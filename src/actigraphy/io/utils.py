@@ -32,16 +32,14 @@ def rdata_to_datadict(filepath: str | pathlib.Path) -> dict[str, Any]:
     return rdata.conversion.convert(data)
 
 
-def snakecase(s: str) -> str:
-    """Converts a string to snake case. If the input is all uppercase,
-    it is converted to all lowercase.
+def snakecase(string: str) -> str:
+    """Converts a string to snake case. Consecutive uppercase letters
+    do not receive underscores between them.
 
     Args:
-        s: The string to convert.
+        string: The string to convert.
 
     Returns:
         The converted string.
     """
-    if all(character.isupper() for character in s if character.isalpha()):
-        return s.lower()
-    return re.sub(r"(?<!^)(?<!_)(?=[A-Z])", "_", s).lower()
+    return re.sub(r"(?<=[A-Z])(?!$)(?!_)(?![A-Z])", "_", string[::-1]).lower()[::-1]
