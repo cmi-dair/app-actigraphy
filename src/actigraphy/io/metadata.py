@@ -34,7 +34,7 @@ class MetaData_M(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
     filecorrupt: bool
     filetooshort: bool
-    n_file_pages_skipped: int
+    nfile_pages_skipped: int
     metalong: pd.DataFrame
     metashort: pd.DataFrame
     wday: int
@@ -63,37 +63,35 @@ class MetaData(pydantic.BaseModel):
         metadata = utils.rdata_to_datadict(filepath)
         metadata["C"]["qc_message"] = metadata["C"]["QCmessage"]
         del metadata["C"]["QCmessage"]
-        metadata = _recursive_remove_single_length_lists(metadata)
-        metadata = _recursive_clean_dict_keys(metadata)
+        metadata = _recursive_clean_rdata(metadata)
         return cls(**metadata)
 
 
-def _recursive_remove_single_length_lists(rdata: dict[str, Any]) -> dict[str, Any]:
-    """Replaces single length lists with their first element.
+def _clean_key(key: str) -> str:
+    """Replaces strings with snakecase characters and legal attribute names.
 
     Args:
-        rdata: The dictionary to clean.
+        key: The key name to clean.
 
     Returns:
-        A dictionary with cleaned keys.
+        A cleaned key.
 
-    Notes:
-        - This function acts recursively on nested dictionaries.
     """
-
-    def clean_value(value: Any) -> Any:
-        """Cleans a value."""
-        if isinstance(value, dict):
-            return _recursive_remove_single_length_lists(value)
-        if isinstance(value, list) and len(value) == 1:
-            return value[0]
-        return value
-
-    return {key: clean_value(value) for key, value in rdata.items()}
+    key = key.replace(".", "_")
+    key = utils.snakecase(key)
+    return key
 
 
-def _recursive_clean_dict_keys(rdata: dict[str, Any]) -> dict[str, Any]:
+def _clean_value(value: Any) -> Any:
+    """Cleans a value."""
+    if isinstance(value, list) and len(value) == 1:
+        return value[0]
+    return value
+
+
+def _recursive_clean_rdata(rdata: dict[str, Any]) -> dict[str, Any]:
     """Replaces dictionary keys with snakecase characters and legal attribute names.
+    Replaces single length lists in dictionary values with their first element.
 
     Args:
         rdata: The dictionary to clean.
@@ -106,17 +104,11 @@ def _recursive_clean_dict_keys(rdata: dict[str, Any]) -> dict[str, Any]:
         - Replaces `.` in keys with `_`.
         - Sets all attributes to snakecase.
     """
-
-    def clean_key(key: str) -> str:
-        """Cleans a key."""
-        key = key.replace(".", "_")
-        key = utils.snakecase(key)
-        return key
-
-    def clean_value(value: Any) -> Any:
-        """Cleans a value."""
+    cleaned_rdata = {}
+    for key, value in rdata.items():
+        key = _clean_key(key)
+        value = _clean_value(value)
         if isinstance(value, dict):
-            return _recursive_clean_dict_keys(value)
-        return value
-
-    return {clean_key(key): clean_value(value) for key, value in rdata.items()}
+            value = _recursive_clean_rdata(value)
+        cleaned_rdata[key] = value
+    return cleaned_rdata

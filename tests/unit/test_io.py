@@ -49,6 +49,15 @@ def test_snakecase_from_pascalcase() -> None:
     assert actual == expected
 
 
+def test_snakecase_from_consecutive_uppercase() -> None:
+    """Test snakecase with a string with consecutive uppercase letters."""
+    expected = "consecutive_uppercase"
+
+    actual = utils.snakecase("COnsecutiveUppercase")
+
+    assert actual == expected
+
+
 def test_ms4(data_dir: pathlib.Path) -> None:
     """Test the MS4 class."""
     ms4_data = ms4.MS4.from_file(data_dir / "ms4.RData")
