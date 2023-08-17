@@ -1,4 +1,5 @@
 """Module for reading and writing data from and to files."""
+import dataclasses
 import datetime
 import enum
 import pathlib
@@ -62,7 +63,8 @@ class MS4Entry(pydantic.BaseModel):
     longitudinal_axis: float | None
 
 
-class MS4(pydantic.BaseModel):
+@dataclasses.dataclass
+class MS4:
     """Represents an MS4 file containing actigraphy data.
 
     Attributes:
