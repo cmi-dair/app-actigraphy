@@ -1,26 +1,12 @@
 """Module for reading and writing data from and to files."""
 import dataclasses
 import datetime
-import enum
 import pathlib
-import re
 from typing import Iterator
 
-import pandas as pd
 import pydantic
-import rdata
 
-
-class Weekdays(str, enum.Enum):
-    """Enum for weekdays."""
-
-    MONDAY = "Monday"
-    TUESDAY = "Tuesday"
-    WEDNESDAY = "Wednesday"
-    THURSDAY = "Thursday"
-    FRIDAY = "Friday"
-    SATURDAY = "Saturday"
-    SUNDAY = "Sunday"
+from actigraphy.io import utils
 
 
 class MS4Entry(pydantic.BaseModel):
@@ -52,7 +38,7 @@ class MS4Entry(pydantic.BaseModel):
     guider_wakeup_ts: datetime.time
     page: int
     daysleeper: bool
-    weekday: Weekdays
+    weekday: utils.Weekdays
     filename: str
     cleaningcode: int
     sleeplog_used: bool
@@ -83,11 +69,17 @@ class MS4:
         Returns:
             An MS4 object containing the data from the file.
         """
-        dataframe = _rdata_to_dataframe(filepath)
-        data_dicts = dataframe.to_dict(orient="records")
+        dataframe = utils.rdata_to_datadict(filepath)
+        keys = list(dataframe.keys())
+        if len(keys) != 1:
+            raise ValueError(
+                f"Expected 1 key in RData file, but found {len(keys)} keys."
+            )
+
+        data_dicts = dataframe[keys[0]].to_dict(orient="records")
         ms4_rows = []
         for row in data_dicts:
-            row_snake_case = {_snakecase(key): value for key, value in row.items()}
+            row_snake_case = {utils.snakecase(key): value for key, value in row.items()}
             ms4_rows.append(MS4Entry(**row_snake_case))
 
         return cls(rows=ms4_rows)
@@ -110,35 +102,3 @@ class MS4:
             list: The row at the specified index.
         """
         return self.rows[key]
-
-
-def _rdata_to_dataframe(filepath: str | pathlib.Path) -> pd.DataFrame:
-    """Converts an Rdata file to a pandas dataframe.
-
-    Args:
-        filepath: The path to the Rdata file.
-
-    Returns:
-        np.ndarray: The numpy array.
-    """
-    data = rdata.parser.parse_file(filepath)
-    datadict = rdata.conversion.convert(data)
-    keys = list(datadict.keys())
-    if len(keys) == 1:
-        return datadict[keys[0]]
-    raise ValueError(f"Expected one key, got {len(keys)}.")
-
-
-def _snakecase(s: str) -> str:
-    """Converts a string to snake case. If the input is all uppercase,
-    it is converted to all lowercase.
-
-    Args:
-        s: The string to convert.
-
-    Returns:
-        The converted string.
-    """
-    if all(c.isupper() for c in s):
-        return s.lower()
-    return re.sub(r"(?<!^)(?<!_)(?=[A-Z])", "_", s).lower()
