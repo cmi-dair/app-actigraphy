@@ -1,5 +1,6 @@
 """Contains the app settings."""
 import functools
+import re
 
 import pydantic
 
@@ -11,6 +12,23 @@ class Colors:
     background: str = "#FFFFFF"
     text: str = "#111111"
     title_text: str = "#0060EE"
+
+    @pydantic.validator("*", pre=True)
+    def _validate_color(self, value: str) -> str:
+        """Validates that a color is a valid hex color.
+
+        Args:
+            value: The color to validate.
+
+        Returns:
+            The validated color.
+
+        Raises:
+            ValueError: If the color is invalid.
+        """
+        if re.match(r"^#(?:[0-9a-fA-F]{3}){1,2}$", value):
+            return value
+        raise ValueError(f"{value} is not a valid hex color.")
 
 
 class Settings(pydantic.BaseModel):
