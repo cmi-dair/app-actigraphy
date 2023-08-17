@@ -116,7 +116,7 @@ def _rdata_to_dataframe(filepath: str | pathlib.Path) -> pd.DataFrame:
     """Converts an Rdata file to a pandas dataframe.
 
     Args:
-        filepath (str | pathlib.Path): The path to the Rdata file.
+        filepath: The path to the Rdata file.
 
     Returns:
         np.ndarray: The numpy array.
