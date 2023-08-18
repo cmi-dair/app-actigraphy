@@ -1,4 +1,11 @@
 import datetime
+import logging
+
+from actigraphy.core import config
+
+settings = config.get_settings()
+LOGGER_NAME = settings.LOGGER_NAME
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
@@ -12,6 +19,7 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
         str: The difference between the two datetime objects as a string in the
         format "HH:MM".
     """
+    logger.debug(f"Calculating datetime delta as HH:MM: {delta}")
     total_minutes = delta.total_seconds() // 60
     hours = int(total_minutes // 60)
     minutes = int(total_minutes % 60)
@@ -19,6 +27,7 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
 
 
 def point2time(point: float, axis_range: float, npointsperday: int) -> datetime.time:
+    logger.debug(f"Converting point to time: {point}, {axis_range}, {npointsperday}")
     if int(point) == 0:
         return datetime.time(3, 0, 0)
 
@@ -38,6 +47,7 @@ def point2time(point: float, axis_range: float, npointsperday: int) -> datetime.
 def time2point(sleep, axis_range=None, npointsperday=None, all_dates=None, day=None):
     # TODO: many of the input variables were clearly intended to be used here
     # but are not.
+    logger.debug(f"Converting time to point: {sleep}, {axis_range}, {npointsperday}")
 
     if sleep == 0:
         return 0
@@ -56,6 +66,26 @@ def time2point(sleep, axis_range=None, npointsperday=None, all_dates=None, day=N
     return sleep_time_hour + sleep_time_min
 
 
+def point2time_timestamp(point, axis_range, npointsperday):
+    if point > 6 * axis_range:
+        temp_point = ((point * 24) / npointsperday) - 12
+    else:
+        temp_point = (point * 24) / npointsperday + 12
+    temp_point_hour = int(temp_point)
+
+    temp_point_min = (temp_point - int(temp_point)) * 60
+    if int(temp_point_min) == 60:
+        temp_point_min = 00
+
+    if int(temp_point_min) < 10:
+        temp_point_min = "0" + str(int(temp_point_min))
+        point_new = str(temp_point_hour) + ":" + temp_point_min
+    else:
+        point_new = str(temp_point_hour) + ":" + str(int(temp_point_min))
+
+    return point_new
+
+
 def hour_to_time_string(hour: int) -> str:
     """Converts an hour integer to a time string in the format of 'hour am/pm'.
     If the hour is 0 or 24, returns 'noon'. If the hour is 12, returns
@@ -67,7 +97,9 @@ def hour_to_time_string(hour: int) -> str:
     Returns:
         The time string.
     """
-    if hour in (0, 24):
+    hour %= 24
+
+    if hour == 0:
         return "noon"
     if hour == 12:
         return "midnight"

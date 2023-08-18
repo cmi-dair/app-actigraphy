@@ -1,3 +1,4 @@
+import dataclasses
 import datetime
 import pathlib
 
@@ -16,6 +17,22 @@ def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
     )
 
 
+@dataclasses.dataclass
+class GraphOutput:
+    identifier: str
+    axis_range: int
+    daycount: int
+    vec_acc: np.ndarray
+    vec_ang: np.ndarray
+    vec_sleeponset: np.ndarray
+    vec_wake: np.ndarray
+    vec_line: np.ndarray
+    npointsperday: int
+    excl_night: np.ndarray
+    vec_nonwear: np.ndarray
+    ddate_new: pd.Index
+
+
 def create_graphs(data_dir: pathlib.Path):
     ms4_file = _get_data_file(data_dir / "meta" / "ms4.out")
     metadata_file = _get_data_file(data_dir / "meta" / "basic")
@@ -27,85 +44,73 @@ def create_graphs(data_dir: pathlib.Path):
         for time in metadata_data.m.metashort.timestamp
     ]
 
-    nightsi = [
+    passed_midnight = [
         index + 1
         for index, time in enumerate(timestamps)
         if time.second == 0 and time.minute == 0 and time.hour == 12
     ]
 
     ddate = [time.strftime("%Y-%m-%d") for time in timestamps]
-    ddates_of_interest = [ddate[index] for index in nightsi]
+    ddates_of_interest = [ddate[index] for index in passed_midnight]
     ddate_new = pd.Index(ddates_of_interest)
 
     # Prepare nonwear information for plotting
-    nonwear = np.zeros((np.size(metadata_data.m.metashort.ENMO * 1000)))
+    nonwear = np.zeros(np.size(metadata_data.m.metashort.ENMO))
 
     # take instances where nonwear was detected (on ws2 time vector) and map results onto a ws3 lenght vector for plotting purposes
-    if np.sum(np.where(metadata_data.m.metalong.nonwearscore > 1)):
-        nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)
-        nonwear_elements = nonwear_elements[0]
+    nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)[0]
 
-        for j in range(1, np.size(nonwear_elements)):
-            # The next if deals with the cases in which the first point is a nowwear data
-            # When this happens, the data takes a minute to load on the APP
-            # TO-DO: find a better way to treat the nonwear cases in the first datapoint
-            if nonwear_elements[j - 1] == 0:
-                nonwear_elements[j - 1] = 1
+    for j in range(np.size(nonwear_elements) - 1):
+        # The next if deals with the cases in which the first point is a nowwear data
+        # When this happens, the data takes a minute to load on the APP
+        # TO-DO: find a better way to treat the nonwear cases in the first datapoint
+        if nonwear_elements[j] == 0:
+            nonwear_elements[j] = 1
 
-            match_loc = np.where(
-                metadata_data.m.metalong.timestamp[nonwear_elements[j - 1]] == time
-                for time in timestamps
-            )
-            match_loc = match_loc[0]
-            nonwear[
-                int(match_loc) : int(
-                    (
-                        int(match_loc)
-                        + (
-                            metadata_data.m.windowsizes[1]
-                            / metadata_data.m.windowsizes[0]
-                        )
-                        - 1
-                    )
+        match_loc = np.where(
+            metadata_data.m.metalong.timestamp[nonwear_elements[j]] == time
+            for time in timestamps
+        )[0]
+
+        nonwear[
+            int(match_loc) : int(
+                (
+                    int(match_loc)
+                    + (metadata_data.m.windowsizes[1] / metadata_data.m.windowsizes[0])
+                    - 1
                 )
-            ] = 1
+            )
+        ] = 1
 
     npointsperday = int((60 / metadata_data.m.windowsizes[0]) * 1440)
 
     # Creating auxiliary vectors to store the data
-    vec_acc = np.zeros((len(nightsi) + 1, npointsperday))
-    vec_ang = np.zeros((len(nightsi) + 1, npointsperday))
-    vec_sleeponset = np.zeros(len(nightsi) + 1)
-    vec_wake = np.zeros(len(nightsi) + 1)
-    vec_sleep_hour = np.zeros(len(nightsi) + 1)
-    vec_sleep_min = np.zeros(len(nightsi) + 1)
-    vec_wake_hour = np.zeros(len(nightsi) + 1)
-    vec_wake_min = np.zeros(len(nightsi) + 1)
-    vec_nonwear = np.zeros((len(nightsi) + 1, npointsperday))
+    vec_acc = np.zeros((len(passed_midnight) + 1, npointsperday))
+    vec_ang = np.zeros((len(passed_midnight) + 1, npointsperday))
+    vec_sleeponset = np.zeros(len(passed_midnight) + 1)
+    vec_wake = np.zeros(len(passed_midnight) + 1)
+    vec_nonwear = np.zeros((len(passed_midnight) + 1, npointsperday))
 
-    if len(nightsi) > 0:
-        nplots = np.size(nightsi) + 1
-        x = range(1, npointsperday + 1, 1)
-
+    if len(passed_midnight) > 0:
+        nplots = np.size(passed_midnight) + 1
         daycount = 1
 
-        # for g in range(1,len(sleep_dates)+1):
-        for g in range(1, nplots + 1):
-            print("Creating graph ", g)
+        for n_graph in range(nplots):
+            print("Creating graph ", n_graph)
 
             check_date = 1
             change_date = 0
 
             if daycount == 1:
                 t0 = 1
-                t1 = nightsi[daycount - 1]
+                t1 = passed_midnight[daycount - 1]
                 non_wear = nonwear[range(t0, t1 + 1)]
             if daycount > 1 and daycount < nplots:
-                t0 = nightsi[daycount - 2] + 1
-                t1 = nightsi[daycount - 1]
+                t0 = passed_midnight[daycount - 2] + 1
+                t1 = passed_midnight[daycount - 1]
                 non_wear = nonwear[range(t0, t1 + 1)]
             if daycount == nplots:
-                t0 = nightsi[daycount - 2]
+                t0 = passed_midnight[daycount - 2]
                 t1 = np.size(timestamps)
                 non_wear = nonwear[range(t0, t1)]
 
@@ -148,11 +153,7 @@ def create_graphs(data_dir: pathlib.Path):
             ):  # if there is less than half a days worth of data
                 list_temp = list(curr_date)
                 temp = int(curr_date[8:]) - 1
-
-                if len(str(temp)) == 1:
-                    temp = "0" + str(temp)
-                else:
-                    temp = str(temp)
+                temp = str(temp).zfill(2)
 
                 list_temp[8:] = temp
                 curr_date = "".join(list_temp)
@@ -219,11 +220,6 @@ def create_graphs(data_dir: pathlib.Path):
                     else:
                         wake_loc = wake_locations[0]
 
-                vec_sleep_hour[g - 1] = sleeponset_hour
-                vec_sleep_min[g - 1] = sleeponset_min
-                vec_wake_hour[g - 1] = wake_hour
-                vec_wake_min[g - 1] = wake_min
-
             if (((t1 - t0) + 1) != npointsperday) & (t0 == 1):
                 extension = [0] * ((npointsperday - (t1 - t0)) - 1)
                 acc = extension + list(acc)
@@ -234,7 +230,7 @@ def create_graphs(data_dir: pathlib.Path):
                 if len(non_wear) < 17280:
                     non_wear = list(extra_extension) + list(non_wear)
 
-                if len(acc) == (len(x) + 1):
+                if len(acc) == npointsperday + 1:
                     extension = extension[1 : (len(extension))]
                     acc = acc[1 : (len(acc))]
                     ang = ang[1 : (len(ang))]
@@ -256,7 +252,7 @@ def create_graphs(data_dir: pathlib.Path):
                 if len(non_wear) < 17280:
                     non_wear = list(non_wear) + extension
 
-                if len(acc) == (len(x) + 1):
+                if len(acc) == npointsperday + 1:
                     extension = extension[1 : (len(extension))]
                     acc = acc[1 : (len(acc))]
                     ang = ang[1 : (len(ang))]
@@ -266,11 +262,11 @@ def create_graphs(data_dir: pathlib.Path):
             acc = (np.array(acc) / 14) - 210
 
             # storing important variables in vectors to be accessed later
-            vec_acc[g - 1] = acc
-            vec_ang[g - 1] = ang
-            vec_sleeponset[g - 1] = sleeponset_loc
-            vec_wake[g - 1] = wake_loc
-            vec_nonwear[g - 1] = non_wear
+            vec_acc[n_graph] = acc
+            vec_ang[n_graph] = ang
+            vec_sleeponset[n_graph] = sleeponset_loc
+            vec_wake[n_graph] = wake_loc
+            vec_nonwear[n_graph] = non_wear
 
             daycount = daycount + 1
 
@@ -279,8 +275,6 @@ def create_graphs(data_dir: pathlib.Path):
         vec_line = [0 for i in range((70) * 2)]
 
         excl_night = [0 for i in range(daycount)]
-        nap_times = [0 for i in range(daycount)]
-        review_night = [0 for i in range(daycount)]
 
     ddate_temp = ddate_new[0]
     new_sleep_date_temp = new_sleep_date[1]
@@ -298,30 +292,20 @@ def create_graphs(data_dir: pathlib.Path):
         new_sleep_date = new_sleep_date.reset_index()
         new_sleep_date = new_sleep_date[0]
 
-    week_day = [row.weekday for row in ms4_data]
     identifier = str(data_dir).split("_")[-1]
     axis_range = int((2 * (60 / metadata_data.m.windowsizes[0]) * 60))
 
-    return (
+    return GraphOutput(
         identifier,
         axis_range,
         daycount,
-        week_day,
-        new_sleep_date,
         vec_acc,
         vec_ang,
         vec_sleeponset,
         vec_wake,
-        vec_sleep_hour,
-        vec_sleep_min,
-        vec_wake_hour,
-        vec_wake_min,
         vec_line,
         npointsperday,
         excl_night,
         vec_nonwear,
         ddate_new,
-        nap_times,
-        timestamps,
-        review_night,
     )

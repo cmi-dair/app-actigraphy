@@ -1,6 +1,6 @@
 """Contains the app settings."""
 import functools
-import re
+import logging
 
 import pydantic
 
@@ -17,7 +17,10 @@ class Colors:
 class Settings(pydantic.BaseModel):
     """Represents the app settings."""
 
-    NAME: str = pydantic.Field("Actigraphy", description="The name of the app.")
+    APP_NAME: str = pydantic.Field("Actigraphy", description="The name of the app.")
+    LOGGER_NAME: str = pydantic.Field(
+        "Actigraphy", description="The name of the logger."
+    )
     APP_COLORS: Colors = pydantic.Field(
         Colors(),
         description="The colors used in the app.",
@@ -32,3 +35,18 @@ def get_settings() -> Settings:
         The app settings.
     """
     return Settings()
+
+
+def initialize_logger() -> None:
+    """Initializes the logger."""
+    settings = get_settings()
+    logger = logging.getLogger(settings.LOGGER_NAME)
+    logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
