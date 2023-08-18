@@ -16,7 +16,7 @@ import plotly.graph_objects as go
 from dash import Input, Output, State, callback_context, dcc, html
 
 from actigraphy.core import config
-from actigraphy.io import metadata, ms4
+from actigraphy.plotting import graphs
 
 settings = config.get_settings()
 APP_NAME = settings.NAME
@@ -32,7 +32,7 @@ parser.add_argument("input_folder", help="GGIR output folder", type=pathlib.Path
 args = parser.parse_args()
 
 input_datapath = args.input_folder
-files = sorted(input_datapath.glob("output_*"))
+files = [str(x) for x in sorted(input_datapath.glob("output_*"))]
 
 log_path = input_datapath / "logs"
 log_path.mkdir(exist_ok=True)
@@ -53,331 +53,6 @@ def which(self):
 
 
 pd.Series.which = which
-
-
-# Function to create the act graphs
-def create_graphs(filename):
-    ms4_filepath = (
-        input_datapath
-        / f"output_{filename}"
-        / "meta"
-        / "ms4.out"
-        / f"{filename}.gt3x.RData"
-    )
-    ms4_data = ms4.MS4.from_file(ms4_filepath)
-
-    metadata_filepath = (
-        input_datapath
-        / f"output_{filename}"
-        / "meta"
-        / "basic"
-        / f"{filename}.gt3x.RData"
-    )
-    metadata_data = metadata.MetaData.from_file(metadata_filepath)
-
-    date_time = metadata_data.m.metashort.timestamp
-
-    year, month, day, hour, minute, sec, _ = date_time.str.split(r"T|-|:", expand=True)
-
-    time = sec + minute + hour
-    ddate = f"{year}-{month}-{day}"
-
-    nightsi = np.where(time == "000012")
-    nightsi = nightsi[0]
-
-    # Easy way to get all the dates and then plot the date correctly
-    ddate_new = ddate[nightsi + 1]
-    ddate_new = pd.Index(ddate_new)
-
-    # Prepare nonwear information for plotting
-    nonwear = np.zeros((np.size(metadata_data.m.metashort.enmo * 1000)))
-
-    # take instances where nonwear was detected (on ws2 time vector) and map results onto a ws3 lenght vector for plotting purposes
-    if np.sum(np.where(metadata_data.m.metalong.nonwearscore > 1)):
-        nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)
-        nonwear_elements = nonwear_elements[0]
-
-        for j in range(1, np.size(nonwear_elements)):
-            # The next if deals with the cases in which the first point is a nowwear data
-            # When this happens, the data takes a minute to load on the APP
-            # TO-DO: find a better way to treat the nonwear cases in the first datapoint
-            if nonwear_elements[j - 1] == 0:
-                nonwear_elements[j - 1] = 1
-
-            match_loc = np.where(
-                metadata_data.m.metalong.timestamp[nonwear_elements[j - 1]] == date_time
-            )
-            match_loc = match_loc[0]
-            nonwear[
-                int(match_loc) : int(
-                    (
-                        int(match_loc)
-                        + (
-                            metadata_data.M.windowsizes[1]
-                            / metadata_data.M.windowsizes[0]
-                        )
-                        - 1
-                    )
-                )
-            ] = 1
-
-    npointsperday = int((60 / metadata_data.M.windowsizes[0]) * 1440)
-
-    # Creating auxiliary vectors to store the data
-    vec_acc = np.zeros((len(nightsi) + 1, npointsperday))
-    vec_ang = np.zeros((len(nightsi) + 1, npointsperday))
-    vec_sleeponset = np.zeros(len(nightsi) + 1)
-    vec_wake = np.zeros(len(nightsi) + 1)
-    vec_sleep_hour = np.zeros(len(nightsi) + 1)
-    vec_sleep_min = np.zeros(len(nightsi) + 1)
-    vec_wake_hour = np.zeros(len(nightsi) + 1)
-    vec_wake_min = np.zeros(len(nightsi) + 1)
-    vec_nonwear = np.zeros((len(nightsi) + 1, npointsperday))
-
-    if len(nightsi) > 0:
-        nplots = np.size(nightsi) + 1
-        x = range(1, npointsperday + 1, 1)
-
-        daycount = 1
-
-        # for g in range(1,len(sleep_dates)+1):
-        for g in range(1, nplots + 1):
-            print("Creating graph ", g)
-
-            check_date = 1
-            change_date = 0
-
-            if daycount == 1:
-                t0 = 1
-                t1 = nightsi[daycount - 1]
-                non_wear = nonwear[range(t0, t1 + 1)]
-            if daycount > 1 and daycount < nplots:
-                t0 = nightsi[daycount - 2] + 1
-                t1 = nightsi[daycount - 1]
-                non_wear = nonwear[range(t0, t1 + 1)]
-            if daycount == nplots:
-                t0 = nightsi[daycount - 2]
-                t1 = np.size(date_time)
-                non_wear = nonwear[range(t0, t1)]
-
-            # Day with 25 hours, just pretend that 25th hour did not happen
-            if ((t1 - t0) + 1) / (60 * 60 / metadata_data.M.windowsizes[0]) == 25:
-                t1 = t1 - (60 * 60 / metadata_data.M.windowsizes[0])
-                t1 = int(t1)
-
-            # Day with 23 hours, just extend timeline with 1 hour
-            if ((t1 - t0) + 1) / (60 * 60 / metadata_data.M.windowsizes[0]) == 23:
-                t1 = t1 + (60 * 60 / metadata_data.M.windowsizes[0])
-                t1 = int(t1)
-
-            # Initialize daily "what we think you did" vectors
-            acc = abs((metadata_data.m.metashort.enmo * 1000)[range(t0, t1 + 1)])
-            ang = metadata_data.m.metashort.anglez[range(t0, t1 + 1)]
-            non_wear = nonwear[range(t0, t1)]
-            extension = range(0, (npointsperday - (t1 - t0)) - 1, 1)
-            extra_extension = range(0, 1)
-
-            # check to see if there are any sleep onset or wake annotations on this day
-            sleeponset_loc = 0
-            wake_loc = 0
-            sw_coefs = [12, 36]
-
-            # Index 0=day; 1=month; 2=year
-            sleep_dates = [row.calendar_date for row in ms4_data]
-            sleep_dates_split = sleep_dates.str.split(r"/", expand=True)
-
-            # Double check because some dates are like 2019-02-25 and other dates are like 2019-2-25
-            # Or some dates are like 2019-02-01 and other dates are like 2019-02-1
-            for i in range(1, len(sleep_dates_split) + 1):
-                sleep_dates_split[0][i] = sleep_dates_split[0][i].zfill(2)
-                sleep_dates_split[1][i] = sleep_dates_split[1][i].zfill(2)
-
-            new_sleep_date = "-".join(sleep_dates_split[::-1])
-
-            # check for sleeponset & wake time that is logged on this day before midnight
-            curr_date = ddate[t0]
-
-            # check to see if it is the first day that has less than 24 and starts after midnight
-            if (t1 - t0) < (
-                (60 * 60 * 12) / metadata_data.M.windowsizes[0]
-            ):  # if there is less than half a days worth of data
-                list_temp = list(curr_date)
-                temp = int(curr_date[8:]) - 1
-
-                if len(str(temp)) == 1:
-                    temp = "0" + str(temp)
-                else:
-                    temp = str(temp)
-
-                list_temp[8:] = temp
-                curr_date = "".join(list_temp)
-                new_sleep_date = pd.concat([pd.Series(curr_date), new_sleep_date])
-
-                if daycount == 1:
-                    # Updating the all days variable to include the day before (without act data) on the first position
-                    ddate_new = pd.concat([pd.Series(curr_date), pd.Series(ddate_new)])
-                    ddate_new = ddate_new.reset_index()
-                    ddate_new = ddate_new[0]
-                    change_date = 1
-
-            if curr_date in str(new_sleep_date):
-                check_date = 0
-                idx = list(new_sleep_date).index(curr_date)
-
-            if check_date is False:
-                # Get sleeponset
-                sleep_onset_time_all = [row.sleeponset for row in ms4_data]
-                sleeponset_time = sleep_onset_time_all[idx + 1]
-
-                if (sleeponset_time >= sw_coefs[0]) & (sleeponset_time < sw_coefs[1]):
-                    sleeponset_hour = int(sleeponset_time)
-                    sleeponset_hour %= 24
-
-                    sleeponset_min = (sleeponset_time - int(sleeponset_time)) * 60
-                    sleeponset_min %= 60
-
-                    sleeponset_locations = (
-                        ((pd.to_numeric(hour[t0:t1])) == sleeponset_hour)
-                        & ((pd.to_numeric(minute[t0:t1])) == int(sleeponset_min))
-                    ).which()
-                    sleeponset_locations = list(pd.to_numeric(sleeponset_locations) + 2)
-
-                    if len(sleeponset_locations) == 0:
-                        sleeponset_loc = 0
-                    else:
-                        sleeponset_loc = sleeponset_locations[0]
-
-                # Get wakeup
-                wake_time_all = [row.wakeup for row in ms4_data]
-                wake_time = wake_time_all[idx + 1]
-
-                if (wake_time >= sw_coefs[0]) & (wake_time < sw_coefs[1]):
-                    wake_hour = int(wake_time) % 24
-
-                    wake_min = ((wake_time - int(wake_time)) * 60) % 60
-
-                    wake_locations = (
-                        ((pd.to_numeric(hour[t0:t1])) == wake_hour)
-                        & ((pd.to_numeric(minute[t0:t1])) == int(wake_min))
-                    ).which()
-                    wake_locations = list(pd.to_numeric(wake_locations) + 2)
-
-                    # Need to change this line to work with boolean
-                    # if(wake_locations[0] == True):
-                    if len(wake_locations) == 0:
-                        wake_loc = 0
-                    else:
-                        wake_loc = wake_locations[0]
-
-                vec_sleep_hour[g - 1] = sleeponset_hour
-                vec_sleep_min[g - 1] = sleeponset_min
-                vec_wake_hour[g - 1] = wake_hour
-                vec_wake_min[g - 1] = wake_min
-
-            # add extensions if <24hr of data
-            # hold adjustments amounts on first and last day plots
-
-            if (((t1 - t0) + 1) != npointsperday) & (t0 == 1):
-                extension = [0] * ((npointsperday - (t1 - t0)) - 1)
-                acc = extension + list(acc)
-                ang = extension + list(ang)
-                non_wear = extension + list(non_wear)
-                t1 = len(acc)
-
-                if len(non_wear) < 17280:
-                    non_wear = list(extra_extension) + list(non_wear)
-
-                if len(acc) == (len(x) + 1):
-                    extension = extension[1 : (len(extension))]
-                    acc = acc[1 : (len(acc))]
-                    ang = ang[1 : (len(ang))]
-                    non_wear = non_wear[1 : (len(non_wear))]
-
-                # adjust any sleeponset / wake annotations if they exist:
-                if sleeponset_loc != 0:
-                    sleeponset_loc = sleeponset_loc + len(extension)
-
-                if wake_loc != 0:
-                    wake_loc = wake_loc + len(extension)
-
-            elif ((t1 - t0) + 1) != npointsperday & (t1 == len(time)):
-                extension = [0] * ((npointsperday - (t1 - t0)))
-                acc = list(acc) + extension
-                ang = list(ang) + extension
-                non_wear = list(non_wear) + extension
-
-                if len(non_wear) < 17280:
-                    non_wear = list(non_wear) + extension
-
-                if len(acc) == (len(x) + 1):
-                    extension = extension[1 : (len(extension))]
-                    acc = acc[1 : (len(acc))]
-                    ang = ang[1 : (len(ang))]
-                    non_wear = non_wear[1 : (len(non_wear))] + list(extra_extension)
-
-            # Comment the next line if the app will create two different graphs: one for the arm movement and one for the z-angle
-            acc = (np.array(acc) / 14) - 210
-
-            # storing important variables in vectors to be accessed later
-            vec_acc[g - 1] = acc
-            vec_ang[g - 1] = ang
-            vec_sleeponset[g - 1] = sleeponset_loc
-            vec_wake[g - 1] = wake_loc
-            vec_nonwear[g - 1] = non_wear
-
-            daycount = daycount + 1
-
-        vec_line = []
-        # Setting nnights = 70 because GGIR version 2.0-0 need a value for the nnights variable.
-        vec_line = [0 for i in range((70) * 2)]
-
-        excl_night = [0 for i in range(daycount)]
-        nap_times = [0 for i in range(daycount)]
-        review_night = [0 for i in range(daycount)]
-
-    ddate_temp = ddate_new[0]
-    new_sleep_date_temp = new_sleep_date[1]
-    if (
-        (ddate_new[0] != new_sleep_date[1])
-        and (change_date == 0)
-        and (ddate_temp[8:] > new_sleep_date_temp[8:])
-    ):
-        ddate_new = pd.concat([pd.Series(new_sleep_date[1]), pd.Series(ddate_new)])
-        ddate_new = ddate_new.reset_index()
-        ddate_new = ddate_new[0]
-
-    if len(new_sleep_date) != daycount - 1:
-        new_sleep_date = pd.concat([new_sleep_date, pd.Series(curr_date)])
-        new_sleep_date = new_sleep_date.reset_index()
-        new_sleep_date = new_sleep_date[0]
-
-    week_day = [row.weekday for row in ms4_data]
-    identifier = filename[7:]
-    axis_range = int((2 * (60 / metadata_data.M.windowsizes[0]) * 60))
-
-    return (
-        identifier,
-        axis_range,
-        daycount,
-        week_day,
-        new_sleep_date,
-        vec_acc,
-        vec_ang,
-        vec_sleeponset,
-        vec_wake,
-        vec_sleep_hour,
-        vec_sleep_min,
-        vec_wake_hour,
-        vec_wake_min,
-        vec_line,
-        npointsperday,
-        excl_night,
-        vec_nonwear,
-        ddate_new,
-        nap_times,
-        date_time,
-        review_night,
-    )
 
 
 # File example:
@@ -784,7 +459,7 @@ def time2point(sleep, wake):
 
 
 def timestamp_to_decimaltime(time, is_sleep):
-    time_split = datetime.time.split(":")
+    time_split = time.split(":")
     time_decimal = ((int(time_split[0]) * 60) + int(time_split[1])) / 60
 
     if is_sleep == 1:
@@ -874,190 +549,182 @@ app.layout = html.Div(
 def parse_contents(filename, name):
     global fig_variables
 
-    try:
-        if name == None or name == "":
-            return "", "", True, False
+    # try:
+    if not name:
+        return "", "", True, False
+
+    if not filename:
+        return
+
+    if "output_" in filename:
+        print("Loading data ...")
+        fig_variables = graphs.create_graphs(pathlib.Path(filename))
+        print("lea!")
+        identifier = fig_variables[0]
+        axis_range = fig_variables[1]
+        sleep = fig_variables[7]
+        wake = fig_variables[8]
+        daycount = fig_variables[2]
+        hour_vector = []
+        sleep_tmp = []
+        wake_tmp = []
+        tmp_axis = int(axis_range / 2)
+
+        for ii in range(0, len(sleep)):
+            sleep_tmp1, wake_tmp1 = point2time(sleep[ii], wake[ii])
+            sleep_tmp.append(sleep_tmp1)
+            wake_tmp.append(wake_tmp1)
+
+        for jj in range(0, daycount - 1):
+            hour_vector.append(sleep_tmp[jj])
+            hour_vector.append(wake_tmp[jj])
+
+        # Checking for a previous sleeplog file
+        if (input_datapath / ("logs/sleeplog_" + identifier + ".csv")).exists():
+            print(
+                "Participant ",
+                identifier,
+                "have a sleeplog. Loading existing file",
+            )
         else:
-            # if 'RData' in filename:
-            if "output_" in filename:
-                print("Loading data ...")
-                fig_variables = create_graphs(filename)
-                identifier = fig_variables[0]
-                axis_range = fig_variables[1]
-                sleep = fig_variables[7]
-                wake = fig_variables[8]
-                daycount = fig_variables[2]
-                hour_vector = []
-                sleep_tmp = []
-                wake_tmp = []
-                tmp_axis = int(axis_range / 2)
+            print(
+                "Participant ",
+                identifier,
+                "does not have a sleeplog. Loading sleepdata from GGIR",
+            )
+            save_GGIR_file(hour_vector, fig_variables, filename)
 
-                for ii in range(0, len(sleep)):
-                    sleep_tmp1, wake_tmp1 = point2time(sleep[ii], wake[ii])
-                    sleep_tmp.append(sleep_tmp1)
-                    wake_tmp.append(wake_tmp1)
+        # Checking for a previous nights do review file
+        if (input_datapath / ("logs/review_night_" + identifier + ".csv")).exists():
+            print(
+                "Participant ",
+                identifier,
+                "have a night review file. Loading existing file",
+            )
+        else:
+            print(
+                "Participant ",
+                identifier,
+                "does not have a night review file. Creating a new one.",
+            )
+            create_review_night_file(identifier)
 
-                for jj in range(0, daycount - 1):
-                    hour_vector.append(sleep_tmp[jj])
-                    hour_vector.append(wake_tmp[jj])
+        # Checking for a multiple sleeplog (nap times) file
+        if (
+            input_datapath / ("logs/multiple_sleeplog_" + identifier + ".csv")
+        ).exists():
+            print(
+                "Participant ",
+                identifier,
+                "have a multiple sleeplog file. Loading existing file",
+            )
+        else:
+            print(
+                "Participant ",
+                identifier,
+                "does not have a multiple sleeplog file. Creating a new one.",
+            )
+            create_multiple_sleeplog(identifier)
 
-                # Checking for a previous sleeplog file
-                if (input_datapath / ("logs/sleeplog_" + identifier + ".csv")).exists():
-                    print(
-                        "Participant ",
-                        identifier,
-                        "have a sleeplog. Loading existing file",
-                    )
-                else:
-                    print(
-                        "Participant ",
-                        identifier,
-                        "does not have a sleeplog. Loading sleepdata from GGIR",
-                    )
-                    save_GGIR_file(hour_vector, fig_variables, filename)
+        # Checking for data cleaning file
+        if (input_datapath / ("logs/missing_sleep_" + identifier + ".csv")).exists():
+            print(
+                "Participant ",
+                identifier,
+                "have a data cleaning file. Loading existing file",
+            )
+        else:
+            print(
+                "Participant ",
+                identifier,
+                "does not have a data cleaning file. Creating a new one.",
+            )
+            create_datacleaning(identifier)
 
-                # Checking for a previous nights do review file
-                if (
-                    input_datapath / ("logs/review_night_" + identifier + ".csv")
-                ).exists():
-                    print(
-                        "Participant ",
-                        identifier,
-                        "have a night review file. Loading existing file",
-                    )
-                else:
-                    print(
-                        "Participant ",
-                        identifier,
-                        "does not have a night review file. Creating a new one.",
-                    )
-                    create_review_night_file(identifier)
+        save_log_file(name, fig_variables[0])
 
-                # Checking for a multiple sleeplog (nap times) file
-                if (
-                    input_datapath / ("logs/multiple_sleeplog_" + identifier + ".csv")
-                ).exists():
-                    print(
-                        "Participant ",
-                        identifier,
-                        "have a multiple sleeplog file. Loading existing file",
-                    )
-                else:
-                    print(
-                        "Participant ",
-                        identifier,
-                        "does not have a multiple sleeplog file. Creating a new one.",
-                    )
-                    create_multiple_sleeplog(identifier)
-
-                # Checking for data cleaning file
-                if (
-                    input_datapath / ("logs/missing_sleep_" + identifier + ".csv")
-                ).exists():
-                    print(
-                        "Participant ",
-                        identifier,
-                        "have a data cleaning file. Loading existing file",
-                    )
-                else:
-                    print(
-                        "Participant ",
-                        identifier,
-                        "does not have a data cleaning file. Creating a new one.",
-                    )
-                    create_datacleaning(identifier)
-
-                save_log_file(name, fig_variables[0])
-
-                return (
+        return (
+            [
+                html.Div(
                     [
-                        html.Div(
-                            [
-                                html.B(
-                                    "* All changes will be automatically saved\n\n",
-                                    style={"color": "red"},
-                                ),
-                                html.B(
-                                    "Select day for participant "
-                                    + fig_variables[0]
-                                    + ": "
-                                ),
-                                dcc.Slider(
-                                    1,
-                                    fig_variables[2] - 1,
-                                    1,
-                                    value=1,
-                                    id="day_slider",
-                                ),
-                            ],
-                            style={"margin-left": "20px", "padding": 10},
+                        html.B(
+                            "* All changes will be automatically saved\n\n",
+                            style={"color": "red"},
                         ),
-                        dcc.Checklist(
-                            [
-                                " I'm done and I would like to proceed to the next participant. "
-                            ],
-                            id="are-you-done",
-                            style={"margin-left": "50px"},
-                        ),
-                        html.Pre(id="check-done"),
-                        daq.BooleanSwitch(
-                            id="multiple_sleep",
-                            on=False,
-                            label=" Does this participant have multiple sleep periods in this 24h period?",
-                        ),
-                        html.Pre(id="checklist-items"),
-                        daq.BooleanSwitch(
-                            id="exclude-night",
-                            on=False,
-                            label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
-                        ),
-                        html.Pre(id="checklist-items2"),
-                        daq.BooleanSwitch(
-                            id="review-night",
-                            on=False,
-                            label=" Do you need to review this night?",
-                        ),
-                        dcc.Graph(id="graph"),
-                        html.Div(
-                            [
-                                html.B(id="sleep-onset"),
-                                html.B(id="sleep-offset"),
-                                html.B(id="sleep-duration"),
-                            ],
-                            style={"margin-left": "80px", "margin-right": "55px"},
-                        ),
-                        html.Div(
-                            [
-                                dcc.RangeSlider(
-                                    min=0,
-                                    max=25920,
-                                    step=1,
-                                    marks={
-                                        i * tmp_axis: hour_to_time_string(i)
-                                        for i in range(37)
-                                    },
-                                    id="my-range-slider",
-                                ),
-                                html.Pre(id="annotations-slider"),
-                            ],
-                            # html.Pre(id="annotations-nap"),
-                            style={"margin-left": "55px", "margin-right": "55px"},
-                        ),
-                        # html.Button('Refresh graph', id='btn_clear', style={"margin-left": "15px"}),
-                        html.Pre(id="annotations-save"),
-                        html.P(
-                            "\n\n     This software is licensed under the GNU Lesser General Public License v3.0\n     Permissions of this copyleft license are conditioned on making available complete source code of licensed works and modifications under the same license or\n     the GNU GPLv3. Copyright and license notices must be preserved.\n     Contributors provide an express grant of patent rights.\n     However, a larger work using the licensed work through interfaces provided by the licensed work may be distributed under different terms\n     and without source code for the larger work.",
-                            style={"color": "gray"},
+                        html.B("Select day for participant " + fig_variables[0] + ": "),
+                        dcc.Slider(
+                            1,
+                            fig_variables[2] - 1,
+                            1,
+                            value=1,
+                            id="day_slider",
                         ),
                     ],
-                    "",
-                    False,
-                    True,
-                )
+                    style={"margin-left": "20px", "padding": 10},
+                ),
+                dcc.Checklist(
+                    [" I'm done and I would like to proceed to the next participant. "],
+                    id="are-you-done",
+                    style={"margin-left": "50px"},
+                ),
+                html.Pre(id="check-done"),
+                daq.BooleanSwitch(
+                    id="multiple_sleep",
+                    on=False,
+                    label=" Does this participant have multiple sleep periods in this 24h period?",
+                ),
+                html.Pre(id="checklist-items"),
+                daq.BooleanSwitch(
+                    id="exclude-night",
+                    on=False,
+                    label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
+                ),
+                html.Pre(id="checklist-items2"),
+                daq.BooleanSwitch(
+                    id="review-night",
+                    on=False,
+                    label=" Do you need to review this night?",
+                ),
+                dcc.Graph(id="graph"),
+                html.Div(
+                    [
+                        html.B(id="sleep-onset"),
+                        html.B(id="sleep-offset"),
+                        html.B(id="sleep-duration"),
+                    ],
+                    style={"margin-left": "80px", "margin-right": "55px"},
+                ),
+                html.Div(
+                    [
+                        dcc.RangeSlider(
+                            min=0,
+                            max=25920,
+                            step=1,
+                            marks={
+                                i * tmp_axis: hour_to_time_string(i) for i in range(37)
+                            },
+                            id="my-range-slider",
+                        ),
+                        html.Pre(id="annotations-slider"),
+                    ],
+                    # html.Pre(id="annotations-nap"),
+                    style={"margin-left": "55px", "margin-right": "55px"},
+                ),
+                # html.Button('Refresh graph', id='btn_clear', style={"margin-left": "15px"}),
+                html.Pre(id="annotations-save"),
+                html.P(
+                    "\n\n     This software is licensed under the GNU Lesser General Public License v3.0\n     Permissions of this copyleft license are conditioned on making available complete source code of licensed works and modifications under the same license or\n     the GNU GPLv3. Copyright and license notices must be preserved.\n     Contributors provide an express grant of patent rights.\n     However, a larger work using the licensed work through interfaces provided by the licensed work may be distributed under different terms\n     and without source code for the larger work.",
+                    style={"color": "gray"},
+                ),
+            ],
+            "",
+            False,
+            True,
+        )
 
-    except Exception as e:
-        print(e)
-        return dash.no_update
+    # except Exception as e:
+    #    print(e)
+    #    return dash.no_update
 
 
 @app.callback(Output("multiple_sleep", "on"), Input("day_slider", "value"))
@@ -1100,7 +767,7 @@ def update_review_night(day):
     Input("my-range-slider", "value"),
     suppress_callback_exceptions=True,
 )
-def update_graph(day, exclude_button, review_night, nap):
+def update_graph(day, exclude_button, review_night, nap, position):
     identifier = fig_variables[0]
     daycount = fig_variables[2]
     vec_acc = fig_variables[5]
@@ -1461,6 +1128,8 @@ def save_log_done(value):
     State("day_slider", "value"),
 )
 def save_info(drag_value, day):
+    if not drag_value:
+        return "", "", "", ""
     identifier = fig_variables[0]
     save_sleeplog_file(identifier, day, drag_value[0], drag_value[1])
     sleep_time, wake_time = point2time(drag_value[0], drag_value[1])
@@ -1476,4 +1145,4 @@ def save_info(drag_value, day):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=False)
+    app.run_server(debug=False, port=8051)

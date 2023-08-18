@@ -47,6 +47,7 @@ class MS4Entry(pydantic.BaseModel):
     sleep_regularity_index: float | None
     sri_fraction_valid: float | None
     longitudinal_axis: float | None
+    calendar_date: str
 
 
 @dataclasses.dataclass
@@ -70,13 +71,7 @@ class MS4:
             An MS4 object containing the data from the file.
         """
         dataframe = utils.rdata_to_datadict(filepath)
-        keys = list(dataframe.keys())
-        if len(keys) != 1:
-            raise ValueError(
-                f"Expected 1 key in RData file, but found {len(keys)} keys."
-            )
-
-        data_dicts = dataframe[keys[0]].to_dict(orient="records")
+        data_dicts = dataframe["nightsummary"].to_dict(orient="records")
         ms4_rows = []
         for row in data_dicts:
             row_snake_case = {utils.snakecase(key): value for key, value in row.items()}
