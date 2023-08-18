@@ -15,7 +15,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash import Input, Output, State, callback_context, dcc, html
 
-from actigraphy.core import config
+from actigraphy.core import config, utils
 from actigraphy.plotting import graphs
 
 settings = config.get_settings()
@@ -36,23 +36,6 @@ files = [str(x) for x in sorted(input_datapath.glob("output_*"))]
 
 log_path = input_datapath / "logs"
 log_path.mkdir(exist_ok=True)
-
-
-def which(self):
-    try:
-        self = list(iter(self))
-    except TypeError as e:
-        raise Exception(
-            """'which' method can only be applied to iterables.
-            {}""".format(
-                str(e)
-            )
-        )
-    indices = [i for i, x in enumerate(self) if bool(x) == True]
-    return indices
-
-
-pd.Series.which = which
 
 
 # File example:
@@ -143,7 +126,8 @@ def save_sleeplog_file(identifier, day, sleep, wake):
 
     df = pd.read_csv(filename_path)
     df.iloc[0, 0] = identifier
-    sleep_time, wake_time = point2time(sleep, wake)
+    sleep_time = utils.point2time(sleep, fig_variables[1], fig_variables[14])
+    wake_time = utils.point2time(wake, fig_variables[1], fig_variables[14])
     df.iloc[0, ((day) * 2) - 1] = sleep_time
     df.iloc[0, ((day) * 2)] = wake_time
 
@@ -338,7 +322,9 @@ def store_sleep_diary(day, sleep, wake):
         vec_line[(day * 2) - 2] = 0
         vec_line[day * 2 - 1] = 0
     else:
-        onset_point2time = point2time(sleep, wake)
+        onset_point2time = utils.point2time(
+            sleep, wake, fig_variables[1], fig_variables[14]
+        )
         vec_line[(day * 2) - 2] = onset_point2time[0]
         vec_line[day * 2 - 1] = onset_point2time[1]
 
@@ -373,132 +359,6 @@ def point2time_timestamp(point):
         point_new = str(temp_point_hour) + ":" + str(int(temp_point_min))
 
     return point_new
-
-
-def point2time(sleep, wake):
-    axis_range = fig_variables[1]
-    npointsperday = fig_variables[14]
-
-    # Get sleeponset
-    if int(sleep) == 0:
-        sleep_point2time = "3:0:00"
-    else:
-        if sleep > 6 * axis_range:
-            temp_sleep = ((sleep * 24) / npointsperday) - 12
-        else:
-            temp_sleep = (sleep * 24) / npointsperday + 12
-        temp_sleep_hour = int(temp_sleep)
-
-        temp_sleep_min = (temp_sleep - int(temp_sleep)) * 60
-        if int(temp_sleep_min) == 60:
-            temp_sleep_min = 0
-
-        sleep_point2time = str(temp_sleep_hour) + ":" + str(int(temp_sleep_min)) + ":00"
-
-    # Get wakeup
-
-    if int(wake) == 0:
-        wake_point2time = "3:0:00"
-    else:
-        if wake > 6 * axis_range:
-            temp_wake = ((wake * 24) / npointsperday) - 12
-        else:
-            temp_wake = (wake * 24) / npointsperday + 12
-        temp_wake_hour = int(temp_wake)
-
-        temp_wake_min = (temp_wake - int(temp_wake)) * 60
-        if int(temp_wake_min) == 60:
-            temp_wake_min = 0
-
-        wake_point2time = str(temp_wake_hour) + ":" + str(int(temp_wake_min)) + ":00"
-
-    return sleep_point2time, wake_point2time
-
-
-def time2point(sleep, wake):
-    if sleep == 0:
-        sleep2return = 0
-    else:
-        sleep_split = sleep.split(":")
-        # Get sleep time and transform to timepoints
-        sleep_time_hour = int(sleep_split[0])
-        sleep_time_min = int(sleep_split[1])
-        # hour
-        if sleep_time_hour >= 0 and sleep_time_hour < 12:
-            sleep_time_hour = ((sleep_time_hour + 12) * 8640) / 12
-        else:
-            sleep_time_hour = ((sleep_time_hour - 12) * 8640) / 12
-        # minute
-        if sleep_time_min == 0:
-            sleep_time_min = 0
-        else:
-            sleep_time_min = sleep_time_min * 12
-
-        sleep2return = sleep_time_hour + sleep_time_min
-
-    if wake == 0:
-        wake2return = 0
-    else:
-        wake_split = wake.split(":")
-        # Get wake time and transform to timepoints
-        wake_time_hour = int(wake_split[0])
-        wake_time_min = int(wake_split[1])
-        # hour
-        if wake_time_hour >= 0 and wake_time_hour < 24:
-            wake_time_hour = ((wake_time_hour + 12) * 17280) / 24
-        else:
-            wake_time_hour = ((wake_time_hour - 12) * 17280) / 24
-        # minute
-        if wake_time_min == 0:
-            wake_time_min = 0
-        else:
-            wake_time_min = wake_time_min * 12
-        wake2return = wake_time_hour + wake_time_min
-
-    return sleep2return, wake2return
-
-
-def timestamp_to_decimaltime(time, is_sleep):
-    time_split = time.split(":")
-    time_decimal = ((int(time_split[0]) * 60) + int(time_split[1])) / 60
-
-    if is_sleep == 1:
-        if time_decimal > 12:
-            time_decimal = time_decimal - 24
-
-    return time_decimal
-
-
-def decimaltime_to_timestamp(time):
-    time_int = int(time)
-    time_decimal = int((time * 60) % 60)
-
-    time_string = str(time_int) + ":" + str(time_decimal)
-
-    return time_string
-
-
-def calculate_sleep_duration(sleeponset, wakeup):
-    sleep_decimal = timestamp_to_decimaltime(sleeponset, 1)
-    wake_decimal = timestamp_to_decimaltime(wakeup, 0)
-
-    sleep_duration_decimal = wake_decimal - sleep_decimal
-
-    sleep_duration = decimaltime_to_timestamp(sleep_duration_decimal)
-
-    return sleep_duration
-
-
-def hour_to_time_string(hour):
-    if hour in (0, 24):
-        return "noon"
-    if hour == 12:
-        return "midnight"
-
-    clock_hour = hour % 12
-    am_pm = "pm" if hour >= 12 else "am"
-
-    return f"{clock_hour}{am_pm}"
 
 
 app.layout = html.Div(
@@ -571,9 +431,12 @@ def parse_contents(filename, name):
         tmp_axis = int(axis_range / 2)
 
         for ii in range(0, len(sleep)):
-            sleep_tmp1, wake_tmp1 = point2time(sleep[ii], wake[ii])
-            sleep_tmp.append(sleep_tmp1)
-            wake_tmp.append(wake_tmp1)
+            sleep_tmp.append(
+                utils.point2time(sleep[ii], fig_variables[1], fig_variables[14])
+            )
+            wake_tmp.append(
+                utils.point2time(wake[ii], fig_variables[1], fig_variables[14])
+            )
 
         for jj in range(0, daycount - 1):
             hour_vector.append(sleep_tmp[jj])
@@ -701,7 +564,8 @@ def parse_contents(filename, name):
                             max=25920,
                             step=1,
                             marks={
-                                i * tmp_axis: hour_to_time_string(i) for i in range(37)
+                                i * tmp_axis: utils.hour_to_time_string(i)
+                                for i in range(37)
                             },
                             id="my-range-slider",
                         ),
@@ -722,10 +586,6 @@ def parse_contents(filename, name):
             True,
         )
 
-    # except Exception as e:
-    #    print(e)
-    #    return dash.no_update
-
 
 @app.callback(Output("multiple_sleep", "on"), Input("day_slider", "value"))
 def update_nap_switch(day):
@@ -733,10 +593,7 @@ def update_nap_switch(day):
     filename = "multiple_sleeplog_" + identifier + ".csv"
     naps = open_multiple_sleeplog(identifier)
 
-    if naps[day - 1] == 0:
-        return False
-    else:
-        return True
+    return naps[day - 1] != 0
 
 
 @app.callback(Output("exclude-night", "on"), Input("day_slider", "value"))
@@ -781,7 +638,8 @@ def update_graph(day, exclude_button, review_night, nap, position):
     night_to_exclude = open_datacleaning(identifier)
 
     sleeponset, wakeup = open_sleeplog_file(identifier)
-    vec_sleeponset, vec_wake = time2point(sleeponset[day - 1], wakeup[day - 1])
+    vec_sleeponset = utils.time2point(sleeponset[day - 1])
+    vec_wake = utils.time2point(wakeup[day - 1])
 
     end_value = []
     begin_value = []
@@ -1113,7 +971,7 @@ def update_graph(day, exclude_button, review_night, nap, position):
 
 @app.callback(Output("check-done", "children"), Input("are-you-done", "value"))
 def save_log_done(value):
-    if value == None or value == []:
+    if not value:
         print("Sleep log analysis not completed yet.")
     else:
         save_log_analysis_completed(fig_variables[0], "Yes")
@@ -1130,16 +988,25 @@ def save_log_done(value):
 def save_info(drag_value, day):
     if not drag_value:
         return "", "", "", ""
+
     identifier = fig_variables[0]
     save_sleeplog_file(identifier, day, drag_value[0], drag_value[1])
-    sleep_time, wake_time = point2time(drag_value[0], drag_value[1])
-
-    sleep_duration = calculate_sleep_duration(sleep_time, wake_time)
+    sleep_time = utils.point2time(drag_value[0], fig_variables[1], fig_variables[14])
+    wake_time = utils.point2time(drag_value[1], fig_variables[1], fig_variables[14])
+    sleep_datetime = datetime.datetime.combine(datetime.date.today(), sleep_time)
+    if wake_time < sleep_time:
+        wake_datetime = datetime.datetime.combine(
+            datetime.date.today() + datetime.timedelta(days=1), wake_time
+        )
+    else:
+        wake_datetime = datetime.datetime.combine(datetime.date.today(), wake_time)
+    delta = wake_datetime - sleep_datetime
+    sleep_duration = utils.datetime_delta_as_hh_mm(delta)
 
     return (
         "",
-        "Sleep onset: " + sleep_time + "\n",
-        "Sleep offset: " + wake_time + "\n",
+        "Sleep onset: " + sleep_datetime.strftime("%H:%M") + "\n",
+        "Sleep offset: " + wake_datetime.strftime("%H:%M") + "\n",
         "Sleep duration: " + sleep_duration,
     )
 

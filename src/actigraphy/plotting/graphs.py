@@ -156,10 +156,10 @@ def create_graphs(data_dir: pathlib.Path):
 
                 list_temp[8:] = temp
                 curr_date = "".join(list_temp)
-                import pdb
 
-                pdb.set_trace()
-                new_sleep_date = pd.concat([pd.Series(curr_date), new_sleep_date])
+                new_sleep_date = pd.concat(
+                    [pd.Series(curr_date), pd.Series(new_sleep_date)]
+                )
 
                 if daycount == 1:
                     # Updating the all days variable to include the day before (without act data) on the first position
@@ -294,7 +294,7 @@ def create_graphs(data_dir: pathlib.Path):
         ddate_new = ddate_new[0]
 
     if len(new_sleep_date) != daycount - 1:
-        new_sleep_date = pd.concat([new_sleep_date, pd.Series(curr_date)])
+        new_sleep_date = pd.concat([pd.Series(new_sleep_date), pd.Series(curr_date)])
         new_sleep_date = new_sleep_date.reset_index()
         new_sleep_date = new_sleep_date[0]
 
