@@ -14,9 +14,10 @@ import dash_daq as daq
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback_context, dcc, html
+from dash import Input, Output, State, dcc, html
 
 from actigraphy.core import config, utils
+from actigraphy.io import minor_files
 from actigraphy.plotting import graphs
 
 settings = config.get_settings()
@@ -43,178 +44,6 @@ log_path = input_datapath / "logs"
 log_path.mkdir(exist_ok=True)
 
 
-# File example:
-# ID onset_N1 wake_N1 onset_N2 wake_N2 onset_N3 wake_N3 ...
-def create_GGIR_file(number_of_days, filename):
-    headline = []
-
-    headline.append("ID")
-
-    for ii in range(1, number_of_days + 1):
-        onset_name = "onset_N" + str(ii)
-        wake_name = "wakeup_N" + str(ii)
-        headline.append(onset_name)
-        headline.append(wake_name)
-
-    with open(log_path / filename, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(headline)
-
-
-def save_GGIR_file(hour_vector, graph_data, filename):
-    vec_line = hour_vector
-
-    filename = "sleeplog_" + graph_data.identifier + ".csv"
-    data_line = []
-
-    data_line.append(graph_data.identifier)
-
-    for ii in range(np.size(vec_line)):
-        if vec_line[ii] != 0:
-            data_line.append(vec_line[ii])
-        else:
-            data_line.append("NA")
-
-    (log_path / filename).unlink(missing_ok=True)
-    create_GGIR_file(70, filename)
-
-    with open(log_path / filename, "a", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(data_line)
-
-
-def save_log_file(name, identifier):
-    filename = "sleeplog_" + identifier + ".csv"
-
-    header = []
-    log_info = []
-    log_info.append(name)
-    log_info.append(identifier)
-    log_info.append(datetime.date.today())
-    log_info.append(filename)
-
-    if (log_path / "log_file.csv").exists():
-        with open(log_path / "log_file.csv", "a", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(log_info)
-    else:
-        with open(log_path / "log_file.csv", "w", encoding="utf-8"):
-            writer = csv.writer(f)
-            header.append("Username")
-            header.append("Participant")
-            header.append("Date")
-            header.append("Filename")
-            writer.writerow(header)
-            writer.writerow(log_info)
-
-    return filename
-
-
-def open_sleeplog_file(identifier):
-    filename = "sleeplog_" + identifier + ".csv"
-
-    filename_path = log_path / filename
-    sleeplog_file = pd.read_csv(filename_path, index_col=0)
-    sleeplog_file = sleeplog_file.iloc[0]
-    wake = [sleeplog_file[idx] for idx in range(len(sleeplog_file)) if idx % 2 == 1]
-    sleep = [sleeplog_file[idx] for idx in range(len(sleeplog_file)) if idx % 2 != 1]
-
-    return sleep, wake
-
-
-def save_sleeplog_file(identifier, day, sleep, wake):
-    filename = "sleeplog_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    df = pd.read_csv(filename_path)
-    df.iloc[0, 0] = identifier
-    sleep_time = utils.point2time(
-        sleep, graph_data.axis_range, graph_data.npointsperday
-    )
-    wake_time = utils.point2time(wake, graph_data.axis_range, graph_data.npointsperday)
-    df.iloc[0, ((day) * 2) - 1] = sleep_time
-    df.iloc[0, ((day) * 2)] = wake_time
-
-    df.to_csv(filename_path, index=False)
-
-
-def save_log_analysis_completed(identifier, completed):
-    todays_date_time = datetime.datetime.now()
-
-    header = []
-    log_info = []
-    log_info.append(identifier)
-    log_info.append(completed)
-    log_info.append(todays_date_time)
-
-    # If file exists, append the new information on the existing file
-    if (log_path / "participants_with_completed_analysis.csv").exists():
-        with open(
-            log_path / "participants_with_completed_analysis.csv", "a", encoding="utf-8"
-        ) as f:
-            writer = csv.writer(f)
-            writer.writerow(log_info)
-    else:
-        with open(
-            log_path / "participants_with_completed_analysis.csv", "w", encoding="utf-8"
-        ) as f:
-            writer = csv.writer(f)
-            header.append("Participant")
-            header.append("Is the sleep log analysis completed?")
-            header.append("Last modified")
-            writer.writerow(header)
-            writer.writerow(log_info)
-
-
-# File format:
-# ID, day_part5, relyonguider_part4, night_part4
-def save_excluded_night(identifier, excl_night):
-    filename = "data_cleaning_file_" + identifier + ".csv"
-    nights_excluded = 0
-    header = []
-    data_night = []
-
-    # Adjusting night variable to the format accepted by GGIR
-    for i in range(1, np.size(excl_night) + 1):
-        if excl_night[i - 1] == 1:
-            if nights_excluded == 0:
-                nights_excluded = i
-            else:
-                nights_excluded = str(nights_excluded) + " " + str(i)
-
-    # Saving the csv file
-    # If file exists, remove older file, create a new one, and store the data
-    if (log_path / filename).exists():
-        with open(log_path / filename, "w", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            header.append("ID")
-            header.append("day_part5")
-            header.append("relyonguider_part4")
-            header.append("night_part4")
-            data_night.append(identifier)
-            data_night.append("")
-            data_night.append("")
-            data_night.append(nights_excluded)
-            writer.writerow(header)
-            writer.writerow(data_night)
-    # If file does not exists, create a new file, and store the data
-    else:
-        with open(log_path / filename, "w", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            header.append("ID")
-            header.append("day_part5")
-            header.append("relyonguider_part4")
-            header.append("night_part4")
-            data_night.append(identifier)
-            data_night.append("")
-            data_night.append("")
-            data_night.append(nights_excluded)
-            writer.writerow(header)
-            writer.writerow(data_night)
-
-    print("Excluded nights formated: ", nights_excluded)
-
-
 def create_datacleaning(identifier):
     filename = "missing_sleep_" + identifier + ".csv"
     filename_path = log_path / filename
@@ -230,11 +59,9 @@ def save_datacleaning(identifier, datacleaning_log):
     filename = "missing_sleep_" + identifier + ".csv"
     filename_path = log_path / filename
 
-    data = datacleaning_log
-
     with open(filename_path, "w", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(data)
+        writer.writerow(datacleaning_log)
 
 
 def open_datacleaning(identifier):
@@ -316,11 +143,14 @@ def store_sleep_diary(day, sleep, wake):
         graph_data.vec_line[(day * 2) - 2] = 0
         graph_data.vec_line[day * 2 - 1] = 0
     else:
-        onset_point2time = utils.point2time(
-            sleep, wake, graph_data.axis_range, graph_data.npointsperday
+        sleeptime = utils.point2time(
+            sleep, graph_data.axis_range, graph_data.npointsperday
         )
-        graph_data.vec_line[(day * 2) - 2] = onset_point2time[0]
-        graph_data.vec_line[day * 2 - 1] = onset_point2time[1]
+        waketime = utils.point2time(
+            wake, graph_data.axis_range, graph_data.npointsperday
+        )
+        graph_data.vec_line[(day * 2) - 2] = sleeptime
+        graph_data.vec_line[day * 2 - 1] = waketime
 
     return graph_data.vec_line
 
@@ -420,7 +250,7 @@ def parse_contents(filename, name):
             print(
                 "Participant ",
                 graph_data.identifier,
-                "have a sleeplog. Loading existing file",
+                "has a sleeplog. Loading existing file",
             )
         else:
             print(
@@ -428,7 +258,7 @@ def parse_contents(filename, name):
                 graph_data.identifier,
                 "does not have a sleeplog. Loading sleepdata from GGIR",
             )
-            save_GGIR_file(hour_vector, graph_data, filename)
+            minor_files.save_ggir(hour_vector, log_path / filename)
 
         # Checking for a previous nights do review file
         if (
@@ -482,7 +312,9 @@ def parse_contents(filename, name):
             )
             create_datacleaning(graph_data.identifier)
 
-        save_log_file(name, graph_data.identifier)
+        minor_files.save_log_file(
+            name, log_path / "log_file.csv", graph_data.identifier
+        )
 
         return (
             [
@@ -604,7 +436,8 @@ def update_graph(day, exclude_button, review_night, nap, position):
     nap_times = open_multiple_sleeplog(graph_data.identifier)
     night_to_exclude = open_datacleaning(graph_data.identifier)
 
-    sleeponset, wakeup = open_sleeplog_file(graph_data.identifier)
+    sleeplog_file = log_path / ("sleeplog_" + graph_data.identifier + ".csv")
+    sleeponset, wakeup = minor_files.read_sleeplog(sleeplog_file)
     vec_sleeponset = utils.time2point(sleeponset[day - 1])
     vec_wake = utils.time2point(wakeup[day - 1])
 
@@ -667,7 +500,7 @@ def update_graph(day, exclude_button, review_night, nap, position):
         )
     else:  # in case this is the last day
         # Adding one more day to the day vector
-        curr_date = all_dates[day - 1]
+        curr_date = graph_data.ddate_new[day - 1]
         list_temp = list(curr_date)
         temp = int(curr_date[8:]) + 1
 
@@ -885,7 +718,12 @@ def update_graph(day, exclude_button, review_night, nap, position):
     night_to_review[day - 1] = 1 if review_night else 0
     nap_times[day - 1] = 1 if nap else 0
 
-    save_excluded_night(graph_data.identifier, night_to_exclude)
+    excluded_night_file = log_path / (
+        "data_cleaning_file_" + graph_data.identifier + ".csv"
+    )
+    minor_files.save_excluded_night(
+        graph_data.identifier, night_to_exclude, excluded_night_file
+    )
     save_datacleaning(graph_data.identifier, night_to_exclude)
     print("Nights to exclude: ", night_to_exclude)
 
@@ -903,7 +741,10 @@ def save_log_done(value):
     if not value:
         print("Sleep log analysis not completed yet.")
     else:
-        save_log_analysis_completed(graph_data.identifier, "Yes")
+        minor_files.save_log_analysis_completed(
+            graph_data.identifier,
+            log_path / "participants_with_completed_analysis.csv",
+        )
 
 
 @app.callback(
@@ -918,7 +759,11 @@ def save_info(drag_value, day):
     if not drag_value:
         return "", "", "", ""
 
-    save_sleeplog_file(graph_data.identifier, day, drag_value[0], drag_value[1])
+    sleeplog_file = log_path / ("sleeplog_" + graph_data.identifier + ".csv")
+
+    minor_files.save_sleeplog(
+        graph_data, day, drag_value[0], drag_value[1], sleeplog_file
+    )
     sleep_time = utils.point2time(
         drag_value[0], graph_data.axis_range, graph_data.npointsperday
     )
