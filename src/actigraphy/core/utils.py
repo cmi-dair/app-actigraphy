@@ -1,11 +1,40 @@
 import datetime
 import logging
+import os
+from os import path
 
 from actigraphy.core import config
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
+
+
+class FileManager:
+    def __init__(self, base_dir: str):
+        self.base_dir = base_dir
+        self.log_dir = path.join(self.base_dir, "logs")
+        self.identifier = self.base_dir.rsplit("_", maxsplit=1)[-1]
+
+        self.log_file = path.join(self.log_dir, "log_file.csv")
+        self.sleeplog_file = path.join(self.log_dir, f"sleeplog_{self.identifier}.csv")
+        self.multiple_sleeplog_file = path.join(
+            self.log_dir, f"multiple_sleeplog_{self.identifier}.csv"
+        )
+        self.data_cleaning_file = path.join(
+            self.log_dir, f"data_cleaning_{self.identifier}.csv"
+        )
+        self.missing_sleep_file = path.join(
+            self.log_dir, f"missing_sleep_{self.identifier}.csv"
+        )
+        self.review_night_file = path.join(
+            self.log_dir, f"review_night_{self.identifier}.csv"
+        )
+        self.completed_analysis_file = path.join(
+            self.log_dir, "participants_with_completed_analysis.csv"
+        )
+
+        os.makedirs(self.log_dir, exist_ok=True)
 
 
 def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
@@ -19,7 +48,7 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
         str: The difference between the two datetime objects as a string in the
         format "HH:MM".
     """
-    logger.debug(f"Calculating datetime delta as HH:MM: {delta}")
+    logger.debug("Calculating datetime delta as HH:MM: %s", delta)
     total_minutes = delta.total_seconds() // 60
     hours = int(total_minutes // 60)
     minutes = int(total_minutes % 60)
@@ -27,7 +56,9 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
 
 
 def point2time(point: float, axis_range: float, npointsperday: int) -> datetime.time:
-    logger.debug(f"Converting point to time: {point}, {axis_range}, {npointsperday}")
+    logger.debug(
+        "Converting point to time: %s, %s, %s", point, axis_range, npointsperday
+    )
     if int(point) == 0:
         return datetime.time(3, 0, 0)
 
@@ -47,7 +78,9 @@ def point2time(point: float, axis_range: float, npointsperday: int) -> datetime.
 def time2point(sleep, axis_range=None, npointsperday=None, all_dates=None, day=None):
     # TODO: many of the input variables were clearly intended to be used here
     # but are not.
-    logger.debug(f"Converting time to point: {sleep}, {axis_range}, {npointsperday}")
+    logger.debug(
+        "Converting time to point: %s, %s, %s", sleep, axis_range, npointsperday
+    )
 
     if sleep == 0:
         return 0

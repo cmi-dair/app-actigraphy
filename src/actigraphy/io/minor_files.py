@@ -1,6 +1,7 @@
 import csv
+import datetime
 import pathlib
-from datetime import datetime
+from os import path
 from typing import Any
 
 import numpy as np
@@ -38,9 +39,7 @@ def read_sleeplog(filepath: str | pathlib.Path) -> tuple[list[str], list[str]]:
     return sleep, wake
 
 
-def save_sleeplog(
-    graph_data: GraphOutput, day, sleep, wake, filepath: pathlib.Path
-) -> None:
+def write_sleeplog(filepath: str, graph_data: GraphOutput, day, sleep, wake) -> None:
     df = pd.read_csv(filepath)
     df.iloc[0, 0] = graph_data.identifier
     sleep_time = utils.point2time(
@@ -53,9 +52,7 @@ def save_sleeplog(
     df.to_csv(filepath, index=False)
 
 
-def save_excluded_night(
-    identifier: str, excl_night: np.ndarray, filepath: pathlib.Path
-):
+def write_excluded_night(identifier: str, excl_night: np.ndarray, filepath: str):
     header = ["ID", "day_part5", "relyonguider_part4", "night_part4"]
     nights_excluded = " ".join((np.where(excl_night == 1)[0] + 1).astype(str))
     data_night = [identifier, "", "", nights_excluded]
@@ -68,7 +65,7 @@ def save_excluded_night(
     print("Excluded nights formated: ", nights_excluded)
 
 
-def save_ggir(hour_vector: npt.ArrayLike, filepath: pathlib.Path) -> None:
+def write_ggir(hour_vector: npt.ArrayLike, filepath: str) -> None:
     """Save the given hour vector to a CSV file in GGIR format.
 
     Args:
@@ -89,12 +86,12 @@ def save_ggir(hour_vector: npt.ArrayLike, filepath: pathlib.Path) -> None:
         writer.writerow(data_line)
 
 
-def save_log_file(name: str, filepath: pathlib.Path, identifier: str) -> None:
+def write_log_file(name: str, filepath: str, identifier: str) -> None:
     filename = "sleeplog_" + identifier + ".csv"
 
     log_info = [name, identifier, datetime.date.today(), filename]
 
-    if not filepath.exists():
+    if not path.exists(filepath):
         with open(filepath, "w", encoding="utf-8") as file_buffer:
             writer = csv.writer(file_buffer)
             writer.writerow(["Username", "Participant", "Date", "Filename"])
@@ -104,10 +101,10 @@ def save_log_file(name: str, filepath: pathlib.Path, identifier: str) -> None:
         writer.writerow(log_info)
 
 
-def save_log_analysis_completed(identifier: str, filepath: pathlib.Path) -> None:
+def write_log_analysis_completed(identifier: str, filepath: str) -> None:
     log_info = [identifier, "Yes", datetime.datetime.now()]
 
-    if not filepath.exists():
+    if not path.exists(filepath):
         header = [
             "Participant",
             "Is the sleep log analysis completed?",
@@ -120,3 +117,16 @@ def save_log_analysis_completed(identifier: str, filepath: pathlib.Path) -> None
     with open(filepath, "a", encoding="utf-8") as file_buffer:
         writer = csv.writer(file_buffer)
         writer.writerow(log_info)
+
+
+def write_vector(filepath: str, vector: list[Any]) -> None:
+    with open(filepath, "w", encoding="utf-8") as file_buffer:
+        writer = csv.writer(file_buffer)
+        writer.writerow(vector)
+
+
+def read_vector(filepath: str, up_to_column=None) -> list[Any]:
+    df = pd.read_csv(filepath, header=None)
+    if up_to_column is None:
+        up_to_column = len(df.columns)
+    return [df.iloc[0, idx] for idx in range(up_to_column)]

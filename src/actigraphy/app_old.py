@@ -3,10 +3,10 @@
 
 import argparse
 import calendar
-import csv
 import datetime
 import logging
 import pathlib
+from os import path
 
 import dash
 import dash_bootstrap_components as dbc
@@ -38,129 +38,7 @@ parser.add_argument("input_folder", help="GGIR output folder", type=pathlib.Path
 args = parser.parse_args()
 
 input_datapath = args.input_folder
-files = [str(x) for x in sorted(input_datapath.glob("output_*"))]
-
-log_path = input_datapath / "logs"
-log_path.mkdir(exist_ok=True)
-
-
-def create_datacleaning(identifier):
-    filename = "missing_sleep_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    data = ["0" for ii in range(0, graph_data.daycount - 1)]
-
-    with open(filename_path, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
-
-
-def save_datacleaning(identifier, datacleaning_log):
-    filename = "missing_sleep_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    with open(filename_path, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(datacleaning_log)
-
-
-def open_datacleaning(identifier):
-    filename = "missing_sleep_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    df = pd.read_csv(filename_path, header=None)
-    datacleaning = [df.iloc[0, idx] for idx in range(0, graph_data.daycount - 1)]
-
-    return datacleaning
-
-
-def create_multiple_sleeplog(identifier):
-    filename = "multiple_sleeplog_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    data = ["0" for ii in range(0, graph_data.daycount - 1)]
-
-    with open(filename_path, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
-
-
-def save_multiple_sleeplog(identifier, multiple_log):
-    filename = "multiple_sleeplog_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    data = multiple_log
-
-    with open(filename_path, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
-
-
-def open_multiple_sleeplog(identifier):
-    filename = "multiple_sleeplog_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    df = pd.read_csv(filename_path, header=None)
-    multiple_sleep = [df.iloc[0, idx] for idx in range(0, graph_data.daycount - 1)]
-
-    return multiple_sleep
-
-
-def create_review_night_file(identifier):
-    filename = "review_night_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    dataline = ["0" for ii in range(1, graph_data.daycount)]
-
-    with open(filename_path, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(dataline)
-
-
-def save_review_night(identifier, review_night):
-    filename = "review_night_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    data = review_night
-
-    with open(filename_path, "w", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(data)
-
-
-def open_review_night(identifier):
-    filename = "review_night_" + identifier + ".csv"
-    filename_path = log_path / filename
-
-    df = pd.read_csv(filename_path, header=None)
-    vec_nights = [df.iloc[0, idx] for idx in range(0, graph_data.daycount - 1)]
-
-    return vec_nights
-
-
-def store_sleep_diary(day, sleep, wake):
-    if sleep == 0 and wake == 0:
-        graph_data.vec_line[(day * 2) - 2] = 0
-        graph_data.vec_line[day * 2 - 1] = 0
-    else:
-        sleeptime = utils.point2time(
-            sleep, graph_data.axis_range, graph_data.npointsperday
-        )
-        waketime = utils.point2time(
-            wake, graph_data.axis_range, graph_data.npointsperday
-        )
-        graph_data.vec_line[(day * 2) - 2] = sleeptime
-        graph_data.vec_line[day * 2 - 1] = waketime
-
-    return graph_data.vec_line
-
-
-def store_excluded_night(day):
-    excl_night = graph_data.excl_night
-    excl_night[day - 1] = 1
-
-    return excl_night
-
+subjects = [str(x) for x in sorted(input_datapath.glob("output_*"))]
 
 app.layout = html.Div(
     style={"backgroundColor": APP_COLORS.background},  # pylint: disable=no-member
@@ -185,12 +63,15 @@ app.layout = html.Div(
                     disabled=False,
                     size="40",
                 ),
-                dcc.Dropdown(files, id="my-dropdown", placeholder="Select subject..."),
+                dcc.Dropdown(
+                    subjects, id="my-dropdown", placeholder="Select subject..."
+                ),
                 dbc.Spinner(html.Div(id="loading")),
             ],
             style={"padding": 10},
         ),
         html.Pre(id="annotations-data"),
+        html.Pre(id="file_manager"),
     ],
 )
 
@@ -201,224 +82,167 @@ app.layout = html.Div(
         Output("loading", "children"),
         Output("insert-user", "displayed"),
         Output("input_name", "disabled"),
+        Output("file_manager", "data"),
     ],
     Input("my-dropdown", "value"),
     Input("input_name", "value"),
     suppress_callback_exceptions=True,
     prevent_initial_call=True,
 )
-def parse_contents(filename, name):
+def parse_contents(filepath: str, name: str):
     global graph_data
     if not name:
-        return "", "", True, False
+        return "", "", True, False, None
 
-    if not filename:
+    if not filepath or not "output_" in filepath:
         return
 
-    if "output_" in filename:
-        print("Loading data ...")
-        graph_data = graphs.create_graphs(pathlib.Path(filename))
-        hour_vector = []
-        sleep_tmp = []
-        wake_tmp = []
-        tmp_axis = int(graph_data.axis_range / 2)
+    file_manager = utils.FileManager(base_dir=filepath)
+    graph_data = graphs.create_graphs(pathlib.Path(filepath))
+    tmp_axis = int(graph_data.axis_range / 2)
 
-        for ii in range(0, len(graph_data.vec_sleeponset)):
-            sleep_tmp.append(
-                utils.point2time(
-                    graph_data.vec_sleeponset[ii],
-                    graph_data.axis_range,
-                    graph_data.npointsperday,
-                )
-            )
-            wake_tmp.append(
-                utils.point2time(
-                    graph_data.vec_wake[ii],
-                    graph_data.axis_range,
-                    graph_data.npointsperday,
-                )
-            )
-
-        for jj in range(0, graph_data.daycount - 1):
-            hour_vector.append(sleep_tmp[jj])
-            hour_vector.append(wake_tmp[jj])
-
-        # Checking for a previous sleeplog file
-        if (
-            input_datapath / ("logs/sleeplog_" + graph_data.identifier + ".csv")
-        ).exists():
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "has a sleeplog. Loading existing file",
-            )
-        else:
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "does not have a sleeplog. Loading sleepdata from GGIR",
-            )
-            minor_files.save_ggir(hour_vector, log_path / filename)
-
-        # Checking for a previous nights do review file
-        if (
-            input_datapath / ("logs/review_night_" + graph_data.identifier + ".csv")
-        ).exists():
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "have a night review file. Loading existing file",
-            )
-        else:
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "does not have a night review file. Creating a new one.",
-            )
-            create_review_night_file(graph_data.identifier)
-
-        # Checking for a multiple sleeplog (nap times) file
-        if (
-            input_datapath
-            / ("logs/multiple_sleeplog_" + graph_data.identifier + ".csv")
-        ).exists():
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "have a multiple sleeplog file. Loading existing file",
-            )
-        else:
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "does not have a multiple sleeplog file. Creating a new one.",
-            )
-            create_multiple_sleeplog(graph_data.identifier)
-
-        # Checking for data cleaning file
-        if (
-            input_datapath / ("logs/missing_sleep_" + graph_data.identifier + ".csv")
-        ).exists():
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "have a data cleaning file. Loading existing file",
-            )
-        else:
-            print(
-                "Participant ",
-                graph_data.identifier,
-                "does not have a data cleaning file. Creating a new one.",
-            )
-            create_datacleaning(graph_data.identifier)
-
-        minor_files.save_log_file(
-            name, log_path / "log_file.csv", graph_data.identifier
+    hour_vector = []
+    for onset, wake in zip(graph_data.vec_sleeponset, graph_data.vec_wake):
+        onset_time = utils.point2time(
+            onset, graph_data.axis_range, graph_data.npointsperday
         )
-
-        return (
-            [
-                html.Div(
-                    [
-                        html.B(
-                            "* All changes will be automatically saved\n\n",
-                            style={"color": "red"},
-                        ),
-                        html.B(
-                            "Select day for participant " + graph_data.identifier + ": "
-                        ),
-                        dcc.Slider(
-                            1,
-                            graph_data.daycount - 1,
-                            1,
-                            value=1,
-                            id="day_slider",
-                        ),
-                    ],
-                    style={"margin-left": "20px", "padding": 10},
-                ),
-                dcc.Checklist(
-                    [" I'm done and I would like to proceed to the next participant. "],
-                    id="are-you-done",
-                    style={"margin-left": "50px"},
-                ),
-                html.Pre(id="check-done"),
-                daq.BooleanSwitch(
-                    id="multiple_sleep",
-                    on=False,
-                    label=" Does this participant have multiple sleep periods in this 24h period?",
-                ),
-                html.Pre(id="checklist-items"),
-                daq.BooleanSwitch(
-                    id="exclude-night",
-                    on=False,
-                    label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
-                ),
-                html.Pre(id="checklist-items2"),
-                daq.BooleanSwitch(
-                    id="review-night",
-                    on=False,
-                    label=" Do you need to review this night?",
-                ),
-                dcc.Graph(id="graph"),
-                html.Div(
-                    [
-                        html.B(id="sleep-onset"),
-                        html.B(id="sleep-offset"),
-                        html.B(id="sleep-duration"),
-                    ],
-                    style={"margin-left": "80px", "margin-right": "55px"},
-                ),
-                html.Div(
-                    [
-                        dcc.RangeSlider(
-                            min=0,
-                            max=25920,
-                            step=1,
-                            marks={
-                                i * tmp_axis: utils.hour_to_time_string(i)
-                                for i in range(37)
-                            },
-                            id="my-range-slider",
-                        ),
-                        html.Pre(id="annotations-slider"),
-                    ],
-                    # html.Pre(id="annotations-nap"),
-                    style={"margin-left": "55px", "margin-right": "55px"},
-                ),
-                # html.Button('Refresh graph', id='btn_clear', style={"margin-left": "15px"}),
-                html.Pre(id="annotations-save"),
-                html.P(
-                    "\n\n     This software is licensed under the GNU Lesser General Public License v3.0\n     Permissions of this copyleft license are conditioned on making available complete source code of licensed works and modifications under the same license or\n     the GNU GPLv3. Copyright and license notices must be preserved.\n     Contributors provide an express grant of patent rights.\n     However, a larger work using the licensed work through interfaces provided by the licensed work may be distributed under different terms\n     and without source code for the larger work.",
-                    style={"color": "gray"},
-                ),
-            ],
-            "",
-            False,
-            True,
+        wake_time = utils.point2time(
+            wake, graph_data.axis_range, graph_data.npointsperday
         )
+        hour_vector.extend([onset_time, wake_time])
+
+    if not path.exists(file_manager.sleeplog_file):
+        minor_files.write_ggir(hour_vector, file_manager.sleeplog_file)
+
+    vector_files = [
+        "review_night_file",
+        "multiple_sleeplog_file",
+        "data_cleaning_file",
+        "missing_sleep_file",
+    ]
+    for vector_file in vector_files:
+        filepath = getattr(file_manager, vector_file)
+        if not path.exists(filepath):
+            minor_files.write_vector(filepath, [0] * graph_data.daycount)
+
+    minor_files.write_log_file(name, file_manager.log_file, graph_data.identifier)
+
+    return (
+        [
+            html.Div(
+                [
+                    html.B(
+                        "* All changes will be automatically saved\n\n",
+                        style={"color": "red"},
+                    ),
+                    html.B(
+                        "Select day for participant " + graph_data.identifier + ": "
+                    ),
+                    dcc.Slider(
+                        1,
+                        graph_data.daycount - 1,
+                        1,
+                        value=1,
+                        id="day_slider",
+                    ),
+                ],
+                style={"margin-left": "20px", "padding": 10},
+            ),
+            dcc.Checklist(
+                [" I'm done and I would like to proceed to the next participant. "],
+                id="are-you-done",
+                style={"margin-left": "50px"},
+            ),
+            html.Pre(id="check-done"),
+            daq.BooleanSwitch(
+                id="multiple_sleep",
+                on=False,
+                label=" Does this participant have multiple sleep periods in this 24h period?",
+            ),
+            html.Pre(id="checklist-items"),
+            daq.BooleanSwitch(
+                id="exclude-night",
+                on=False,
+                label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
+            ),
+            html.Pre(id="checklist-items2"),
+            daq.BooleanSwitch(
+                id="review-night",
+                on=False,
+                label=" Do you need to review this night?",
+            ),
+            dcc.Graph(id="graph"),
+            html.Div(
+                [
+                    html.B(id="sleep-onset"),
+                    html.B(id="sleep-offset"),
+                    html.B(id="sleep-duration"),
+                ],
+                style={"margin-left": "80px", "margin-right": "55px"},
+            ),
+            html.Div(
+                [
+                    dcc.RangeSlider(
+                        min=0,
+                        max=25920,
+                        step=1,
+                        marks={
+                            i * tmp_axis: utils.hour_to_time_string(i)
+                            for i in range(37)
+                        },
+                        id="my-range-slider",
+                    ),
+                    html.Pre(id="annotations-slider"),
+                ],
+                # html.Pre(id="annotations-nap"),
+                style={"margin-left": "55px", "margin-right": "55px"},
+            ),
+            # html.Button('Refresh graph', id='btn_clear', style={"margin-left": "15px"}),
+            html.Pre(id="annotations-save"),
+            html.P(
+                "\n\n     This software is licensed under the GNU Lesser General Public License v3.0\n     Permissions of this copyleft license are conditioned on making available complete source code of licensed works and modifications under the same license or\n     the GNU GPLv3. Copyright and license notices must be preserved.\n     Contributors provide an express grant of patent rights.\n     However, a larger work using the licensed work through interfaces provided by the licensed work may be distributed under different terms\n     and without source code for the larger work.",
+                style={"color": "gray"},
+            ),
+        ],
+        "",
+        False,
+        True,
+        file_manager.__dict__,
+    )
 
 
-@app.callback(Output("multiple_sleep", "on"), Input("day_slider", "value"))
-def update_nap_switch(day):
-    filename = "multiple_sleeplog_" + graph_data.identifier + ".csv"
-    naps = open_multiple_sleeplog(graph_data.identifier)
-
-    return naps[day - 1] != 0
-
-
-@app.callback(Output("exclude-night", "on"), Input("day_slider", "value"))
-def update_exclude_switch(day):
-    missing = open_datacleaning(graph_data.identifier)
-
-    return missing[day - 1] != 0
+@app.callback(
+    Output("multiple_sleep", "on"),
+    Input("day_slider", "value"),
+    Input("file_manager", "data"),
+)
+def update_nap_switch(file_manager: dict[str, str], day) -> bool:
+    naps = minor_files.read_vector(
+        file_manager["multiple_sleeplog_file"], graph_data.daycount
+    )
+    return bool(naps[day - 1])
 
 
-@app.callback(Output("review-night", "on"), Input("day_slider", "value"))
-def update_review_night(day):
-    nights = open_review_night(graph_data.identifier)
+@app.callback(
+    Output("exclude-night", "on"),
+    Input("day_slider", "value"),
+    Input("file_manager", "data"),
+)
+def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
+    missing = minor_files.read_vector(
+        file_manager["missing_sleep_file"], graph_data.daycount
+    )
+    return bool(missing[day - 1])
 
-    return nights[day - 1] != 0
+
+@app.callback(
+    Output("review-night", "on"),
+    Input("day_slider", "value"),
+    Input("file_manager", "data"),
+)
+def update_review_night(day, file_manager: dict[str, str]) -> bool:
+    nights = minor_files.read_vector(file_manager["review_night_file"], day)
+    return bool(nights[day - 1])
 
 
 @app.callback(
@@ -429,27 +253,29 @@ def update_review_night(day):
     Input("review-night", "on"),
     Input("multiple_sleep", "on"),
     Input("my-range-slider", "value"),
+    Input("file_manager", "data"),
     suppress_callback_exceptions=True,
 )
-def update_graph(day, exclude_button, review_night, nap, position):
-    night_to_review = open_review_night(graph_data.identifier)
-    nap_times = open_multiple_sleeplog(graph_data.identifier)
-    night_to_exclude = open_datacleaning(graph_data.identifier)
+def update_graph(day, exclude_button, review_night, nap, position, file_manager):
+    night_to_review = minor_files.read_vector(
+        file_manager["review_night_file"], graph_data.daycount
+    )
+    nap_times = minor_files.read_vector(
+        file_manager["multiple_sleeplog_file"], graph_data.daycount
+    )
+    night_to_exclude = minor_files.read_vector(
+        file_manager["data_cleaning_file"], graph_data.daycount
+    )
 
-    sleeplog_file = log_path / ("sleeplog_" + graph_data.identifier + ".csv")
-    sleeponset, wakeup = minor_files.read_sleeplog(sleeplog_file)
+    sleeponset, wakeup = minor_files.read_sleeplog(file_manager["sleeplog_file"])
     vec_sleeponset = utils.time2point(sleeponset[day - 1])
     vec_wake = utils.time2point(wakeup[day - 1])
-
-    end_value = []
-    begin_value = []
 
     month_1 = calendar.month_abbr[int(graph_data.ddate_new[day - 1][5:7])]
     day_of_week_1 = datetime.datetime.fromisoformat(graph_data.ddate_new[day - 1])
     day_of_week_1 = day_of_week_1.strftime("%A")
 
     if day < graph_data.daycount - 1:
-        month_2 = calendar.month_abbr[int(graph_data.ddate_new[day][5:7])]
         day_of_week_2 = datetime.datetime.fromisoformat(graph_data.ddate_new[day])
         day_of_week_2 = day_of_week_2.strftime("%A")
 
@@ -718,32 +544,27 @@ def update_graph(day, exclude_button, review_night, nap, position):
     night_to_review[day - 1] = 1 if review_night else 0
     nap_times[day - 1] = 1 if nap else 0
 
-    excluded_night_file = log_path / (
-        "data_cleaning_file_" + graph_data.identifier + ".csv"
+    minor_files.write_excluded_night(
+        graph_data.identifier, night_to_exclude, file_manager["data_cleaning_file"]
     )
-    minor_files.save_excluded_night(
-        graph_data.identifier, night_to_exclude, excluded_night_file
-    )
-    save_datacleaning(graph_data.identifier, night_to_exclude)
-    print("Nights to exclude: ", night_to_exclude)
-
-    save_review_night(graph_data.identifier, night_to_review)
-    print("Nights to review: ", night_to_review)
-
-    save_multiple_sleeplog(graph_data.identifier, nap_times)
-    print("Nap times: ", nap_times)
+    minor_files.write_vector(file_manager["missing_sleep_file"], night_to_exclude)
+    minor_files.write_vector(file_manager["review_night_file"], night_to_review)
+    minor_files.write_vector(file_manager["multiple_sleeplog_file"], nap_times)
 
     return fig, [int(vec_sleeponset), int(vec_wake)]
 
 
-@app.callback(Output("check-done", "children"), Input("are-you-done", "value"))
-def save_log_done(value):
+@app.callback(
+    Output("check-done", "children"),
+    Input("are-you-done", "value"),
+    Input("file_manager", "data"),
+)
+def write_log_done(value, file_manager):
     if not value:
         print("Sleep log analysis not completed yet.")
     else:
-        minor_files.save_log_analysis_completed(
-            graph_data.identifier,
-            log_path / "participants_with_completed_analysis.csv",
+        minor_files.write_log_analysis_completed(
+            graph_data.identifier, file_manager["completed_analysis_file"]
         )
 
 
@@ -753,16 +574,15 @@ def save_log_done(value):
     Output("sleep-offset", "children"),
     Output("sleep-duration", "children"),
     Input("my-range-slider", "drag_value"),
+    Input("file_manager", "data"),
     State("day_slider", "value"),
 )
-def save_info(drag_value, day):
+def write_info(drag_value, file_manager, day):
     if not drag_value:
         return "", "", "", ""
 
-    sleeplog_file = log_path / ("sleeplog_" + graph_data.identifier + ".csv")
-
-    minor_files.save_sleeplog(
-        graph_data, day, drag_value[0], drag_value[1], sleeplog_file
+    minor_files.write_sleeplog(
+        file_manager["sleeplog_file"], graph_data, day, drag_value[0], drag_value[1]
     )
     sleep_time = utils.point2time(
         drag_value[0], graph_data.axis_range, graph_data.npointsperday
@@ -789,4 +609,4 @@ def save_info(drag_value, day):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=False, port=8051)
+    app.run_server(debug=True, port=8051, dev_tools_hot_reload=True)
