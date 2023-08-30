@@ -7,7 +7,6 @@ import logging
 
 import dash
 import dash_bootstrap_components
-import dash_daq
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -33,6 +32,8 @@ subject_directories = cli.parse_args()
 app.layout = html.Div(
     (
         dcc.Store(id="file_manager", storage_type="session"),
+        dcc.Store(id="check-done", storage_type="session"),
+        dcc.Store(id="annotations-save", storage_type="session"),
         components.header(),
         components.no_evaluator_error(),
         components.file_selection(subject_directories),
@@ -47,7 +48,7 @@ app.layout = html.Div(
         dash.Output("annotations-data", "children"),
         dash.Output("loading", "children"),
         dash.Output("insert-user", "displayed"),
-        dash.Output("evaluator_name", "disabled"),
+        dash.Output("evaluator_name", "disabled"),  # Can this be removed?
         dash.Output("file_manager", "data"),
     ],
     dash.State("my-dropdown", "value"),
@@ -82,78 +83,11 @@ def parse_contents(
 
     return (
         [
-            html.Div(
-                [
-                    html.B(
-                        "* All changes will be automatically saved\n\n",
-                        style={"color": "red"},
-                    ),
-                    html.B(f"Select day for participant {file_manager['identifier']}:"),
-                    dcc.Slider(
-                        1,
-                        daycount,
-                        1,
-                        value=1,
-                        id="day_slider",
-                    ),
-                ],
-                style={"margin-left": "20px", "padding": 10},
-            ),
-            dcc.Checklist(
-                [" I'm done and I would like to proceed to the next participant. "],
-                id="are-you-done",
-                style={"margin-left": "50px"},
-            ),
-            html.Pre(id="check-done"),
-            dash_daq.BooleanSwitch(
-                id="multiple_sleep",
-                on=False,
-                label=" Does this participant have multiple sleep periods in this 24h period?",
-            ),
-            html.Pre(id="checklist-items"),
-            dash_daq.BooleanSwitch(
-                id="exclude-night",
-                on=False,
-                label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
-            ),
-            html.Pre(id="checklist-items2"),
-            dash_daq.BooleanSwitch(
-                id="review-night",
-                on=False,
-                label=" Do you need to review this night?",
-            ),
-            dcc.Graph(id="graph"),
-            html.Div(
-                [
-                    html.B(id="sleep-onset"),
-                    html.B(id="sleep-offset"),
-                    html.B(id="sleep-duration"),
-                ],
-                style={"margin-left": "80px", "margin-right": "55px"},
-            ),
-            html.Div(
-                [
-                    dcc.RangeSlider(
-                        min=0,
-                        max=25920,
-                        step=1,
-                        marks={
-                            i * tmp_axis: utils.hour_to_time_string(i)
-                            for i in range(37)
-                        },
-                        id="my-range-slider",
-                    ),
-                    html.Pre(id="annotations-slider"),
-                ],
-                # html.Pre(id="annotations-nap"),
-                style={"margin-left": "55px", "margin-right": "55px"},
-            ),
-            # html.Button('Refresh graph', id='btn_clear', style={"margin-left": "15px"}),
-            html.Pre(id="annotations-save"),
-            html.P(
-                "\n\n     This software is licensed under the GNU Lesser General Public License v3.0\n     Permissions of this copyleft license are conditioned on making available complete source code of licensed works and modifications under the same license or\n     the GNU GPLv3. Copyright and license notices must be preserved.\n     Contributors provide an express grant of patent rights.\n     However, a larger work using the licensed work through interfaces provided by the licensed work may be distributed under different terms\n     and without source code for the larger work.",
-                style={"color": "gray"},
-            ),
+            components.day_slider(file_manager["identifier"], daycount),
+            components.finished_checkbox(),
+            components.switches(),
+            components.graph(tmp_axis),
+            components.app_license(),
         ],
         "",
         False,
@@ -207,7 +141,7 @@ def update_review_night(day, file_manager: dict[str, str]) -> bool:
     dash.State("file_manager", "data"),
 )
 def update_graph(day, exclude_button, review_night, nap, position, file_manager):
-    # Position is intentially not used.
+    # Position is intentionally not used.
     daycount = graphs.get_daycount(file_manager)
     night_to_review = minor_files.read_vector(
         file_manager["review_night_file"], daycount
