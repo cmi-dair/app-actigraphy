@@ -1,22 +1,19 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 
-import argparse
 import calendar
 import datetime
 import logging
-import pathlib
-from os import path
 
 import dash
-import dash_bootstrap_components as dbc
-import dash_daq as daq
+import dash_bootstrap_components
+import dash_daq
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, State, dcc, html
+from dash import dcc, html
 
-from actigraphy.core import config, utils
+from actigraphy.core import cli, components, config, utils
 from actigraphy.io import minor_files
 from actigraphy.plotting import graphs
 
@@ -28,77 +25,48 @@ LOGGER_NAME = settings.LOGGER_NAME
 config.initialize_logger()
 logger = logging.getLogger(LOGGER_NAME)
 
-app = dash.Dash(APP_NAME, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-parser = argparse.ArgumentParser(
-    description="""Actigraphy APP to manually correct annotations for the sleep log diary. """,
-    epilog="""APP developed by Child Mind Institute.""",
+app = dash.Dash(
+    APP_NAME, external_stylesheets=[dash_bootstrap_components.themes.BOOTSTRAP]
 )
-parser.add_argument("input_folder", help="GGIR output folder", type=pathlib.Path)
-args = parser.parse_args()
-
-input_datapath = args.input_folder
-subjects = [str(x) for x in sorted(input_datapath.glob("output_*"))]
+subject_directories = cli.parse_args()
 
 app.layout = html.Div(
-    style={"backgroundColor": APP_COLORS.background},  # pylint: disable=no-member
-    children=[
-        html.Img(
-            src="/assets/CMI_Logo_title.png", style={"height": "60%", "width": "60%"}
-        ),
-        html.Div(
-            [
-                dcc.ConfirmDialog(
-                    id="insert-user",
-                    message="Insert the evaluator's name before continue",
-                )
-            ]
-        ),
-        html.Div(
-            [
-                dcc.Input(
-                    id="input_name",
-                    type="text",
-                    placeholder="Insert evaluator's name",
-                    disabled=False,
-                    size="40",
-                ),
-                dcc.Dropdown(
-                    subjects, id="my-dropdown", placeholder="Select subject..."
-                ),
-                dbc.Spinner(html.Div(id="loading")),
-            ],
-            style={"padding": 10},
-        ),
+    (
+        dcc.Store(id="file_manager", storage_type="session"),
+        components.header(),
+        components.no_evaluator_error(),
+        components.file_selection(subject_directories),
         html.Pre(id="annotations-data"),
-        html.Pre(id="file_manager"),
-    ],
+    ),
+    style={"backgroundColor": APP_COLORS.background},  # pylint: disable=no-member
 )
 
 
 @app.callback(
     [
-        Output("annotations-data", "children"),
-        Output("loading", "children"),
-        Output("insert-user", "displayed"),
-        Output("input_name", "disabled"),
-        Output("file_manager", "data"),
+        dash.Output("annotations-data", "children"),
+        dash.Output("loading", "children"),
+        dash.Output("insert-user", "displayed"),
+        dash.Output("evaluator_name", "disabled"),
+        dash.Output("file_manager", "data"),
     ],
-    Input("my-dropdown", "value"),
-    Input("input_name", "value"),
-    suppress_callback_exceptions=True,
+    dash.State("my-dropdown", "value"),
+    dash.State("evaluator_name", "value"),
+    dash.Input("load_file_button", "n_clicks"),
     prevent_initial_call=True,
 )
-def parse_contents(filepath: str, name: str):
+def parse_contents(
+    filepath: str, evaluator_name: str, n_clicks: int  # pylint: disable=unused-argument
+):
+    # n_clicks is only used to trigger this function and is intentionally not used.
     global graph_data
-    if not name:
+    if not evaluator_name:
         return "", "", True, False, None
 
-    if not filepath or not "output_" in filepath:
-        return
+    file_manager = utils.FileManager(base_dir=filepath).__dict__
+    daycount = graphs.get_daycount(file_manager)
+    graph_data = graphs.create_graphs(file_manager)
 
-    file_manager = utils.FileManager(base_dir=filepath)
-    graph_data = graphs.create_graphs(pathlib.Path(filepath))
     tmp_axis = int(graph_data.axis_range / 2)
 
     hour_vector = []
@@ -110,22 +78,7 @@ def parse_contents(filepath: str, name: str):
             wake, graph_data.axis_range, graph_data.npointsperday
         )
         hour_vector.extend([onset_time, wake_time])
-
-    if not path.exists(file_manager.sleeplog_file):
-        minor_files.write_ggir(hour_vector, file_manager.sleeplog_file)
-
-    vector_files = [
-        "review_night_file",
-        "multiple_sleeplog_file",
-        "data_cleaning_file",
-        "missing_sleep_file",
-    ]
-    for vector_file in vector_files:
-        filepath = getattr(file_manager, vector_file)
-        if not path.exists(filepath):
-            minor_files.write_vector(filepath, [0] * graph_data.daycount)
-
-    minor_files.write_log_file(name, file_manager.log_file, graph_data.identifier)
+    minor_files.initialize_files(file_manager, hour_vector, evaluator_name)
 
     return (
         [
@@ -135,12 +88,10 @@ def parse_contents(filepath: str, name: str):
                         "* All changes will be automatically saved\n\n",
                         style={"color": "red"},
                     ),
-                    html.B(
-                        "Select day for participant " + graph_data.identifier + ": "
-                    ),
+                    html.B(f"Select day for participant {file_manager['identifier']}:"),
                     dcc.Slider(
                         1,
-                        graph_data.daycount - 1,
+                        daycount,
                         1,
                         value=1,
                         id="day_slider",
@@ -154,19 +105,19 @@ def parse_contents(filepath: str, name: str):
                 style={"margin-left": "50px"},
             ),
             html.Pre(id="check-done"),
-            daq.BooleanSwitch(
+            dash_daq.BooleanSwitch(
                 id="multiple_sleep",
                 on=False,
                 label=" Does this participant have multiple sleep periods in this 24h period?",
             ),
             html.Pre(id="checklist-items"),
-            daq.BooleanSwitch(
+            dash_daq.BooleanSwitch(
                 id="exclude-night",
                 on=False,
                 label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
             ),
             html.Pre(id="checklist-items2"),
-            daq.BooleanSwitch(
+            dash_daq.BooleanSwitch(
                 id="review-night",
                 on=False,
                 label=" Do you need to review this night?",
@@ -207,64 +158,65 @@ def parse_contents(filepath: str, name: str):
         "",
         False,
         True,
-        file_manager.__dict__,
+        file_manager,
     )
 
 
 @app.callback(
-    Output("multiple_sleep", "on"),
-    Input("day_slider", "value"),
-    Input("file_manager", "data"),
+    dash.Output("multiple_sleep", "on"),
+    dash.Input("day_slider", "value"),
+    dash.State("file_manager", "data"),
 )
-def update_nap_switch(file_manager: dict[str, str], day) -> bool:
+def update_nap_switch(day, file_manager: dict[str, str]) -> bool:
     naps = minor_files.read_vector(
-        file_manager["multiple_sleeplog_file"], graph_data.daycount
+        file_manager["multiple_sleeplog_file"], graphs.get_daycount(file_manager)
     )
     return bool(naps[day - 1])
 
 
 @app.callback(
-    Output("exclude-night", "on"),
-    Input("day_slider", "value"),
-    Input("file_manager", "data"),
+    dash.Output("exclude-night", "on"),
+    dash.Input("day_slider", "value"),
+    dash.State("file_manager", "data"),
 )
 def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
     missing = minor_files.read_vector(
-        file_manager["missing_sleep_file"], graph_data.daycount
+        file_manager["missing_sleep_file"], graphs.get_daycount(file_manager)
     )
     return bool(missing[day - 1])
 
 
 @app.callback(
-    Output("review-night", "on"),
-    Input("day_slider", "value"),
-    Input("file_manager", "data"),
+    dash.Output("review-night", "on"),
+    dash.Input("day_slider", "value"),
+    dash.State("file_manager", "data"),
 )
 def update_review_night(day, file_manager: dict[str, str]) -> bool:
-    nights = minor_files.read_vector(file_manager["review_night_file"], day)
+    nights = minor_files.read_vector(file_manager["review_night_file"], day - 1)
     return bool(nights[day - 1])
 
 
 @app.callback(
-    Output("graph", "figure"),
-    Output("my-range-slider", "value"),
-    Input("day_slider", "value"),
-    Input("exclude-night", "on"),
-    Input("review-night", "on"),
-    Input("multiple_sleep", "on"),
-    Input("my-range-slider", "value"),
-    Input("file_manager", "data"),
-    suppress_callback_exceptions=True,
+    dash.Output("graph", "figure"),
+    dash.Output("my-range-slider", "value"),
+    dash.Input("day_slider", "value"),
+    dash.Input("exclude-night", "on"),
+    dash.Input("review-night", "on"),
+    dash.Input("multiple_sleep", "on"),
+    dash.Input("my-range-slider", "value"),
+    dash.State("file_manager", "data"),
 )
 def update_graph(day, exclude_button, review_night, nap, position, file_manager):
+    # Position is intentially not used.
+    daycount = graphs.get_daycount(file_manager)
     night_to_review = minor_files.read_vector(
-        file_manager["review_night_file"], graph_data.daycount
+        file_manager["review_night_file"], daycount
     )
     nap_times = minor_files.read_vector(
-        file_manager["multiple_sleeplog_file"], graph_data.daycount
+        file_manager["multiple_sleeplog_file"], daycount
     )
     night_to_exclude = minor_files.read_vector(
-        file_manager["data_cleaning_file"], graph_data.daycount
+        file_manager["data_cleaning_file"], daycount
     )
 
     sleeponset, wakeup = minor_files.read_sleeplog(file_manager["sleeplog_file"])
@@ -275,7 +227,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     day_of_week_1 = datetime.datetime.fromisoformat(graph_data.ddate_new[day - 1])
     day_of_week_1 = day_of_week_1.strftime("%A")
 
-    if day < graph_data.daycount - 1:
+    if day < daycount:
         day_of_week_2 = datetime.datetime.fromisoformat(graph_data.ddate_new[day])
         day_of_week_2 = day_of_week_2.strftime("%A")
 
@@ -283,7 +235,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
 
     # Getting the timestamp (one minute resolution) and transforming it to dataframe
     # Need to do this to plot the time on the graph hover
-    if day < graph_data.daycount - 1:
+    if day < daycount:
         timestamp_day1 = [
             graph_data.ddate_new[day - 1]
             for x in range(int(graph_data.npointsperday / 2))
@@ -397,9 +349,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
 
     if vec_sleeponset < int(graph_data.npointsperday / 2):
         new_sleep = graph_data.ddate_new[day - 1] + new_sleep
-    elif vec_sleeponset > int(graph_data.npointsperday / 2) and (
-        day == graph_data.daycount - 1
-    ):
+    elif vec_sleeponset > int(graph_data.npointsperday / 2) and (day == daycount):
         new_sleep = graph_data.ddate_new[day - 1] + new_sleep
     else:
         new_sleep = graph_data.ddate_new[day] + new_sleep
@@ -411,12 +361,8 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
 
     if vec_wake < int(graph_data.npointsperday / 2):
         new_wake = graph_data.ddate_new[day - 1] + new_wake
-    elif vec_wake > int(graph_data.npointsperday / 2) and (
-        day == graph_data.daycount - 1
-    ):
+    elif vec_wake > int(graph_data.npointsperday / 2) and (day == daycount):
         new_wake = graph_data.ddate_new[day - 1] + new_wake
-    elif vec_wake > int(graph_data.npointsperday):
-        new_wake = graph_data.ddate_new[day] + new_wake
     else:
         new_wake = graph_data.ddate_new[day] + new_wake
 
@@ -544,9 +490,6 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     night_to_review[day - 1] = 1 if review_night else 0
     nap_times[day - 1] = 1 if nap else 0
 
-    minor_files.write_excluded_night(
-        graph_data.identifier, night_to_exclude, file_manager["data_cleaning_file"]
-    )
     minor_files.write_vector(file_manager["missing_sleep_file"], night_to_exclude)
     minor_files.write_vector(file_manager["review_night_file"], night_to_review)
     minor_files.write_vector(file_manager["multiple_sleeplog_file"], nap_times)
@@ -555,34 +498,34 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
 
 
 @app.callback(
-    Output("check-done", "children"),
-    Input("are-you-done", "value"),
-    Input("file_manager", "data"),
+    dash.Output("check-done", "children"),
+    dash.Input("are-you-done", "value"),
+    dash.State("file_manager", "data"),
 )
-def write_log_done(value, file_manager):
-    if not value:
+def write_log_done(is_user_done, file_manager):
+    if not is_user_done:
         print("Sleep log analysis not completed yet.")
     else:
         minor_files.write_log_analysis_completed(
-            graph_data.identifier, file_manager["completed_analysis_file"]
+            file_manager["identifier"], file_manager["completed_analysis_file"]
         )
 
 
 @app.callback(
-    Output("annotations-save", "children"),
-    Output("sleep-onset", "children"),
-    Output("sleep-offset", "children"),
-    Output("sleep-duration", "children"),
-    Input("my-range-slider", "drag_value"),
-    Input("file_manager", "data"),
-    State("day_slider", "value"),
+    dash.Output("annotations-save", "children"),
+    dash.Output("sleep-onset", "children"),
+    dash.Output("sleep-offset", "children"),
+    dash.Output("sleep-duration", "children"),
+    dash.Input("my-range-slider", "drag_value"),
+    dash.State("file_manager", "data"),
+    dash.State("day_slider", "value"),
 )
 def write_info(drag_value, file_manager, day):
     if not drag_value:
         return "", "", "", ""
 
     minor_files.write_sleeplog(
-        file_manager["sleeplog_file"], graph_data, day, drag_value[0], drag_value[1]
+        file_manager, graph_data, day, drag_value[0], drag_value[1]
     )
     sleep_time = utils.point2time(
         drag_value[0], graph_data.axis_range, graph_data.npointsperday

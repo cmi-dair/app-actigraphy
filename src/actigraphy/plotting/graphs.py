@@ -19,7 +19,6 @@ def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
 
 @dataclasses.dataclass
 class GraphOutput:
-    identifier: str
     axis_range: int
     daycount: int
     vec_acc: np.ndarray
@@ -33,22 +32,48 @@ class GraphOutput:
     ddate_new: pd.Index
 
 
-def create_graphs(data_dir: pathlib.Path):
-    ms4_file = _get_data_file(data_dir / "meta" / "ms4.out")
-    metadata_file = _get_data_file(data_dir / "meta" / "basic")
-    ms4_data = ms4.MS4.from_file(ms4_file)
-    metadata_data = metadata.MetaData.from_file(metadata_file)
+def get_metadata(file_manager: dict[str, str]):
+    metadata_file = _get_data_file(
+        pathlib.Path(file_manager["base_dir"]) / "meta" / "basic"
+    )
+    return metadata.MetaData.from_file(metadata_file)
+
+
+def get_ms4_data(file_manager: dict[str, str]):
+    ms4_file = _get_data_file(
+        pathlib.Path(file_manager["base_dir"]) / "meta" / "ms4.out"
+    )
+    return ms4.MS4.from_file(ms4_file)
+
+
+def get_midnights(file_manager: dict[str, str]):
+    metadata_data = get_metadata(file_manager)
+    timestamps = [
+        datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
+        for time in metadata_data.m.metashort.timestamp
+    ]
+
+    return [
+        index + 1
+        for index, time in enumerate(timestamps)
+        if time.second == 0 and time.minute == 0 and time.hour == 12
+    ]
+
+
+def get_daycount(file_manager: dict[str, str]):
+    return len(get_midnights(file_manager)) + 1
+
+
+def create_graphs(file_manager: dict[str, str]):
+    metadata_data = get_metadata(file_manager)
+    ms4_data = get_ms4_data(file_manager)
 
     timestamps = [
         datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
         for time in metadata_data.m.metashort.timestamp
     ]
 
-    passed_midnight = [
-        index + 1
-        for index, time in enumerate(timestamps)
-        if time.second == 0 and time.minute == 0 and time.hour == 12
-    ]
+    passed_midnight = get_midnights(file_manager)
 
     ddate = [time.strftime("%Y-%m-%d") for time in timestamps]
     ddates_of_interest = [ddate[index] for index in passed_midnight]
@@ -292,11 +317,9 @@ def create_graphs(data_dir: pathlib.Path):
         new_sleep_date = new_sleep_date.reset_index()
         new_sleep_date = new_sleep_date[0]
 
-    identifier = str(data_dir).split("_")[-1]
     axis_range = int((2 * (60 / metadata_data.m.windowsizes[0]) * 60))
 
     return GraphOutput(
-        identifier,
         axis_range,
         daycount,
         vec_acc,

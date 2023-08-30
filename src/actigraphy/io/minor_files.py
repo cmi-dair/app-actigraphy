@@ -1,6 +1,5 @@
 import csv
 import datetime
-import pathlib
 from os import path
 from typing import Any
 
@@ -9,7 +8,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from actigraphy.core import utils
-from actigraphy.plotting.graphs import GraphOutput
+from actigraphy.plotting import graphs
 
 
 def _flatten(list_of_lists: list[Any]) -> list[Any]:
@@ -30,7 +29,7 @@ def _flatten(list_of_lists: list[Any]) -> list[Any]:
     return new_list
 
 
-def read_sleeplog(filepath: str | pathlib.Path) -> tuple[list[str], list[str]]:
+def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
     sleeplog_file = pd.read_csv(filepath, index_col=0)
     sleeplog_file = sleeplog_file.iloc[0]
     wake = [sleeplog_file[idx] for idx in range(len(sleeplog_file)) if idx % 2 == 1]
@@ -39,9 +38,9 @@ def read_sleeplog(filepath: str | pathlib.Path) -> tuple[list[str], list[str]]:
     return sleep, wake
 
 
-def write_sleeplog(filepath: str, graph_data: GraphOutput, day, sleep, wake) -> None:
-    df = pd.read_csv(filepath)
-    df.iloc[0, 0] = graph_data.identifier
+def write_sleeplog(file_manager, graph_data, day, sleep, wake) -> None:
+    df = pd.read_csv(file_manager["sleeplog_file"])
+    df.iloc[0, 0] = file_manager["identifier"]
     sleep_time = utils.point2time(
         sleep, graph_data.axis_range, graph_data.npointsperday
     )
@@ -49,20 +48,7 @@ def write_sleeplog(filepath: str, graph_data: GraphOutput, day, sleep, wake) -> 
     df.iloc[0, ((day) * 2) - 1] = sleep_time
     df.iloc[0, ((day) * 2)] = wake_time
 
-    df.to_csv(filepath, index=False)
-
-
-def write_excluded_night(identifier: str, excl_night: np.ndarray, filepath: str):
-    header = ["ID", "day_part5", "relyonguider_part4", "night_part4"]
-    nights_excluded = " ".join((np.where(excl_night == 1)[0] + 1).astype(str))
-    data_night = [identifier, "", "", nights_excluded]
-
-    with open(filepath, "w", encoding="utf-8") as file_buffer:
-        writer = csv.writer(file_buffer)
-        writer.writerow(header)
-        writer.writerow(data_night)
-
-    print("Excluded nights formated: ", nights_excluded)
+    df.to_csv(file_manager["sleeplog_file"], index=False)
 
 
 def write_ggir(hour_vector: npt.ArrayLike, filepath: str) -> None:
@@ -130,3 +116,26 @@ def read_vector(filepath: str, up_to_column=None) -> list[Any]:
     if up_to_column is None:
         up_to_column = len(df.columns)
     return [df.iloc[0, idx] for idx in range(up_to_column)]
+
+
+def initialize_files(
+    file_manager: dict[str, str],
+    hour_vector: list[int],
+    evaluator_name: str,
+) -> None:
+    if not path.exists(file_manager["sleeplog_file"]):
+        write_ggir(hour_vector, file_manager["sleeplog_file"])
+
+    daycount = graphs.get_daycount(file_manager)
+    vector_files = [
+        "review_night_file",
+        "multiple_sleeplog_file",
+        "data_cleaning_file",
+        "missing_sleep_file",
+    ]
+    for vector_file in vector_files:
+        filepath = file_manager[vector_file]
+        if not path.exists(filepath):
+            write_vector(filepath, [0] * daycount)
+
+    write_log_file(evaluator_name, file_manager["log_file"], file_manager["identifier"])
