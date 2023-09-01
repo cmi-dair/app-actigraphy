@@ -28,7 +28,9 @@ def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
     return sleep, wake
 
 
-def write_sleeplog(file_manager, day, sleep, wake) -> None:
+def write_sleeplog(
+    file_manager: dict[str, str], day: int, sleep: float, wake: float
+) -> None:
     with open(file_manager["sleeplog_file"], "r", encoding="utf-8") as file_buffer:
         reader = csv.reader(file_buffer)
         sleeplog: list[list[str]] = list(reader)

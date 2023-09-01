@@ -59,7 +59,7 @@ def flatten(iterable_of_iterables: Iterable[Any]) -> list[Any]:
     """
     new_list = []
     for item in iterable_of_iterables:
-        if isinstance(item, abc.Iterable):
+        if isinstance(item, abc.Iterable) and not isinstance(item, (str, bytes)):
             new_list.extend(flatten(item))
         else:
             new_list.append(item)

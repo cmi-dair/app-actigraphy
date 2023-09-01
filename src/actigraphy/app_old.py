@@ -104,7 +104,6 @@ def update_nap_switch(day, file_manager: dict[str, str]) -> bool:
     logger.debug("Entering update nap switch callback")
     naps = minor_files.read_vector(
         file_manager["multiple_sleeplog_file"],
-        graphs.get_daycount(file_manager["base_dir"]),
     )
     return bool(naps[day - 1])
 
@@ -118,7 +117,6 @@ def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
     logger.debug("Entering update exclude night callback")
     missing = minor_files.read_vector(
         file_manager["missing_sleep_file"],
-        graphs.get_daycount(file_manager["base_dir"]),
     )
     return bool(missing[day - 1])
 
@@ -130,7 +128,7 @@ def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
 )
 def update_review_night(day, file_manager: dict[str, str]) -> bool:
     logger.debug("Entering update review night callback")
-    nights = minor_files.read_vector(file_manager["review_night_file"], day - 1)
+    nights = minor_files.read_vector(file_manager["review_night_file"])
     return bool(nights[day - 1])
 
 
@@ -148,15 +146,9 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     # Position is intentionally not used.
     logger.debug("Entering update graph callback")
     daycount = graphs.get_daycount(file_manager["base_dir"])
-    night_to_review = minor_files.read_vector(
-        file_manager["review_night_file"], daycount
-    )
-    nap_times = minor_files.read_vector(
-        file_manager["multiple_sleeplog_file"], daycount
-    )
-    night_to_exclude = minor_files.read_vector(
-        file_manager["data_cleaning_file"], daycount
-    )
+    night_to_review = minor_files.read_vector(file_manager["review_night_file"])
+    nap_times = minor_files.read_vector(file_manager["multiple_sleeplog_file"])
+    night_to_exclude = minor_files.read_vector(file_manager["data_cleaning_file"])
 
     sleeponset, wakeup = minor_files.read_sleeplog(file_manager["sleeplog_file"])
     vec_sleeponset = utils.time2point(sleeponset[day - 1])
@@ -177,8 +169,8 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         timestamp = [
             " ".join(
                 [
-                    timestamp[x].strftime("%d/%b/%Y")
-                    + utils.point2time_timestamp(x, axis_range, n_points_per_day)
+                    timestamp[x].strftime("%d/%b/%Y"),
+                    utils.point2time_timestamp(x, axis_range, n_points_per_day),
                 ]
             )
             for x in range(int(n_points_per_day * 1.5))
@@ -217,8 +209,8 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         timestamp = [
             " ".join(
                 [
-                    timestamp[x].strftime("%d/%b/%Y")
-                    + utils.point2time_timestamp(x, axis_range, n_points_per_day)
+                    timestamp[x].strftime("%d/%b/%Y"),
+                    utils.point2time_timestamp(x, axis_range, n_points_per_day),
                 ]
             )
             for x in range(0, int(n_points_per_day * 1.5))
@@ -260,6 +252,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
             "x": 1,
         }
     )
+
     figure.update_layout(title=title_day)
 
     sleep_split = sleeponset[day - 1].split(":")
@@ -287,7 +280,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         new_wake = dates[day].strftime("%d/%b/%Y") + " " + new_wake
 
     if (
-        new_sleep[-4:] == "3:00" and new_wake[-4:] == "3:00"
+        new_sleep[-5:] == "03:00" and new_wake[-5:] == "03:00"
     ):  # Getting the last four characters from the string containing day and time
         figure.add_vrect(
             x0=new_sleep, x1=new_wake, line_width=0, fillcolor="red", opacity=0.2
@@ -309,10 +302,8 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     )
 
     if int(vec_for_the_day[0]) == 0:
-        begin_value = np.where(np.diff(graph_data.vec_nonwear[day - 1]) == 1)
-        begin_value = begin_value[0] + 180
-        end_value = np.where(np.diff(graph_data.vec_nonwear[day - 1]) == -1)
-        end_value = end_value[0] + 180
+        begin_value = np.where(np.diff(graph_data.vec_nonwear[day - 1]) == 1)[0] + 180
+        end_value = np.where(np.diff(graph_data.vec_nonwear[day - 1]) == -1)[0] + 180
     else:
         first_value = 0
         begin_value = np.where(np.diff(graph_data.vec_nonwear[day - 1]) == 1)
@@ -324,8 +315,6 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         end_value = end_value[0] + 180
         end_value = np.insert(end_value, 0, 179)
 
-    new_end_value = []
-    new_begin_value = []
     rect_data_init = []
     rect_data_final = []
     idx = 0
@@ -398,10 +387,6 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
                     xanchor="left",
                     showarrow=False,
                 )
-
-    figure.update_xaxes(
-        ticktext=[utils.hour_to_time_string(time) for time in range(0, 37)],
-    )
 
     figure.update_layout(showlegend=True)
     figure.update_yaxes(visible=False, showticklabels=False)
