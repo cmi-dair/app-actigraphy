@@ -31,7 +31,6 @@ class GraphOutput:
     vec_ang: np.ndarray
     vec_sleeponset: np.ndarray
     vec_wake: np.ndarray
-    vec_line: np.ndarray
     vec_nonwear: np.ndarray
 
 
@@ -285,14 +284,10 @@ def create_graphs(file_manager: dict[str, str]) -> GraphOutput:
 
         daycount = daycount + 1
 
-    # Setting nnights = 70 because GGIR version 2.0-0 need a value for the nnights variable.
-    vec_line = [0] * 140
-
     return GraphOutput(
         vec_acc,
         vec_ang,
         vec_sleeponset,
         vec_wake,
-        vec_line,
         vec_nonwear,
     )
