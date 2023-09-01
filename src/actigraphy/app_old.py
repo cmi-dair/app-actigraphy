@@ -2,9 +2,7 @@
 # visit http://127.0.0.1:8050/ in your web browser.
 
 import datetime
-import itertools
 import logging
-import pdb
 
 import dash
 import dash_bootstrap_components
@@ -67,19 +65,10 @@ def parse_contents(
 
     file_manager = utils.FileManager(base_dir=filepath).__dict__
     daycount = graphs.get_daycount(file_manager["base_dir"])
+    minor_files.initialize_files(file_manager, evaluator_name)
     graph_data = graphs.create_graphs(file_manager)
 
     axis_range = graphs.get_axis_range(file_manager)
-    n_points_per_day = graphs.get_n_points_per_day(file_manager)
-
-    onset_wake = itertools.chain.from_iterable(
-        zip(graph_data.vec_sleeponset, graph_data.vec_wake)
-    )
-    hour_vector = [
-        utils.point2time(time, axis_range, n_points_per_day) for time in onset_wake
-    ]
-    minor_files.initialize_files(file_manager, hour_vector, evaluator_name)
-
     ui_components = [
         components.day_slider(file_manager["identifier"], daycount),
         components.finished_checkbox(),

@@ -141,21 +141,22 @@ def read_vector(filepath: str, up_to_column: int | None = None) -> list[Any]:
 
 def initialize_files(
     file_manager: dict[str, str],
-    hour_vector: list[datetime.datetime | None],
     evaluator_name: str,
 ) -> None:
-    """
-    Initializes the files required for actigraphy analysis.
+    """Initializes the files required for actigraphy analysis.
 
     Args:
         file_manager: A dictionary containing file paths for various files.
-        hour_vector: A list of datetime objects representing hours and minutes.
         evaluator_name: The name of the evaluator.
 
-    Returns:
-        None
     """
     if not path.exists(file_manager["sleeplog_file"]):
+        axis_range = graphs.get_axis_range(file_manager)
+        n_points_per_day = graphs.get_n_points_per_day(file_manager)
+
+        hour_vector = [
+            core_utils.point2time([0] * n_points_per_day, axis_range, n_points_per_day)
+        ]
         write_ggir(hour_vector, file_manager["sleeplog_file"])
 
     daycount = graphs.get_daycount(file_manager["base_dir"])
