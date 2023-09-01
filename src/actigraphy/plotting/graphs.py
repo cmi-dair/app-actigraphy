@@ -1,11 +1,19 @@
 import dataclasses
 import datetime
+import functools
+import logging
 import pathlib
 
 import numpy as np
 import pandas as pd
 
+from actigraphy.core import config
 from actigraphy.io import metadata, ms4
+
+settings = config.get_settings()
+LOGGER_NAME = settings.LOGGER_NAME
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
@@ -32,22 +40,24 @@ class GraphOutput:
     ddate_new: pd.Index
 
 
-def get_metadata(file_manager: dict[str, str]):
-    metadata_file = _get_data_file(
-        pathlib.Path(file_manager["base_dir"]) / "meta" / "basic"
-    )
+@functools.lru_cache()
+def get_metadata(base_dir: str) -> metadata.MetaData:
+    logger.debug("Getting metadata from %s", "base_dir")
+    metadata_file = _get_data_file(pathlib.Path(base_dir) / "meta" / "basic")
     return metadata.MetaData.from_file(metadata_file)
 
 
-def get_ms4_data(file_manager: dict[str, str]):
-    ms4_file = _get_data_file(
-        pathlib.Path(file_manager["base_dir"]) / "meta" / "ms4.out"
-    )
+@functools.lru_cache()
+def get_ms4_data(base_dir: str) -> ms4.MS4:
+    logger.debug("Getting MS4 data from %s", base_dir)
+    ms4_file = _get_data_file(pathlib.Path(base_dir) / "meta" / "ms4.out")
     return ms4.MS4.from_file(ms4_file)
 
 
-def get_midnights(file_manager: dict[str, str]):
-    metadata_data = get_metadata(file_manager)
+@functools.lru_cache()
+def get_midnights(base_dir: str) -> list[int]:
+    logger.debug("Getting midnights from %s", base_dir)
+    metadata_data = get_metadata(base_dir)
     timestamps = [
         datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
         for time in metadata_data.m.metashort.timestamp
@@ -56,24 +66,38 @@ def get_midnights(file_manager: dict[str, str]):
     return [
         index + 1
         for index, time in enumerate(timestamps)
-        if time.second == 0 and time.minute == 0 and time.hour == 12
+        if time.second == 0
+        and time.minute == 0
+        and time.hour == 12
+        and index != len(timestamps) - 1
     ]
 
 
-def get_daycount(file_manager: dict[str, str]):
-    return len(get_midnights(file_manager)) + 1
+@functools.lru_cache()
+def get_daycount(base_dir: str) -> int:
+    """Returns the number of days in the subject's data.
+
+    Args:
+        base_dir: The path to the subject's data.
+
+    Returns:
+        int: The number of days in the subject's data.
+
+    """
+    logger.debug("Getting daycount from %s", base_dir)
+    return len(get_midnights(base_dir)) + 1
 
 
 def create_graphs(file_manager: dict[str, str]):
-    metadata_data = get_metadata(file_manager)
-    ms4_data = get_ms4_data(file_manager)
+    metadata_data = get_metadata(file_manager["base_dir"])
+    ms4_data = get_ms4_data(file_manager["base_dir"])
 
     timestamps = [
         datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
         for time in metadata_data.m.metashort.timestamp
     ]
 
-    passed_midnight = get_midnights(file_manager)
+    passed_midnight = get_midnights(file_manager["base_dir"])
 
     ddate = [time.strftime("%Y-%m-%d") for time in timestamps]
     ddates_of_interest = [ddate[index] for index in passed_midnight]
@@ -121,7 +145,7 @@ def create_graphs(file_manager: dict[str, str]):
         daycount = 1
 
         for n_graph in range(nplots):
-            print("Creating graph ", n_graph)
+            logger.debug("Creating graph %s.", n_graph)
 
             check_date = 1
             change_date = 0

@@ -1,3 +1,4 @@
+"""Command line interface for the actigraphy APP."""
 import argparse
 import pathlib
 

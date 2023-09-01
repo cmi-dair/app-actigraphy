@@ -1,3 +1,4 @@
+"""Utility functions for the actigraphy package."""
 import datetime
 import logging
 import os
@@ -82,12 +83,10 @@ def time2point(sleep, axis_range=None, npointsperday=None, all_dates=None, day=N
         "Converting time to point: %s, %s, %s", sleep, axis_range, npointsperday
     )
 
-    if sleep == 0:
-        return 0
     sleep_split = sleep.split(":")
-    # Get sleep time and transform to timepoints
     sleep_time_hour = int(sleep_split[0])
     sleep_time_min = int(sleep_split[1])
+
     # hour
     if sleep_time_hour >= 0 and sleep_time_hour < 12:
         sleep_time_hour = ((sleep_time_hour + 12) * 8640) / 12

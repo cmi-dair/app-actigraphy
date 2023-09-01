@@ -1,14 +1,12 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
 
-import calendar
 import datetime
 import logging
 
 import dash
 import dash_bootstrap_components
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 from dash import dcc, html
 
@@ -21,7 +19,7 @@ APP_NAME = settings.APP_NAME
 APP_COLORS = settings.APP_COLORS
 LOGGER_NAME = settings.LOGGER_NAME
 
-config.initialize_logger()
+config.initialize_logger(logging_level=logging.DEBUG)
 logger = logging.getLogger(LOGGER_NAME)
 
 app = dash.Dash(
@@ -65,7 +63,7 @@ def parse_contents(
         return "", "", True, False, None
 
     file_manager = utils.FileManager(base_dir=filepath).__dict__
-    daycount = graphs.get_daycount(file_manager)
+    daycount = graphs.get_daycount(file_manager["base_dir"])
     graph_data = graphs.create_graphs(file_manager)
 
     tmp_axis = int(graph_data.axis_range / 2)
@@ -103,7 +101,8 @@ def parse_contents(
 )
 def update_nap_switch(day, file_manager: dict[str, str]) -> bool:
     naps = minor_files.read_vector(
-        file_manager["multiple_sleeplog_file"], graphs.get_daycount(file_manager)
+        file_manager["multiple_sleeplog_file"],
+        graphs.get_daycount(file_manager["base_dir"]),
     )
     return bool(naps[day - 1])
 
@@ -115,7 +114,8 @@ def update_nap_switch(day, file_manager: dict[str, str]) -> bool:
 )
 def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
     missing = minor_files.read_vector(
-        file_manager["missing_sleep_file"], graphs.get_daycount(file_manager)
+        file_manager["missing_sleep_file"],
+        graphs.get_daycount(file_manager["base_dir"]),
     )
     return bool(missing[day - 1])
 
@@ -142,7 +142,7 @@ def update_review_night(day, file_manager: dict[str, str]) -> bool:
 )
 def update_graph(day, exclude_button, review_night, nap, position, file_manager):
     # Position is intentionally not used.
-    daycount = graphs.get_daycount(file_manager)
+    daycount = graphs.get_daycount(file_manager["base_dir"])
     night_to_review = minor_files.read_vector(
         file_manager["review_night_file"], daycount
     )
@@ -157,15 +157,10 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     vec_sleeponset = utils.time2point(sleeponset[day - 1])
     vec_wake = utils.time2point(wakeup[day - 1])
 
-    month_1 = calendar.month_abbr[int(graph_data.ddate_new[day - 1][5:7])]
-    day_of_week_1 = datetime.datetime.fromisoformat(graph_data.ddate_new[day - 1])
-    day_of_week_1 = day_of_week_1.strftime("%A")
-
-    if day < daycount:
-        day_of_week_2 = datetime.datetime.fromisoformat(graph_data.ddate_new[day])
-        day_of_week_2 = day_of_week_2.strftime("%A")
-
-    title_day = f"Day {day}: {day_of_week_1} - {graph_data.ddate_new[day - 1][8:]} {month_1} {graph_data.ddate_new[day - 1][0:4]}"
+    all_dates = [
+        datetime.datetime.fromisoformat(dates) for dates in graph_data.ddate_new
+    ]
+    title_day = f"Day {day}: {all_dates[day-1].strftime('%A - %d %B %Y')}"
 
     # Getting the timestamp (one minute resolution) and transforming it to dataframe
     # Need to do this to plot the time on the graph hover
@@ -191,23 +186,16 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
             )
         ]
 
-        df = pd.DataFrame(index=timestamp)
-        df["vec_ang"] = np.concatenate(
+        vec_ang = np.concatenate(
             (
                 graph_data.vec_ang[day - 1, :],
-                graph_data.vec_ang[day, 0 : int(graph_data.npointsperday / 2)],
+                graph_data.vec_ang[day, : int(graph_data.npointsperday / 2)],
             )
         )
-        df["vec_acc"] = np.concatenate(
+        vec_acc = np.concatenate(
             (
                 graph_data.vec_acc[day - 1, :],
-                graph_data.vec_acc[day, 0 : int(graph_data.npointsperday / 2)],
-            )
-        )
-        df["non_wear"] = np.concatenate(
-            (
-                graph_data.vec_nonwear[day - 1, :],
-                graph_data.vec_nonwear[day, 0 : int(graph_data.npointsperday / 2)],
+                graph_data.vec_acc[day, : int(graph_data.npointsperday / 2)],
             )
         )
     else:  # in case this is the last day
@@ -246,16 +234,14 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         vec_end = [0 for x in range(int(graph_data.npointsperday / 2))]
         vec_end_acc = [-210 for x in range(int(graph_data.npointsperday / 2))]
 
-        df = pd.DataFrame(index=timestamp)
-        df["vec_ang"] = np.concatenate((graph_data.vec_ang[day - 1, :], vec_end))
-        df["vec_acc"] = np.concatenate((graph_data.vec_acc[day - 1, :], vec_end_acc))
-        df["non_wear"] = np.concatenate((graph_data.vec_nonwear[day - 1, :], vec_end))
+        vec_ang = np.concatenate((graph_data.vec_ang[day - 1, :], vec_end))
+        vec_acc = np.concatenate((graph_data.vec_acc[day - 1, :], vec_end_acc))
 
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=df.index,
-            y=df.vec_ang,
+            x=timestamp,
+            y=vec_ang,
             mode="lines",
             name="Angle of sensor's z-axis",
             line_color="blue",
@@ -263,8 +249,8 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     )
     fig.add_trace(
         go.Scatter(
-            x=df.index,
-            y=df.vec_acc,
+            x=timestamp,
+            y=vec_acc,
             mode="lines",
             name="Arm movement",
             line_color="black",
@@ -272,7 +258,13 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     )
 
     fig.update_layout(
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "right",
+            "x": 1,
+        }
     )
     fig.update_layout(title=title_day)
 

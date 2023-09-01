@@ -37,11 +37,11 @@ def get_settings() -> Settings:
     return Settings()
 
 
-def initialize_logger() -> None:
+def initialize_logger(logging_level: int = logging.INFO) -> None:
     """Initializes the logger."""
     settings = get_settings()
     logger = logging.getLogger(settings.LOGGER_NAME)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging_level)
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
