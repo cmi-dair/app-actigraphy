@@ -2,13 +2,15 @@
 # visit http://127.0.0.1:8050/ in your web browser.
 
 import datetime
+import itertools
 import logging
+import pdb
 
 import dash
 import dash_bootstrap_components
 import numpy as np
-import plotly.graph_objects as go
 from dash import dcc, html
+from plotly import graph_objects
 
 from actigraphy.core import cli, components, config, utils
 from actigraphy.io import minor_files
@@ -25,7 +27,8 @@ logger = logging.getLogger(LOGGER_NAME)
 app = dash.Dash(
     APP_NAME, external_stylesheets=[dash_bootstrap_components.themes.BOOTSTRAP]
 )
-subject_directories = cli.parse_args()
+args = cli.parse_args()
+subject_directories = cli.get_subject_folders(args)
 
 app.layout = html.Div(
     (
@@ -46,7 +49,6 @@ app.layout = html.Div(
         dash.Output("annotations-data", "children"),
         dash.Output("loading", "children"),
         dash.Output("insert-user", "displayed"),
-        dash.Output("evaluator_name", "disabled"),  # Can this be removed?
         dash.Output("file_manager", "data"),
     ],
     dash.State("my-dropdown", "value"),
@@ -57,39 +59,38 @@ app.layout = html.Div(
 def parse_contents(
     filepath: str, evaluator_name: str, n_clicks: int  # pylint: disable=unused-argument
 ):
+    logger.debug("Entering parse contents callback")
     # n_clicks is only used to trigger this function and is intentionally not used.
     global graph_data
     if not evaluator_name:
-        return "", "", True, False, None
+        return "", "", True, None
 
     file_manager = utils.FileManager(base_dir=filepath).__dict__
     daycount = graphs.get_daycount(file_manager["base_dir"])
     graph_data = graphs.create_graphs(file_manager)
 
-    tmp_axis = int(graph_data.axis_range / 2)
+    axis_range = graphs.get_axis_range(file_manager)
+    n_points_per_day = graphs.get_n_points_per_day(file_manager)
 
-    hour_vector = []
-    for onset, wake in zip(graph_data.vec_sleeponset, graph_data.vec_wake):
-        onset_time = utils.point2time(
-            onset, graph_data.axis_range, graph_data.npointsperday
-        )
-        wake_time = utils.point2time(
-            wake, graph_data.axis_range, graph_data.npointsperday
-        )
-        hour_vector.extend([onset_time, wake_time])
+    onset_wake = itertools.chain.from_iterable(
+        zip(graph_data.vec_sleeponset, graph_data.vec_wake)
+    )
+    hour_vector = [
+        utils.point2time(time, axis_range, n_points_per_day) for time in onset_wake
+    ]
     minor_files.initialize_files(file_manager, hour_vector, evaluator_name)
 
+    ui_components = [
+        components.day_slider(file_manager["identifier"], daycount),
+        components.finished_checkbox(),
+        components.switches(),
+        components.graph(axis_range // 2),
+        components.app_license(),
+    ]
     return (
-        [
-            components.day_slider(file_manager["identifier"], daycount),
-            components.finished_checkbox(),
-            components.switches(),
-            components.graph(tmp_axis),
-            components.app_license(),
-        ],
+        ui_components,
         "",
         False,
-        True,
         file_manager,
     )
 
@@ -100,6 +101,7 @@ def parse_contents(
     dash.State("file_manager", "data"),
 )
 def update_nap_switch(day, file_manager: dict[str, str]) -> bool:
+    logger.debug("Entering update nap switch callback")
     naps = minor_files.read_vector(
         file_manager["multiple_sleeplog_file"],
         graphs.get_daycount(file_manager["base_dir"]),
@@ -113,6 +115,7 @@ def update_nap_switch(day, file_manager: dict[str, str]) -> bool:
     dash.State("file_manager", "data"),
 )
 def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
+    logger.debug("Entering update exclude night callback")
     missing = minor_files.read_vector(
         file_manager["missing_sleep_file"],
         graphs.get_daycount(file_manager["base_dir"]),
@@ -126,6 +129,7 @@ def update_exclude_switch(day, file_manager: dict[str, str]) -> bool:
     dash.State("file_manager", "data"),
 )
 def update_review_night(day, file_manager: dict[str, str]) -> bool:
+    logger.debug("Entering update review night callback")
     nights = minor_files.read_vector(file_manager["review_night_file"], day - 1)
     return bool(nights[day - 1])
 
@@ -142,6 +146,7 @@ def update_review_night(day, file_manager: dict[str, str]) -> bool:
 )
 def update_graph(day, exclude_button, review_night, nap, position, file_manager):
     # Position is intentionally not used.
+    logger.debug("Entering update graph callback")
     daycount = graphs.get_daycount(file_manager["base_dir"])
     night_to_review = minor_files.read_vector(
         file_manager["review_night_file"], daycount
@@ -156,51 +161,44 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     sleeponset, wakeup = minor_files.read_sleeplog(file_manager["sleeplog_file"])
     vec_sleeponset = utils.time2point(sleeponset[day - 1])
     vec_wake = utils.time2point(wakeup[day - 1])
+    axis_range = graphs.get_axis_range(file_manager)
+    dates = graphs.get_dates(file_manager)
+    n_points_per_day = graphs.get_n_points_per_day(file_manager)
 
-    all_dates = [
-        datetime.datetime.fromisoformat(dates) for dates in graph_data.ddate_new
-    ]
-    title_day = f"Day {day}: {all_dates[day-1].strftime('%A - %d %B %Y')}"
+    title_day = f"Day {day}: {dates[day-1].strftime('%A - %d %B %Y')}"
 
     # Getting the timestamp (one minute resolution) and transforming it to dataframe
     # Need to do this to plot the time on the graph hover
     if day < daycount:
-        timestamp_day1 = [
-            graph_data.ddate_new[day - 1]
-            for x in range(int(graph_data.npointsperday / 2))
-        ]
-        timestamp_day2 = [
-            graph_data.ddate_new[day] for x in range(graph_data.npointsperday)
-        ]
+        timestamp_day1 = [dates[day - 1] for x in range(n_points_per_day // 2)]
+        timestamp_day2 = [dates[day] for x in range(n_points_per_day)]
         timestamp = timestamp_day1 + timestamp_day2
 
         timestamp = [
-            (
-                timestamp[x]
-                + utils.point2time_timestamp(
-                    x, graph_data.axis_range, graph_data.npointsperday
-                )
+            " ".join(
+                [
+                    timestamp[x].strftime("%d/%b/%Y")
+                    + utils.point2time_timestamp(x, axis_range, n_points_per_day)
+                ]
             )
-            for x in range(
-                0, graph_data.npointsperday + int(graph_data.npointsperday / 2)
-            )
+            for x in range(int(n_points_per_day * 1.5))
         ]
 
         vec_ang = np.concatenate(
             (
                 graph_data.vec_ang[day - 1, :],
-                graph_data.vec_ang[day, : int(graph_data.npointsperday / 2)],
+                graph_data.vec_ang[day, : n_points_per_day // 2],
             )
         )
         vec_acc = np.concatenate(
             (
                 graph_data.vec_acc[day - 1, :],
-                graph_data.vec_acc[day, : int(graph_data.npointsperday / 2)],
+                graph_data.vec_acc[day, : n_points_per_day // 2],
             )
         )
     else:  # in case this is the last day
         # Adding one more day to the day vector
-        curr_date = graph_data.ddate_new[day - 1]
+        curr_date = dates[day - 1]
         list_temp = list(curr_date)
         temp = int(curr_date[8:]) + 1
 
@@ -212,34 +210,30 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         list_temp[8:] = temp
         curr_date = "".join(list_temp)
 
-        timestamp_day1 = [
-            graph_data.ddate_new[day - 1]
-            for x in range(int(graph_data.npointsperday / 2))
-        ]
-        timestamp_day2 = [curr_date for x in range(graph_data.npointsperday)]
+        timestamp_day1 = [dates[day - 1] for x in range(n_points_per_day // 2)]
+        timestamp_day2 = [curr_date for x in range(n_points_per_day)]
         timestamp = timestamp_day1 + timestamp_day2
 
         timestamp = [
-            (
-                timestamp[x]
-                + utils.point2time_timestamp(
-                    x, graph_data.axis_range, graph_data.npointsperday
-                )
+            " ".join(
+                [
+                    timestamp[x].strftime("%d/%b/%Y")
+                    + utils.point2time_timestamp(x, axis_range, n_points_per_day)
+                ]
             )
-            for x in range(
-                0, graph_data.npointsperday + int(graph_data.npointsperday / 2)
-            )
+            for x in range(0, int(n_points_per_day * 1.5))
         ]
 
-        vec_end = [0 for x in range(int(graph_data.npointsperday / 2))]
-        vec_end_acc = [-210 for x in range(int(graph_data.npointsperday / 2))]
+        vec_end = [0 for x in range(n_points_per_day // 2)]
+        vec_end_acc = [-210 for x in range(n_points_per_day // 2)]
 
         vec_ang = np.concatenate((graph_data.vec_ang[day - 1, :], vec_end))
         vec_acc = np.concatenate((graph_data.vec_acc[day - 1, :], vec_end_acc))
 
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
+    figure = graph_objects.Figure()
+
+    figure.add_trace(
+        graph_objects.Scatter(
             x=timestamp,
             y=vec_ang,
             mode="lines",
@@ -247,8 +241,8 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
             line_color="blue",
         )
     )
-    fig.add_trace(
-        go.Scatter(
+    figure.add_trace(
+        graph_objects.Scatter(
             x=timestamp,
             y=vec_acc,
             mode="lines",
@@ -257,7 +251,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         )
     )
 
-    fig.update_layout(
+    figure.update_layout(
         legend={
             "orientation": "h",
             "yanchor": "bottom",
@@ -266,40 +260,40 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
             "x": 1,
         }
     )
-    fig.update_layout(title=title_day)
+    figure.update_layout(title=title_day)
 
     sleep_split = sleeponset[day - 1].split(":")
     if int(sleep_split[1]) < 10:
         sleep_split[1] = "0" + sleep_split[1]
     new_sleep = sleep_split[0] + ":" + sleep_split[1]
 
-    if vec_sleeponset < int(graph_data.npointsperday / 2):
-        new_sleep = graph_data.ddate_new[day - 1] + new_sleep
-    elif vec_sleeponset > int(graph_data.npointsperday / 2) and (day == daycount):
-        new_sleep = graph_data.ddate_new[day - 1] + new_sleep
+    if vec_sleeponset < n_points_per_day // 2:
+        new_sleep = dates[day - 1].strftime("%d/%b/%Y") + " " + new_sleep
+    elif vec_sleeponset > n_points_per_day // 2 and day == daycount:
+        new_sleep = dates[day - 1].strftime("%d/%b/%Y") + " " + new_sleep
     else:
-        new_sleep = graph_data.ddate_new[day] + new_sleep
+        new_sleep = dates[day].strftime("%d/%b/%Y") + " " + new_sleep
 
     wake_split = wakeup[day - 1].split(":")
     if int(wake_split[1]) < 10:
         wake_split[1] = "0" + wake_split[1]
     new_wake = wake_split[0] + ":" + wake_split[1]
 
-    if vec_wake < int(graph_data.npointsperday / 2):
-        new_wake = graph_data.ddate_new[day - 1] + new_wake
-    elif vec_wake > int(graph_data.npointsperday / 2) and (day == daycount):
-        new_wake = graph_data.ddate_new[day - 1] + new_wake
+    if vec_wake < n_points_per_day // 2:
+        new_wake = dates[day - 1].strftime("%d/%b/%Y") + " " + new_wake
+    elif vec_wake > n_points_per_day // 2 and day == daycount:
+        new_wake = dates[day - 1].strftime("%d/%b/%Y") + " " + new_wake
     else:
-        new_wake = graph_data.ddate_new[day] + new_wake
+        new_wake = dates[day].strftime("%d/%b/%Y") + " " + new_wake
 
     if (
         new_sleep[-4:] == "3:00" and new_wake[-4:] == "3:00"
     ):  # Getting the last four characters from the string containing day and time
-        fig.add_vrect(
+        figure.add_vrect(
             x0=new_sleep, x1=new_wake, line_width=0, fillcolor="red", opacity=0.2
         )
     else:
-        fig.add_vrect(
+        figure.add_vrect(
             x0=new_sleep,
             x1=new_wake,
             line_width=0,
@@ -351,66 +345,66 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
         if rect_data_final[ii] >= 17280:
             rect_data_final[ii] = 17279
         new_begin_value = utils.point2time_timestamp(
-            rect_data, graph_data.axis_range, graph_data.npointsperday
+            rect_data, axis_range, n_points_per_day
         )
         new_end_value = utils.point2time_timestamp(
-            rect_data_final[ii], graph_data.axis_range, graph_data.npointsperday
+            rect_data_final[ii], axis_range, n_points_per_day
         )
 
         # need to control for different days (non-wear marker after midnight)
         if rect_data >= 8640:
-            fig.add_vrect(
-                x0=graph_data.ddate_new[day] + new_begin_value,
-                x1=graph_data.ddate_new[day] + new_end_value,
+            figure.add_vrect(
+                x0=dates[day].strftime("%d/%b/%Y") + " " + new_begin_value,
+                x1=dates[day].strftime("%d/%b/%Y") + " " + new_end_value,
                 line_width=0,
                 fillcolor="green",
                 opacity=0.5,
             )
-            fig.add_annotation(
+            figure.add_annotation(
                 text="nonwear",
                 y=75,
-                x=graph_data.ddate_new[day] + new_begin_value,
+                x=dates[day].strftime("%d/%b/%Y") + " " + new_begin_value,
                 xanchor="left",
                 showarrow=False,
             )
         else:
             if rect_data_final[ii] >= 8640:
-                fig.add_vrect(
-                    x0=graph_data.ddate_new[day - 1] + new_begin_value,
-                    x1=graph_data.ddate_new[day] + new_end_value,
+                figure.add_vrect(
+                    x0=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
+                    x1=dates[day].strftime("%d/%b/%Y") + " " + new_end_value,
                     line_width=0,
                     fillcolor="green",
                     opacity=0.5,
                 )
-                fig.add_annotation(
+                figure.add_annotation(
                     text="nonwear",
                     y=75,
-                    x=graph_data.ddate_new[day - 1] + new_begin_value,
+                    x=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
                     xanchor="left",
                     showarrow=False,
                 )
             else:
-                fig.add_vrect(
-                    x0=graph_data.ddate_new[day - 1] + new_begin_value,
-                    x1=graph_data.ddate_new[day - 1] + new_end_value,
+                figure.add_vrect(
+                    x0=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
+                    x1=dates[day - 1].strftime("%d/%b/%Y") + " " + new_end_value,
                     line_width=0,
                     fillcolor="green",
                     opacity=0.5,
                 )
-                fig.add_annotation(
+                figure.add_annotation(
                     text="nonwear",
                     y=75,
-                    x=graph_data.ddate_new[day - 1] + new_begin_value,
+                    x=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
                     xanchor="left",
                     showarrow=False,
                 )
 
-    fig.update_xaxes(
+    figure.update_xaxes(
         ticktext=[utils.hour_to_time_string(time) for time in range(0, 37)],
     )
 
-    fig.update_layout(showlegend=True)
-    fig.update_yaxes(visible=False, showticklabels=False)
+    figure.update_layout(showlegend=True)
+    figure.update_yaxes(visible=False, showticklabels=False)
 
     night_to_exclude[day - 1] = 1 if exclude_button else 0
     night_to_review[day - 1] = 1 if review_night else 0
@@ -420,7 +414,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     minor_files.write_vector(file_manager["review_night_file"], night_to_review)
     minor_files.write_vector(file_manager["multiple_sleeplog_file"], nap_times)
 
-    return fig, [int(vec_sleeponset), int(vec_wake)]
+    return figure, [int(vec_sleeponset), int(vec_wake)]
 
 
 @app.callback(
@@ -429,6 +423,7 @@ def update_graph(day, exclude_button, review_night, nap, position, file_manager)
     dash.State("file_manager", "data"),
 )
 def write_log_done(is_user_done, file_manager):
+    logger.debug("Entering write log done callback")
     if not is_user_done:
         print("Sleep log analysis not completed yet.")
     else:
@@ -447,18 +442,15 @@ def write_log_done(is_user_done, file_manager):
     dash.State("day_slider", "value"),
 )
 def write_info(drag_value, file_manager, day):
+    logger.debug("Entering write info callback")
     if not drag_value:
         return "", "", "", ""
 
-    minor_files.write_sleeplog(
-        file_manager, graph_data, day, drag_value[0], drag_value[1]
-    )
-    sleep_time = utils.point2time(
-        drag_value[0], graph_data.axis_range, graph_data.npointsperday
-    )
-    wake_time = utils.point2time(
-        drag_value[1], graph_data.axis_range, graph_data.npointsperday
-    )
+    axis_range = graphs.get_axis_range(file_manager)
+    n_points_per_day = graphs.get_n_points_per_day(file_manager)
+    minor_files.write_sleeplog(file_manager, day, drag_value[0], drag_value[1])
+    sleep_time = utils.point2time(drag_value[0], axis_range, n_points_per_day)
+    wake_time = utils.point2time(drag_value[1], axis_range, n_points_per_day)
     sleep_datetime = datetime.datetime.combine(datetime.date.today(), sleep_time)
     if wake_time < sleep_time:
         wake_datetime = datetime.datetime.combine(

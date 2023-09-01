@@ -17,13 +17,18 @@ class Colors:
 class Settings(pydantic.BaseModel):
     """Represents the app settings."""
 
-    APP_NAME: str = pydantic.Field("Actigraphy", description="The name of the app.")
+    APP_NAME: str = pydantic.Field(
+        "Actigraphy", description="The name of the app.", env="ACTIGRAPHY_APP_NAME"
+    )
     LOGGER_NAME: str = pydantic.Field(
-        "Actigraphy", description="The name of the logger."
+        "Actigraphy",
+        description="The name of the logger.",
+        env="ACTIGRAPHY_LOGGER_NAME",
     )
     APP_COLORS: Colors = pydantic.Field(
         Colors(),
         description="The colors used in the app.",
+        env="ACTIGRAPHY_APP_COLORS",
     )
 
 
@@ -47,6 +52,6 @@ def initialize_logger(logging_level: int = logging.INFO) -> None:
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    ch = logging.StreamHandler()
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)

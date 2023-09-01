@@ -102,7 +102,7 @@ def day_slider(participant_name: str, max_count: int) -> html.Div:
     )
 
 
-def graph(tmp_axis) -> html.Div:
+def graph(axis_range: int) -> html.Div:
     return html.Div(
         children=[
             dcc.Graph(id="graph"),
@@ -121,7 +121,7 @@ def graph(tmp_axis) -> html.Div:
                         max=25920,
                         step=1,
                         marks={
-                            i * tmp_axis: utils.hour_to_time_string(i)
+                            i * (axis_range // 2): utils.hour_to_time_string(i)
                             for i in range(37)
                         },
                         id="my-range-slider",

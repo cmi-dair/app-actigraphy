@@ -4,7 +4,8 @@ import enum
 import itertools
 import pathlib
 import re
-from typing import Any
+from collections import abc
+from typing import Any, Iterable
 
 import rdata
 
@@ -47,18 +48,18 @@ def snakecase(string: str) -> str:
     return re.sub(r"(?<=[A-Z])(?!$)(?!_)(?![A-Z])", "_", string[::-1]).lower()[::-1]
 
 
-def flatten(list_of_lists: list[Any]) -> list[Any]:
-    """Recursively flattens a list of lists into a single list.
+def flatten(iterable_of_iterables: Iterable[Any]) -> list[Any]:
+    """Recursively flattens an iterable of iterables into a single list.
 
     Args:
-        list_of_lists: The list of lists to flatten.
+        iterable_of_iterables: The list of lists to flatten.
 
     Returns:
         list[any]: The flattened list.
     """
     new_list = []
-    for item in list_of_lists:
-        if isinstance(item, list):
+    for item in iterable_of_iterables:
+        if isinstance(item, abc.Iterable):
             new_list.extend(flatten(item))
         else:
             new_list.append(item)

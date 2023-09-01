@@ -105,15 +105,9 @@ def point2time_timestamp(point, axis_range, npointsperday):
         temp_point = (point * 24) / npointsperday + 12
     temp_point_hour = int(temp_point)
 
-    temp_point_min = (temp_point - int(temp_point)) * 60
-    if int(temp_point_min) == 60:
-        temp_point_min = 00
+    temp_point_min = int((temp_point - int(temp_point)) * 60) % 60
 
-    if int(temp_point_min) < 10:
-        temp_point_min = "0" + str(int(temp_point_min))
-        point_new = str(temp_point_hour) + ":" + temp_point_min
-    else:
-        point_new = str(temp_point_hour) + ":" + str(int(temp_point_min))
+    point_new = f"{temp_point_hour:02d}:{temp_point_min:02d}"
 
     return point_new
 

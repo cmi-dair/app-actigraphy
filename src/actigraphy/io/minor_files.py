@@ -28,20 +28,18 @@ def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
     return sleep, wake
 
 
-def write_sleeplog(file_manager, graph_data, day, sleep, wake) -> None:
+def write_sleeplog(file_manager, day, sleep, wake) -> None:
     with open(file_manager["sleeplog_file"], "r", encoding="utf-8") as file_buffer:
         reader = csv.reader(file_buffer)
         sleeplog: list[list[str]] = list(reader)
 
     sleeplog[1][0] = file_manager["identifier"]
+    axis_range = graphs.get_axis_range(file_manager)
+    n_points_per_day = graphs.get_n_points_per_day(file_manager)
 
-    sleep_time = core_utils.point2time(
-        sleep, graph_data.axis_range, graph_data.npointsperday
-    )
+    sleep_time = core_utils.point2time(sleep, axis_range, n_points_per_day)
 
-    wake_time = core_utils.point2time(
-        wake, graph_data.axis_range, graph_data.npointsperday
-    )
+    wake_time = core_utils.point2time(wake, axis_range, n_points_per_day)
 
     sleeplog[1][(day * 2) - 1] = sleep_time
     sleeplog[1][(day * 2)] = wake_time
