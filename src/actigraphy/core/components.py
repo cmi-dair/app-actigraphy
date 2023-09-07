@@ -3,7 +3,31 @@ import dash_bootstrap_components
 import dash_daq
 from dash import dcc, html
 
-from actigraphy.core import utils
+from actigraphy.core import config, utils
+
+settings = config.get_settings()
+APP_COLORS = settings.APP_COLORS
+
+
+def layout(files: list[str]) -> html.Div:
+    """Creates the layout of the Actigraphy app.
+
+    Returns:
+        html.Div: The layout of the Actigraphy app.
+    """
+    return html.Div(
+        (
+            dcc.Store(id="file_manager", storage_type="session"),
+            dcc.Store(id="check-done", storage_type="session"),
+            dcc.Store(id="annotations-save", storage_type="session"),
+            header(),
+            no_evaluator_error(),
+            file_selection(files),
+            html.Pre(id="annotations-data"),
+            html.Pre(id="null-data"),
+        ),
+        style={"backgroundColor": APP_COLORS.background},  # pylint: disable=no-member
+    )
 
 
 def header() -> html.Div:
@@ -83,6 +107,20 @@ def finished_checkbox() -> dcc.Checklist:
 
 
 def day_slider(participant_name: str, max_count: int) -> html.Div:
+    """Returns a Dash HTML div containing a slider component for selecting a day
+    for a participant.
+
+    Args:
+        participant_name : The name of the participant.
+        max_count: The maximum number of days available for selection.
+
+    Returns:
+        html.Div: A Dash HTML div containing a slider component for selecting a
+            day for a participant.
+
+    Notes:
+        The frontend shows 1-indexed days, but the backend uses 0-indexed days.
+    """
     return html.Div(
         children=[
             html.B(
@@ -91,10 +129,11 @@ def day_slider(participant_name: str, max_count: int) -> html.Div:
             ),
             html.B(f"Select day for participant {participant_name}:"),
             dcc.Slider(
+                0,
+                max_count - 1,
                 1,
-                max_count,
-                1,
-                value=1,
+                marks={f"{i}": f"{i+1}" for i in range(max_count)},
+                value=0,
                 id="day_slider",
             ),
         ],
@@ -136,6 +175,19 @@ def graph(axis_range: int) -> html.Div:
 
 
 def switches() -> html.Div:
+    """Returns a Dash HTML div containing three BooleanSwitch components for use
+    in the Actigraphy app.
+
+    - The first switch is used to indicate whether the participant has multiple
+        sleep periods in a 24-hour period.
+    - The second switch is used to indicate whether the participant has more
+        than 2 hours of missing sleep data from 8PM to 8AM.
+    - The third switch is used to indicate whether the user needs to
+        review the sleep data for a particular night.
+
+    Returns:
+        html.Div: A Dash HTML div containing three BooleanSwitch components.
+    """
     # pylint: disable=not-callable because dash_daq.BooleanSwitch is callable
     return html.Div(
         children=[

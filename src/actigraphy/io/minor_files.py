@@ -5,8 +5,8 @@ from os import path
 from typing import Any
 
 from actigraphy.core import utils as core_utils
+from actigraphy.io import data_import
 from actigraphy.io import utils as io_utils
-from actigraphy.plotting import graphs
 
 
 def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
@@ -36,8 +36,8 @@ def write_sleeplog(
         sleeplog: list[list[str]] = list(reader)
 
     sleeplog[1][0] = file_manager["identifier"]
-    axis_range = graphs.get_axis_range(file_manager)
-    n_points_per_day = graphs.get_n_points_per_day(file_manager)
+    axis_range = data_import.get_axis_range(file_manager)
+    n_points_per_day = data_import.get_n_points_per_day(file_manager)
 
     sleep_time = core_utils.point2time(sleep, axis_range, n_points_per_day)
 
@@ -151,15 +151,15 @@ def initialize_files(
 
     """
     if not path.exists(file_manager["sleeplog_file"]):
-        axis_range = graphs.get_axis_range(file_manager)
-        n_points_per_day = graphs.get_n_points_per_day(file_manager)
+        axis_range = data_import.get_axis_range(file_manager)
+        n_points_per_day = data_import.get_n_points_per_day(file_manager)
 
         hour_vector = [
-            core_utils.point2time([0] * n_points_per_day, axis_range, n_points_per_day)
-        ]
+            core_utils.point2time(0, axis_range, n_points_per_day)
+        ] * n_points_per_day
         write_ggir(hour_vector, file_manager["sleeplog_file"])
 
-    daycount = graphs.get_daycount(file_manager["base_dir"])
+    daycount = data_import.get_daycount(file_manager["base_dir"])
     vector_files = [
         "review_night_file",
         "multiple_sleeplog_file",

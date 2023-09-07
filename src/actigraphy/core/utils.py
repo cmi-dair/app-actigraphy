@@ -12,7 +12,25 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 class FileManager:
-    def __init__(self, base_dir: str):
+    """A class for managing file paths and directories.
+
+    Attributes:
+        base_dir (str): The base directory for the file manager.
+        log_dir (str): The directory for log files.
+        identifier (str): The identifier for the file manager.
+        log_file (str): The path to the log file.
+        sleeplog_file (str): The path to the sleep log file.
+        multiple_sleeplog_file (str): The path to the multiple sleep log file.
+        data_cleaning_file (str): The path to the data cleaning file.
+        missing_sleep_file (str): The path to the missing sleep file.
+        review_night_file (str): The path to the review night file.
+        completed_analysis_file (str): The path to the completed analysis file.
+
+    Notes:
+        Files are kept as strings because Dash cannot serialize pathlib.Path.
+    """
+
+    def __init__(self, base_dir: str) -> None:
         self.base_dir = base_dir
         self.log_dir = path.join(self.base_dir, "logs")
         self.identifier = self.base_dir.rsplit("_", maxsplit=1)[-1]
