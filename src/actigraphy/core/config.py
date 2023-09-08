@@ -10,8 +10,6 @@ class Colors:
     """Represents the colors used in the app."""
 
     background: str = "#FFFFFF"
-    text: str = "#111111"
-    title_text: str = "#0060EE"
 
 
 class Settings(pydantic.BaseModel):

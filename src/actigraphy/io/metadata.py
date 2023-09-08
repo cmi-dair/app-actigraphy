@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 import pydantic
@@ -38,7 +38,9 @@ class MetaData_M(pydantic.BaseModel):
     metalong: pd.DataFrame
     metashort: pd.DataFrame
     wday: int
-    wdayname: utils.Weekdays
+    wdayname: Literal[
+        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    ]
     windowsizes: list[int]
     bsc_qc: pd.DataFrame
 

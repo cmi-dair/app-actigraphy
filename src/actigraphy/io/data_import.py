@@ -33,22 +33,32 @@ def get_metadata(base_dir: str) -> metadata.MetaData:
 
 
 @functools.lru_cache()
+def get_time(times: list[str]) -> list[datetime.datetime]:
+    """Source data is shifted by negative twelve hours. This function returns a
+    list of datetime objects that represent the standard time.
+
+    Args:
+        meta: The metadata object.
+
+    Returns:
+        A list of datetime objects that represent the standard time.
+
+    """
+    logger.debug("Getting standard time from metadata.")
+    return [datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z") for time in times]
+
+
+@functools.lru_cache()
 def get_midnights(base_dir: str) -> list[int]:
     logger.debug("Getting midnights from %s", base_dir)
     metadata_data = get_metadata(base_dir)
-    timestamps = [
-        datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
-        for time in metadata_data.m.metashort.timestamp
-    ]
-
-    return [
-        index + 1
-        for index, time in enumerate(timestamps)
-        if time.second == 0
-        and time.minute == 0
-        and time.hour == 12
-        and index != len(timestamps) - 1
-    ]
+    timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
+    midnight_indices = []
+    for date_pairs in itertools.pairwise(timestamps):
+        if date_pairs[0].day != date_pairs[1].day:
+            midnight_indices.append(timestamps.index(date_pairs[1]) + 1)
+    logger.debug("Found %s midnights.", len(midnight_indices))
+    return midnight_indices
 
 
 @functools.lru_cache()
@@ -66,12 +76,6 @@ def get_daycount(base_dir: str) -> int:
     return len(get_midnights(base_dir)) + 1
 
 
-def get_axis_range(file_manager: dict[str, str]) -> int:
-    logger.debug("Getting axis range from %s", file_manager["base_dir"])
-    metadata_data = get_metadata(file_manager["base_dir"])
-    return 7200 / metadata_data.m.windowsizes[0]
-
-
 def get_n_points_per_day(file_manager: dict[str, str]) -> int:
     logger.debug("Getting n points per day from %s", file_manager["base_dir"])
     metadata_data = get_metadata(file_manager["base_dir"])
@@ -82,28 +86,23 @@ def get_dates(file_manager: dict[str, str]) -> list[datetime.date]:
     """Returns a list of unique dates from the metadata.
 
     Args:
-        file_manager (d: A dictionary containing the base directory of the metadata.
+        file_manager: A dictionary containing the base directory of the metadata.
 
     Returns:
         list[datetime.date]: A sorted list of unique dates extracted from the metadata.
 
-    Notes:
-        The first date is removed because it is not a full day.
     """
     logger.debug("Getting dates from %s", file_manager["base_dir"])
     metadata_data = get_metadata(file_manager["base_dir"])
-    timestamps = [
-        datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z")
-        for time in metadata_data.m.metashort.timestamp
-    ]
+    timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
     dates = {time.date() for time in timestamps}
-
-    return sorted(dates)[1:]
+    return sorted(dates)
 
 
 def create_graph(
     file_manager: dict[str, str], day: int
-) -> tuple[np.ndarray, list, list]:
+) -> tuple[list[float], list[float], list[float]]:
+    # TODO: This function does a lot of type conversions. It should be refactored
     logger.debug("Loading data for day %s.", day)
     metadata_data = get_metadata(file_manager["base_dir"])
     passed_midnight = get_midnights(file_manager["base_dir"])
@@ -150,14 +149,16 @@ def create_graph(
 
     acc = (np.array(acc) / 14) - 210
 
-    return acc, ang, nonwear
+    return list(acc), list(ang), list(nonwear)
 
 
 def _day_start_and_end_time_points(
     file_manager: dict[str, str], day: int, window_size: int
 ):
     target_timepoints = [0] + get_midnights(file_manager["base_dir"]) + [None]
+
     start, end = list(itertools.pairwise(target_timepoints))[day]
+
     if end:
         time_day_ends = _adjust_timepoint_for_daylight_savings(start, end, window_size)
     else:

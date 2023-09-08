@@ -35,13 +35,11 @@ def write_sleeplog(
         reader = csv.reader(file_buffer)
         sleeplog: list[list[str]] = list(reader)
 
+    dates = data_import.get_dates(file_manager)
     sleeplog[1][0] = file_manager["identifier"]
-    axis_range = data_import.get_axis_range(file_manager)
-    n_points_per_day = data_import.get_n_points_per_day(file_manager)
 
-    sleep_time = core_utils.point2time(sleep, axis_range, n_points_per_day)
-
-    wake_time = core_utils.point2time(wake, axis_range, n_points_per_day)
+    sleep_time = core_utils.point2time(sleep, dates[day])
+    wake_time = core_utils.point2time(wake, dates[day])
 
     sleeplog[1][(day * 2) - 1] = sleep_time
     sleeplog[1][(day * 2)] = wake_time
@@ -151,12 +149,9 @@ def initialize_files(
 
     """
     if not path.exists(file_manager["sleeplog_file"]):
-        axis_range = data_import.get_axis_range(file_manager)
-        n_points_per_day = data_import.get_n_points_per_day(file_manager)
-
-        hour_vector = [
-            core_utils.point2time(0, axis_range, n_points_per_day)
-        ] * n_points_per_day
+        dates = data_import.get_dates(file_manager)
+        hour_vector = [[core_utils.point2time(None, date)] * 2 for date in dates]
+        hour_vector = io_utils.flatten(hour_vector)
         write_ggir(hour_vector, file_manager["sleeplog_file"])
 
     daycount = data_import.get_daycount(file_manager["base_dir"])

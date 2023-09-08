@@ -10,18 +10,6 @@ from typing import Any, Iterable
 import rdata
 
 
-class Weekdays(str, enum.Enum):
-    """Enum for weekdays."""
-
-    MONDAY = "Monday"
-    TUESDAY = "Tuesday"
-    WEDNESDAY = "Wednesday"
-    THURSDAY = "Thursday"
-    FRIDAY = "Friday"
-    SATURDAY = "Saturday"
-    SUNDAY = "Sunday"
-
-
 def rdata_to_datadict(filepath: str | pathlib.Path) -> dict[str, Any]:
     """Converts an Rdata file to a pandas dataframe.
 

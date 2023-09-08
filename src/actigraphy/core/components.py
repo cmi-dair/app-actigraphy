@@ -141,7 +141,7 @@ def day_slider(participant_name: str, max_count: int) -> html.Div:
     )
 
 
-def graph(axis_range: int) -> html.Div:
+def graph() -> html.Div:
     return html.Div(
         children=[
             dcc.Graph(id="graph"),
@@ -157,13 +157,14 @@ def graph(axis_range: int) -> html.Div:
                 children=[
                     dcc.RangeSlider(
                         min=0,
-                        max=25920,
+                        max=36 * 60,  # 36 hours in minutes
                         step=1,
                         marks={
-                            i * (axis_range // 2): utils.hour_to_time_string(i)
-                            for i in range(37)
+                            hour * 60: f"{(hour + 12) % 24:02d}:00"
+                            for hour in range(0, 37, 2)
                         },
                         id="my-range-slider",
+                        updatemode="mouseup",
                     ),
                     html.Pre(id="annotations-slider"),
                 ],
@@ -213,6 +214,7 @@ def switches() -> html.Div:
 
 
 def app_license() -> html.P:
+    """Returns a HTML paragraph element containing the software license information."""
     return html.P(
         """
 This software is licensed under the GNU Lesser General Public License v3.0

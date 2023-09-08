@@ -8,7 +8,6 @@ from actigraphy.core import callbacks, cli, components, config
 
 settings = config.get_settings()
 APP_NAME = settings.APP_NAME
-APP_COLORS = settings.APP_COLORS
 LOGGER_NAME = settings.LOGGER_NAME
 
 config.initialize_logger(logging_level=logging.DEBUG)
@@ -18,6 +17,7 @@ logger.info("Starting Actigraphy app")
 app = dash.Dash(
     APP_NAME, external_stylesheets=[dash_bootstrap_components.themes.BOOTSTRAP]
 )
+app.title = APP_NAME
 
 logger.debug("Attaching callbacks to app")
 callbacks.manager.attach_to_app(app)

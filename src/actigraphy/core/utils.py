@@ -74,81 +74,51 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
     return f"{hours:02}:{minutes:02}"
 
 
-def point2time(point: float, axis_range: float, npointsperday: int) -> datetime.time:
-    logger.debug(
-        "Converting point to time: %s, %s, %s", point, axis_range, npointsperday
-    )
-    if int(point) == 0:
-        return datetime.time(3, 0, 0)
-
-    if point > 6 * axis_range:
-        temp_sleep = (point * 24) / npointsperday - 12
-    else:
-        temp_sleep = (point * 24) / npointsperday + 12
-
-    temp_sleep_hour = int(temp_sleep)
-    temp_sleep_min = (temp_sleep - int(temp_sleep)) * 60
-    if int(temp_sleep_min) == 60:
-        temp_sleep_min = 0
-
-    return datetime.time(temp_sleep_hour, int(temp_sleep_min), 0)
-
-
-def time2point(sleep, axis_range=None, npointsperday=None, all_dates=None, day=None):
-    # TODO: many of the input variables were clearly intended to be used here
-    # but are not.
-    logger.debug(
-        "Converting time to point: %s, %s, %s", sleep, axis_range, npointsperday
-    )
-
-    sleep_split = sleep.split(":")
-    sleep_time_hour = int(sleep_split[0])
-    sleep_time_min = int(sleep_split[1])
-
-    # hour
-    if sleep_time_hour >= 0 and sleep_time_hour < 12:
-        sleep_time_hour = ((sleep_time_hour + 12) * 8640) / 12
-    else:
-        sleep_time_hour = ((sleep_time_hour - 12) * 8640) / 12
-
-    sleep_time_min *= 12
-
-    return sleep_time_hour + sleep_time_min
-
-
-def point2time_timestamp(point, axis_range, npointsperday):
-    if point > 6 * axis_range:
-        temp_point = ((point * 24) / npointsperday) - 12
-    else:
-        temp_point = (point * 24) / npointsperday + 12
-    temp_point_hour = int(temp_point)
-
-    temp_point_min = int(temp_point % 1 * 60)
-
-    point_new = f"{temp_point_hour:02d}:{temp_point_min:02d}"
-
-    return point_new
-
-
-def hour_to_time_string(hour: int) -> str:
-    """Converts an hour integer to a time string in the format of 'hour am/pm'.
-    If the hour is 0 or 24, returns 'noon'. If the hour is 12, returns
-    'midnight'.
+def time2point(time: datetime.datetime, date: datetime.date) -> int:
+    """Converts a datetime object to a float representing the number of minutes
+    since midnight on the given date.
 
     Args:
-        hour: The hour to convert to a time string.
+        time: The datetime object to convert.
+        date: The date preceding midnight as reference.
+
+    Returns:
+        float: The number of minutes since midnight on the given date.
+    """
+    logger.debug("Converting time to point: %s.", time)
+    reference = datetime.datetime.combine(date, datetime.time(hour=12))
+    delta = time - reference
+    return delta.total_seconds() // 60
+
+
+def point2time(point: float | None, date: datetime.date) -> datetime.datetime:
+    logger.debug("Converting point to time: %s.", point)
+    if point is None:
+        delta = datetime.timedelta(
+            days=1, hours=3, minutes=0
+        )  # Default to 03:00AM the next day
+    else:
+        days = point // 1440
+        hour = point // 60
+        minute = point % 60
+        offset = datetime.timedelta(hours=12)
+        delta = datetime.timedelta(days=days, hours=hour, minutes=minute) + offset
+    return datetime.datetime.combine(date, datetime.time(0)) + delta
+
+
+def point2time_timestamp(point: int, npointsperday: int, offset: int = 0):
+    """Converts a point to a time string in the format of 'hour:minute'.
+
+    Args:
+        point: The point to convert to a time string.
+        npointsperday: The number of points per day.
+        offset: The offset to apply to the point in hours.
 
     Returns:
         The time string.
     """
-    hour %= 24
-
-    if hour == 0:
-        return "noon"
-    if hour == 12:
-        return "midnight"
-
-    clock_hour = hour % 12
-    am_pm = "pm" if hour >= 12 else "am"
-
-    return f"{clock_hour}{am_pm}"
+    offset_in_points = offset * npointsperday / 24
+    scaled_point = (point + offset_in_points) * 24 / npointsperday
+    hour = scaled_point % 24
+    minute = (scaled_point - int(scaled_point)) * 60
+    return f"{int(hour):02d}:{int(minute):02d}"
