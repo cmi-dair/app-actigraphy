@@ -1,9 +1,9 @@
 """Defines the callbacks for the Actigraphy app."""
 import datetime
+import itertools
 import logging
 
 import dash
-from plotly import graph_objects
 
 from actigraphy.core import callback_manager, components, config, utils
 from actigraphy.io import data_import, minor_files
@@ -294,6 +294,7 @@ def create_graph(day: int, drag_value: list[int, int], file_manager: dict[str, s
 
     sensor_angle = day_1_sensor_angles[n_points_per_day // 2 :] + day_2_sensor_angles
     arm_movement = day_1_arm_movement[n_points_per_day // 2 :] + day_2_arm_movement
+    nonwear = day_1_non_wear[n_points_per_day // 2 :] + day_2_non_wear
 
     title_day = f"Day {day+1}: {dates[day].strftime('%A - %d %B %Y')}"  # Frontend uses 1-indexed days.
     day_timestamps = [dates[day]] * (n_points_per_day // 2) + (
@@ -310,6 +311,15 @@ def create_graph(day: int, drag_value: list[int, int], file_manager: dict[str, s
         for point in range(len(day_timestamps))
     ]
 
+    nonwear_changes = []
+    for index in range(1, len(nonwear)):
+        if nonwear[index] != nonwear[index - 1]:
+            nonwear_changes += [index]
+    if nonwear[0]:
+        nonwear_changes.insert(0, 0)
+    if len(nonwear_changes) % 2 != 0:
+        nonwear_changes.append(len(timestamp) - 1)
+
     figure = sensor_plots.build_sensor_plot(
         timestamp, sensor_angle, arm_movement, title_day
     )
@@ -318,98 +328,11 @@ def create_graph(day: int, drag_value: list[int, int], file_manager: dict[str, s
         drag_value, n_points_per_day
     )
     sensor_plots.add_rectangle(figure, rectangle_timepoints, "red", "sleep window")
-    return figure
-
-
-"""
-    # Nonwear
-    vec_for_the_day = np.concatenate((vec_nonwear[0, :], vec_nonwear[0, 0:8620]))
-
-    if vec_for_the_day[0] == 0:
-        begin_value = np.where(np.diff(vec_nonwear[0]) == 1)[0]
-        end_value = np.where(np.diff(vec_nonwear[0]) == -1)[0]
-    else:
-        first_value = 0
-        begin_value = np.where(np.diff(vec_nonwear[0]) == 1)
-        begin_value = np.asarray(begin_value)
-        begin_value = np.insert(begin_value, 0, first_value)
-        begin_value = np.insert(begin_value, 0, first_value)
-        end_value = np.where(np.diff(vec_nonwear[0]) == -1)
-        end_value = np.insert(end_value, 0, 179)
-
-    rect_data_init = []
-    rect_data_final = []
-
-    if len(begin_value) > 0:
-        rect_data_init.append(begin_value[0])
-
-        for ii in range(0, len(begin_value) - 1):
-            if begin_value[ii + 1] - end_value[ii] > 1:
-                rect_data_init.append(begin_value[ii + 1])
-                rect_data_final.append(end_value[ii])
-
-        rect_data_final.append(end_value[-1])
-
-    for ii, rect_data in enumerate(rect_data_init):
-        if rect_data_final[ii] >= 17280:
-            rect_data_final[ii] = 17279
-        new_begin_value = utils.point2time_timestamp(
-            rect_data, axis_range, n_points_per_day
+    for index in range(0, len(nonwear_changes), 2):
+        sensor_plots.add_rectangle(
+            figure,
+            [nonwear_changes[index], nonwear_changes[index + 1]],
+            "green",
+            "non-wear",
         )
-        new_end_value = utils.point2time_timestamp(
-            rect_data_final[ii], axis_range, n_points_per_day
-        )
-
-        # need to control for different days (non-wear marker after midnight)
-        if rect_data >= 8640:
-            figure.add_vrect(
-                x0=dates[day].strftime("%d/%b/%Y") + " " + new_begin_value,
-                x1=dates[day].strftime("%d/%b/%Y") + " " + new_end_value,
-                line_width=0,
-                fillcolor="green",
-                opacity=0.5,
-            )
-            figure.add_annotation(
-                text="nonwear",
-                y=75,
-                x=dates[day].strftime("%d/%b/%Y") + " " + new_begin_value,
-                xanchor="left",
-                showarrow=False,
-            )
-        else:
-            if rect_data_final[ii] >= 8640:
-                figure.add_vrect(
-                    x0=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
-                    x1=dates[day].strftime("%d/%b/%Y") + " " + new_end_value,
-                    line_width=0,
-                    fillcolor="green",
-                    opacity=0.5,
-                )
-                figure.add_annotation(
-                    text="nonwear",
-                    y=75,
-                    x=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
-                    xanchor="left",
-                    showarrow=False,
-                )
-            else:
-                figure.add_vrect(
-                    x0=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
-                    x1=dates[day - 1].strftime("%d/%b/%Y") + " " + new_end_value,
-                    line_width=0,
-                    fillcolor="green",
-                    opacity=0.5,
-                )
-                figure.add_annotation(
-                    text="nonwear",
-                    y=75,
-                    x=dates[day - 1].strftime("%d/%b/%Y") + " " + new_begin_value,
-                    xanchor="left",
-                    showarrow=False,
-                )
-
-    figure.update_layout(showlegend=True)
-    figure.update_yaxes(visible=False, showticklabels=False)
-
     return figure
-"""

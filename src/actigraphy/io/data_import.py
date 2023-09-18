@@ -149,7 +149,7 @@ def create_graph(
 
     acc = (np.array(acc) / 14) - 210
 
-    return list(acc), list(ang), list(nonwear)
+    return list(acc), list(ang), list(non_wear)
 
 
 def _day_start_and_end_time_points(
