@@ -31,4 +31,4 @@ app.layout = components.layout(subject_directories)
 
 if __name__ == "__main__":
     logger.debug("Running app")
-    app.run_server(debug=True, port=8051, dev_tools_hot_reload=True)
+    app.run_server(debug=True, port=8051, dev_tools_hot_reload=True, host="0.0.0.0")
