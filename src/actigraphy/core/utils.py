@@ -99,8 +99,8 @@ def point2time(point: float | None, date: datetime.date) -> datetime.datetime:
         )  # Default to 03:00AM the next day
     else:
         days = point // 1440
-        hour = point // 60
-        minute = point % 60
+        hour = (point - 1440 * days) // 60
+        minute = (point - 1440 * days - 60 * hour) % 60
         offset = datetime.timedelta(hours=12)
         delta = datetime.timedelta(days=days, hours=hour, minutes=minute) + offset
     return datetime.datetime.combine(date, datetime.time(0)) + delta
@@ -122,3 +122,21 @@ def point2time_timestamp(point: int, npointsperday: int, offset: int = 0):
     hour = scaled_point % 24
     minute = (scaled_point - int(scaled_point)) * 60
     return f"{int(hour):02d}:{int(minute):02d}"
+
+
+def slider_values_to_graph_values(
+    values: list[int], n_points_per_day: int
+) -> list[int]:
+    """Converts the values of the slider to the values of the graph.
+
+    Args:
+        values: The values of the slider.
+        n_points_per_day: The number of points per day.
+
+    Returns:
+        The values of the graph.
+
+    Notes:
+        The slider has one point per minute.
+    """
+    return [int(value * n_points_per_day / 24 / 60) for value in values]

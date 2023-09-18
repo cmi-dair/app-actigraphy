@@ -70,3 +70,24 @@ def build_sensor_plot(
         }
     )
     return figure
+
+
+def add_rectangle(
+    figure: graph_objects.Figure, limits: tuple[int, int], color: str, label: str
+) -> graph_objects.Figure:
+    """Adds a rectangle to the figure.
+
+    Args:
+        figure: The figure to add the rectangle to.
+        limits: The limits of the rectangle.
+        color: The color of the rectangle.
+        label: The label of the rectangle.
+    """
+    figure.add_vrect(
+        x0=limits[0],
+        x1=limits[1],
+        fillcolor=color,
+        opacity=0.2,
+        annotation={"text": label},
+    )
+    return figure

@@ -1,6 +1,5 @@
 """Utility functions for the actigraphy.io module."""
 import csv
-import enum
 import itertools
 import pathlib
 import re

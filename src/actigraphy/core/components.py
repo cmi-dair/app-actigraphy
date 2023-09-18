@@ -3,7 +3,7 @@ import dash_bootstrap_components
 import dash_daq
 from dash import dcc, html
 
-from actigraphy.core import config, utils
+from actigraphy.core import config
 
 settings = config.get_settings()
 APP_COLORS = settings.APP_COLORS
@@ -99,6 +99,13 @@ def no_evaluator_error() -> html.Div:
 
 
 def finished_checkbox() -> dcc.Checklist:
+    """Returns a Dash checklist component that allows the user to indicate
+    whether they are done with the current participant and would like to proceed
+    to the next one.
+
+    Returns:
+        dcc.Checklist: A Dash checklist component with a single checkbox option.
+    """
     return dcc.Checklist(
         [" I'm done and I would like to proceed to the next participant. "],
         id="are-you-done",
@@ -142,6 +149,11 @@ def day_slider(participant_name: str, max_count: int) -> html.Div:
 
 
 def graph() -> html.Div:
+    """Builds the graph component of the Actigraphy app.
+
+    Returns:
+    html.Div: A Dash HTML div containing a graph and range slider components.
+    """
     return html.Div(
         children=[
             dcc.Graph(id="graph"),

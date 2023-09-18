@@ -1,7 +1,9 @@
+"""Defines the callbacks for the Actigraphy app."""
 import datetime
 import logging
 
 import dash
+from plotly import graph_objects
 
 from actigraphy.core import callback_manager, components, config, utils
 from actigraphy.io import data_import, minor_files
@@ -121,7 +123,7 @@ def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool,
     dash.Output("sleep-duration", "children", allow_duplicate=True),
     dash.Output("my-range-slider", "value"),
     dash.Input("day_slider", "value"),
-    dash.State("file_manager", "data"),
+    dash.Input("file_manager", "data"),
     prevent_initial_call=True,
 )
 def refresh_range_slider(
@@ -266,9 +268,11 @@ def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]):
 @manager.callback(
     dash.Output("graph", "figure"),
     dash.Input("day_slider", "value"),
+    dash.Input("my-range-slider", "value"),
     dash.State("file_manager", "data"),
+    prevent_initial_call=True,
 )
-def create_graph(day: int, file_manager: dict[str, str]):
+def create_graph(day: int, drag_value: list[int, int], file_manager: dict[str, str]):
     logger.debug("Entering create graph callback")
 
     dates = data_import.get_dates(file_manager)
@@ -306,155 +310,18 @@ def create_graph(day: int, file_manager: dict[str, str]):
         for point in range(len(day_timestamps))
     ]
 
-    return sensor_plots.build_sensor_plot(
+    figure = sensor_plots.build_sensor_plot(
         timestamp, sensor_angle, arm_movement, title_day
     )
 
+    rectangle_timepoints = utils.slider_values_to_graph_values(
+        drag_value, n_points_per_day
+    )
+    sensor_plots.add_rectangle(figure, rectangle_timepoints, "red", "sleep window")
+    return figure
+
 
 """
-@manager.callback(
-    dash.Output("graph", "figure"),
-    dash.Output("my-range-slider", "value"),
-    dash.Input("day_slider", "value"),
-    dash.Input("my-range-slider", "value"),
-    dash.State("file_manager", "data"),
-)
-def update_graph(day: int, position: Any, file_manager: dict[str, str]):
-    # Position is intentionally not used.
-    logger.debug("Entering update graph callback")
-    daycount = data_import.get_daycount(file_manager["base_dir"])
-
-    sleeponset, wakeup = minor_files.read_sleeplog(file_manager["sleeplog_file"])
-    vec_sleeponset = utils.time2point(sleeponset[day])
-    vec_wake = utils.time2point(wakeup[day])
-    axis_range = data_import.get_axis_range(file_manager)
-    dates = data_import.get_dates(file_manager)
-    n_points_per_day = data_import.get_n_points_per_day(file_manager)
-
-    vec_ang_day_1, vec_acc_day_1, vec_nonwear_day_1 = data_import.create_graph(
-        file_manager, day
-    )
-    vec_ang_day_2, vec_acc_day_2, vec_nonwear_day_2 = data_import.create_graph(
-        file_manager, day + 1
-    )
-
-    # Patchwork testfix
-    vec_ang = np.stack((vec_ang_day_1, vec_ang_day_2))
-    vec_acc = np.stack((vec_acc_day_1, vec_acc_day_2))
-    vec_nonwear = np.stack((vec_nonwear_day_1, vec_nonwear_day_2))
-
-    title_day = f"Day {day+1}: {dates[day].strftime('%A - %d %B %Y')}"  # Frontend uses 1-indexed days.
-
-    # Getting the timestamp (one minute resolution) and transforming it to dataframe
-    # Need to do this to plot the time on the graph hover
-    timestamp_day1 = [dates[day] for x in range(n_points_per_day // 2)]
-    if day < daycount:
-        timestamp_day2 = [dates[day + 1] for x in range(n_points_per_day)]
-        timestamp = timestamp_day1 + timestamp_day2
-    else:
-        curr_date = dates[day]
-        list_temp = list(curr_date)
-        temp = str(int(curr_date[8:]) + 1).zfill(2)
-
-        list_temp[8:] = temp
-        curr_date = "".join(list_temp)
-        timestamp_day2 = [curr_date for x in range(n_points_per_day)]
-
-    timestamp = [
-        " ".join(
-            [
-                timestamp[x].strftime("%d/%b/%Y"),
-                utils.point2time_timestamp(x, axis_range, n_points_per_day),
-            ]
-        )
-        for x in range(int(n_points_per_day * 1.5))
-    ]
-
-    if day < daycount:
-        vec_ang = np.concatenate((vec_ang[0, :], vec_ang[1, : n_points_per_day // 2]))
-        vec_acc = np.concatenate((vec_acc[0, :], vec_acc[1, : n_points_per_day // 2]))
-    else:
-        vec_end = [0] * (n_points_per_day // 2)
-        vec_end_acc = [-210] * (n_points_per_day // 2)
-
-        vec_ang = np.concatenate((vec_ang[0, :], vec_end))
-        vec_acc = np.concatenate((vec_acc[0, :], vec_end_acc))
-
-    figure = graph_objects.Figure()
-
-    figure.add_trace(
-        graph_objects.Scatter(
-            x=timestamp,
-            y=vec_ang,
-            mode="lines",
-            name="Angle of sensor's z-axis",
-            line_color="blue",
-        )
-    )
-    figure.add_trace(
-        graph_objects.Scatter(
-            x=timestamp,
-            y=vec_acc,
-            mode="lines",
-            name="Arm movement",
-            line_color="black",
-        )
-    )
-
-    figure.update_layout(
-        legend={
-            "orientation": "h",
-            "yanchor": "bottom",
-            "y": 1.02,
-            "xanchor": "right",
-            "x": 1,
-        }
-    )
-
-    figure.update_layout(title=title_day)
-
-    sleep_split = sleeponset[day].split(":")
-    sleep_split[1] = sleep_split[1].zfill(2)
-    new_sleep = sleep_split[0] + ":" + sleep_split[1]
-
-    if vec_sleeponset < n_points_per_day // 2 or (
-        vec_sleeponset > n_points_per_day // 2 and day == daycount
-    ):
-        new_sleep = dates[day].strftime("%d/%b/%Y") + " " + new_sleep
-    else:
-        new_sleep = dates[day + 1].strftime("%d/%b/%Y") + " " + new_sleep
-
-    wake_split = wakeup[day].split(":")
-    wake_split[1] = wake_split[1].zfill(2)
-    new_wake = wake_split[0] + ":" + wake_split[1]
-
-    import pdb
-
-    pdb.set_trace()
-    if vec_wake < n_points_per_day // 2 or (
-        vec_wake > n_points_per_day // 2 and day == daycount
-    ):
-        new_wake = dates[day].strftime("%d/%b/%Y") + " " + new_wake
-    else:
-        new_wake = dates[day + 1].strftime("%d/%b/%Y") + " " + new_wake
-
-    if (
-        new_sleep[-5:] == "03:00" and new_wake[-5:] == "03:00"
-    ):  # Getting the last four characters from the string containing day and time
-        figure.add_vrect(
-            x0=new_sleep, x1=new_wake, line_width=0, fillcolor="red", opacity=0.2
-        )
-    else:
-        figure.add_vrect(
-            x0=new_sleep,
-            x1=new_wake,
-            line_width=0,
-            fillcolor="red",
-            opacity=0.2,
-            annotation_text="sleep window",
-            annotation_position="top left",
-        )
-
     # Nonwear
     vec_for_the_day = np.concatenate((vec_nonwear[0, :], vec_nonwear[0, 0:8620]))
 

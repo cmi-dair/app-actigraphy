@@ -85,6 +85,7 @@ class CallbackManager:
             app: The Dash app to attach the callbacks to.
         """
         for callback in self._callbacks:
+            logger.debug("Attaching callback: %s.", callback.func.__name__)
             app.callback(
                 callback.outputs, callback.inputs, callback.states, **callback.kwargs
             )(callback.func)
