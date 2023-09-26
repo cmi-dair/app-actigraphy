@@ -9,8 +9,7 @@ import dash
 import dash_bootstrap_components
 from dash import dcc, html
 
-from actigraphy.components import (day_slider, finished_checkbox, graph,
-                                   switches)
+from actigraphy.components import day_slider, finished_checkbox, graph, switches
 from actigraphy.core import callback_manager, config, utils
 from actigraphy.io import data_import, minor_files
 
