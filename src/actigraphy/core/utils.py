@@ -88,7 +88,7 @@ def time2point(time: datetime.datetime, date: datetime.date) -> int:
     logger.debug("Converting time to point: %s.", time)
     reference = datetime.datetime.combine(date, datetime.time(hour=12))
     delta = time - reference
-    return delta.total_seconds() // 60
+    return int(delta.total_seconds() // 60)
 
 
 def point2time(point: float | None, date: datetime.date) -> datetime.datetime:

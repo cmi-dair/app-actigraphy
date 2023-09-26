@@ -5,13 +5,6 @@ import logging
 import pydantic
 
 
-@pydantic.dataclasses.dataclass
-class Colors:
-    """Represents the colors used in the app."""
-
-    background: str = "#FFFFFF"
-
-
 class Settings(pydantic.BaseModel):
     """Represents the app settings."""
 
@@ -22,11 +15,6 @@ class Settings(pydantic.BaseModel):
         "Actigraphy",
         description="The name of the logger.",
         env="ACTIGRAPHY_LOGGER_NAME",
-    )
-    APP_COLORS: Colors = pydantic.Field(
-        Colors(),
-        description="The colors used in the app.",
-        env="ACTIGRAPHY_APP_COLORS",
     )
 
 

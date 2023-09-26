@@ -141,26 +141,32 @@ def create_graph(
     if time_day_starts == 0:
         acc = extension + list(acc)
         ang = extension + list(ang)
-        non_wear = extension + list(non_wear)
+        non_wear_list = extension + list(non_wear)
     elif time_day_ends is None:
         acc = list(acc) + extension
         ang = list(ang) + extension
-        non_wear = list(non_wear) + extension
+        non_wear_list = list(non_wear) + extension
+    else:
+        non_wear_list = list(non_wear)
 
     acc = (np.array(acc) / 14) - 210
 
-    return list(acc), list(ang), list(non_wear)
+    return list(acc), list(ang), non_wear_list
 
 
 def _day_start_and_end_time_points(
     file_manager: dict[str, str], day: int, window_size: int
-):
+) -> tuple[int, int | None]:
     target_timepoints = [0] + get_midnights(file_manager["base_dir"]) + [None]
 
     start, end = list(itertools.pairwise(target_timepoints))[day]
+    if start is None:
+        raise ValueError(f"No start time found for day {day}.")
 
     if end:
-        time_day_ends = _adjust_timepoint_for_daylight_savings(start, end, window_size)
+        time_day_ends: int | None = _adjust_timepoint_for_daylight_savings(
+            start, end, window_size
+        )
     else:
         time_day_ends = end
     return start, time_day_ends

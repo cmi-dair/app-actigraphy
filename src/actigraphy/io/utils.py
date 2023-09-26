@@ -1,38 +1,8 @@
 """Utility functions for the actigraphy.io module."""
 import csv
 import itertools
-import pathlib
-import re
 from collections import abc
 from typing import Any, Iterable
-
-import rdata
-
-
-def rdata_to_datadict(filepath: str | pathlib.Path) -> dict[str, Any]:
-    """Converts an Rdata file to a pandas dataframe.
-
-    Args:
-        filepath: The path to the Rdata file.
-
-    Returns:
-        np.ndarray: The numpy array.
-    """
-    data = rdata.parser.parse_file(filepath)
-    return rdata.conversion.convert(data)
-
-
-def snakecase(string: str) -> str:
-    """Converts a string to snake case. Consecutive uppercase letters
-    do not receive underscores between them.
-
-    Args:
-        string: The string to convert.
-
-    Returns:
-        The converted string.
-    """
-    return re.sub(r"(?<=[A-Z])(?!$)(?!_)(?![A-Z])", "_", string[::-1]).lower()[::-1]
 
 
 def flatten(iterable_of_iterables: Iterable[Any]) -> list[Any]:

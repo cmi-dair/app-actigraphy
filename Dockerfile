@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 
 RUN pip install poetry && \
+    poetry config virtualenvs.create false && \
     poetry install --only main
 
 CMD ["poetry", "run", "python", "src/actigraphy/app.py", "/data"]
-

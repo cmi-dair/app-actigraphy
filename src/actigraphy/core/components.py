@@ -3,11 +3,6 @@ import dash_bootstrap_components
 import dash_daq
 from dash import dcc, html
 
-from actigraphy.core import config
-
-settings = config.get_settings()
-APP_COLORS = settings.APP_COLORS
-
 
 def layout(files: list[str]) -> html.Div:
     """Creates the layout of the Actigraphy app.
@@ -24,9 +19,7 @@ def layout(files: list[str]) -> html.Div:
             no_evaluator_error(),
             file_selection(files),
             html.Pre(id="annotations-data"),
-            html.Pre(id="null-data"),
         ),
-        style={"backgroundColor": APP_COLORS.background},  # pylint: disable=no-member
     )
 
 
@@ -56,7 +49,6 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
         id="evaluator_name",
         type="text",
         placeholder="Insert evaluator's name",
-        disabled=False,
         size="40",
     )
     drop_down = dcc.Dropdown(
@@ -64,7 +56,12 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
         dropdown_choices[0],
         id="my-dropdown",
     )
-    spinner = dash_bootstrap_components.Spinner(html.Div(id="loading"))
+    spinner = html.Div(
+        [
+            dash_bootstrap_components.Spinner(html.Div(id="loading")),
+        ],
+        style={"margin": "40px 0"},
+    )
 
     confirmation_button = html.Button(
         "Load Files",
@@ -77,8 +74,8 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
         [
             input_box_evaluator,
             drop_down,
-            spinner,
             confirmation_button,
+            spinner,
         ],
         style={"padding": 10},
     )
@@ -92,7 +89,7 @@ def no_evaluator_error() -> html.Div:
         [
             dcc.ConfirmDialog(
                 id="insert-user",
-                message="Insert the evaluator's name before continue",
+                message="Insert the evaluator's name before continuing.",
             )
         ]
     )
@@ -235,7 +232,7 @@ complete source code of licensed works and modifications under the same license
 or the GNU GPLv3. Copyright and license notices must be preserved. Contributors
 provide an express grant of patent rights. However, a larger work using the
 licensed work through interfaces provided by the licensed work may be
-distributed under different terms and without source code for the larger work.,
+distributed under different terms and without source code for the larger work.
 """,
         style={"color": "gray"},
     )

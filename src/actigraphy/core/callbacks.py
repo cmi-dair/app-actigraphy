@@ -1,6 +1,5 @@
 """Defines the callbacks for the Actigraphy app."""
 import datetime
-import itertools
 import logging
 
 import dash
@@ -17,7 +16,7 @@ logger = logging.getLogger(LOGGER_NAME)
 manager = callback_manager.CallbackManager()
 
 
-def _toggle_vector_value(new_value: bool, index: int, file_path: str) -> None:
+def _toggle_vector_value(new_value: int, index: int, file_path: str) -> None:
     """Toggles the value of a vector at a given index in a file.
 
     Args:
@@ -30,7 +29,7 @@ def _toggle_vector_value(new_value: bool, index: int, file_path: str) -> None:
         "Setting index %s to value %s for file %s", index, new_value, file_path
     )
     vector = minor_files.read_vector(file_path)
-    vector[index] = int(new_value)
+    vector[index] = new_value
     minor_files.write_vector(file_path, vector)
 
 
@@ -128,7 +127,7 @@ def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool,
 )
 def refresh_range_slider(
     day: int, file_manager: dict[str, str]
-) -> tuple[str, str, str]:
+) -> tuple[str, str, str, list[int]]:
     """Reads the sleep logs for the given day from the file manager and returns
     the sleep onset, sleep offset, and sleep duration as strings.
 
@@ -170,6 +169,16 @@ def refresh_range_slider(
     prevent_initial_call=True,
 )
 def adjust_range_slider(drag_value: list[int], file_manager: dict[str, str], day: int):
+    """Adjusts the text labels fora  given day and writes the sleep log to a file.
+
+    Args:
+        drag_value: The drag values of the range slider.
+        file_manager: The file manager containing the sleep log.
+        day: The day for which to adjust the range slider.
+
+    Returns:
+        Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep offset, and sleep duration.
+    """
     logger.debug("Entering write info callback")
     dates = data_import.get_dates(file_manager)
     minor_files.write_sleeplog(file_manager, day, drag_value[0], drag_value[1])
@@ -243,7 +252,7 @@ def toggle_review_night(
         day: The day index to toggle the flag for.
         file_manager: A dictionary containing file paths for the review night file.
     """
-    _toggle_vector_value(review_night, day, file_manager["review_night_file"])
+    _toggle_vector_value(bool(review_night), day, file_manager["review_night_file"])
 
 
 @manager.callback(
@@ -272,7 +281,17 @@ def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]):
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
-def create_graph(day: int, drag_value: list[int, int], file_manager: dict[str, str]):
+def create_graph(day: int, drag_value: list[int], file_manager: dict[str, str]) -> dict:
+    """Creates a graph for a given day using data from the file manager.
+
+    Args:
+        day: The day for which to create the graph (0-indexed).
+        drag_value: The drag value for the slider.
+        file_manager: The file manager containing the data.
+
+    Returns:
+        dict: The figure object representing the graph.
+    """
     logger.debug("Entering create graph callback")
 
     dates = data_import.get_dates(file_manager)
@@ -327,7 +346,9 @@ def create_graph(day: int, drag_value: list[int, int], file_manager: dict[str, s
     rectangle_timepoints = utils.slider_values_to_graph_values(
         drag_value, n_points_per_day
     )
-    sensor_plots.add_rectangle(figure, rectangle_timepoints, "red", "sleep window")
+
+    if rectangle_timepoints[0] != rectangle_timepoints[1]:
+        sensor_plots.add_rectangle(figure, rectangle_timepoints, "red", "sleep window")
     for index in range(0, len(nonwear_changes), 2):
         sensor_plots.add_rectangle(
             figure,

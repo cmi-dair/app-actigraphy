@@ -1,11 +1,9 @@
 """Module for all plotting functions."""
-import datetime
-
 from plotly import graph_objects
 
 
 def build_sensor_plot(
-    timestamps: list[datetime.datetime],
+    timestamps: list[str],
     sensor_angle: list[float],
     arm_movement: list[float],
     title_day: str,
@@ -73,7 +71,7 @@ def build_sensor_plot(
 
 
 def add_rectangle(
-    figure: graph_objects.Figure, limits: tuple[int, int], color: str, label: str
+    figure: graph_objects.Figure, limits: list[int], color: str, label: str
 ) -> graph_objects.Figure:
     """Adds a rectangle to the figure.
 

@@ -31,6 +31,14 @@ def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
 def write_sleeplog(
     file_manager: dict[str, str], day: int, sleep: float, wake: float
 ) -> None:
+    """Writes sleep and wake times to the sleeplog file for a given day.
+
+    Args:
+        file_manager: A dictionary containing file paths for various files.
+        day: The day for which to write the sleep and wake times.
+        sleep: The sleep time for the given day, represented as a decimal point.
+        wake: The wake time for the given day, represented as a decimal point.
+    """
     with open(file_manager["sleeplog_file"], "r", encoding="utf-8") as file_buffer:
         reader = csv.reader(file_buffer)
         sleeplog: list[list[str]] = list(reader)
@@ -41,8 +49,8 @@ def write_sleeplog(
     sleep_time = core_utils.point2time(sleep, dates[day])
     wake_time = core_utils.point2time(wake, dates[day])
 
-    sleeplog[1][(day * 2) - 1] = sleep_time
-    sleeplog[1][(day * 2)] = wake_time
+    sleeplog[1][(day * 2) + 1] = str(sleep_time)
+    sleeplog[1][(day * 2) + 2] = str(wake_time)
 
     with open(file_manager["sleeplog_file"], "w", encoding="utf-8") as file_buffer:
         writer = csv.writer(file_buffer)
@@ -151,8 +159,8 @@ def initialize_files(
     if not path.exists(file_manager["sleeplog_file"]):
         dates = data_import.get_dates(file_manager)
         hour_vector = [[core_utils.point2time(None, date)] * 2 for date in dates]
-        hour_vector = io_utils.flatten(hour_vector)
-        write_ggir(hour_vector, file_manager["sleeplog_file"])
+        hour_vector_flat = io_utils.flatten(hour_vector)
+        write_ggir(hour_vector_flat, file_manager["sleeplog_file"])
 
     daycount = data_import.get_daycount(file_manager["base_dir"])
     vector_files = [
