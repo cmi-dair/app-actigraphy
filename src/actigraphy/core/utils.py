@@ -92,6 +92,16 @@ def time2point(time: datetime.datetime, date: datetime.date) -> int:
 
 
 def point2time(point: float | None, date: datetime.date) -> datetime.datetime:
+    """
+    Converts a point value to a datetime object.
+
+    Args:
+        point (float | None): The point value to convert.
+        date (datetime.date): The date to combine with the converted time.
+
+    Returns:
+        datetime.datetime: The resulting datetime object.
+    """
     logger.debug("Converting point to time: %s.", point)
     if point is None:
         delta = datetime.timedelta(

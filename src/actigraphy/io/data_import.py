@@ -50,6 +50,14 @@ def get_time(times: list[str]) -> list[datetime.datetime]:
 
 @functools.lru_cache()
 def get_midnights(base_dir: str) -> list[int]:
+    """Returns a list of indices of midnight timestamps in the metadata file.
+
+    Args:
+        base_dir: The base directory containing the metadata file.
+
+    Returns:
+        list[int]: A list of indices of midnight timestamps in the metadata file.
+    """
     logger.debug("Getting midnights from %s", base_dir)
     metadata_data = get_metadata(base_dir)
     timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
@@ -77,6 +85,14 @@ def get_daycount(base_dir: str) -> int:
 
 
 def get_n_points_per_day(file_manager: dict[str, str]) -> int:
+    """Calculates the number of data points per day based on the metadata file.
+
+    Args:
+        file_manager: A dictionary containing the base directory of the metadata file.
+
+    Returns:
+        int: The number of data points per day.
+    """
     logger.debug("Getting n points per day from %s", file_manager["base_dir"])
     metadata_data = get_metadata(file_manager["base_dir"])
     return 86400 // metadata_data.m.windowsizes[0]
@@ -102,6 +118,18 @@ def get_dates(file_manager: dict[str, str]) -> list[datetime.date]:
 def create_graph(
     file_manager: dict[str, str], day: int
 ) -> tuple[list[float], list[float], list[float]]:
+    """Loads data for a given day and prepares it for plotting.
+
+    Args:
+        file_manager: A dictionary containing file paths.
+        day: The day for which to load data.
+
+    Returns:
+        tuple[list[float], list[float], list[float]]: A tuple containing three lists:
+            - A list of acceleration values.
+            - A list of angle values.
+            - A list of non-wear values.
+    """
     # TODO: This function does a lot of type conversions. It should be refactored
     logger.debug("Loading data for day %s.", day)
     metadata_data = get_metadata(file_manager["base_dir"])
@@ -157,6 +185,17 @@ def create_graph(
 def _day_start_and_end_time_points(
     file_manager: dict[str, str], day: int, window_size: int
 ) -> tuple[int, int | None]:
+    """Given a file manager, a day index, and a window size, returns the start
+    and end time points for the given day.
+
+    Args:
+        file_manager: A dictionary containing file paths.
+        day : The index of the day for which to retrieve the start and end time points.
+        window_size: The size of the window in minutes.
+
+    Returns:
+        tuple[int, int | None]: A tuple containing the start and end time points for the given day.
+    """
     target_timepoints = [0] + get_midnights(file_manager["base_dir"]) + [None]
 
     start, end = list(itertools.pairwise(target_timepoints))[day]
@@ -172,7 +211,20 @@ def _day_start_and_end_time_points(
     return start, time_day_ends
 
 
-def _adjust_timepoint_for_daylight_savings(start, end, window_size) -> int:
+def _adjust_timepoint_for_daylight_savings(
+    start: int, end: int, window_size: int
+) -> int:
+    """
+    Adjusts the end timepoint for daylight savings time.
+
+    Args:
+        start: The start timepoint.
+        end: The end timepoint.
+        window_size: The size of the time window.
+
+    Returns:
+        int: The adjusted end timepoint.
+    """
     day_length = end - start
     if (day_length + 1) // (3600 / window_size) == 25:
         end = end - (60 * 60 / window_size)

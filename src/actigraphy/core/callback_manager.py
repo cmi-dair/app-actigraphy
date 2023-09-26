@@ -89,3 +89,21 @@ class CallbackManager:
             app.callback(
                 callback.outputs, callback.inputs, callback.states, **callback.kwargs
             )(callback.func)
+
+
+# Allow a single manager to be used across multiple files.
+global_manager = CallbackManager()
+
+
+def initialize_components():
+    """Initializes the components of the Actigraphy app.
+
+    Notes:
+        This is a workaround to allow callbacks to be placed across multiple
+        files. All these files use the global_manager object defined in this
+        file. As such, a side-effect of importing these files is that all the
+        callbacks are registered.
+    """
+    # pylint: disable=import-outside-toplevel
+    from actigraphy.components import (app_license, day_slider, file_selection,
+                                       finished_checkbox, graph, switches)

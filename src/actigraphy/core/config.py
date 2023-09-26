@@ -29,7 +29,11 @@ def get_settings() -> Settings:
 
 
 def initialize_logger(logging_level: int = logging.INFO) -> None:
-    """Initializes the logger."""
+    """Initializes the logger.
+
+    Args:
+        logging_level: The logging level.
+    """
     settings = get_settings()
     logger = logging.getLogger(settings.LOGGER_NAME)
     logger.setLevel(logging_level)

@@ -3,8 +3,10 @@ import logging
 
 import dash
 import dash_bootstrap_components
+from dash import dcc, html
 
-from actigraphy.core import callbacks, cli, components, config
+from actigraphy.components import app_license, file_selection
+from actigraphy.core import callback_manager, cli, config
 
 settings = config.get_settings()
 APP_NAME = settings.APP_NAME
@@ -20,14 +22,28 @@ app = dash.Dash(
 app.title = APP_NAME
 
 logger.debug("Attaching callbacks to app")
-callbacks.manager.attach_to_app(app)
+callback_manager.initialize_components()
+callback_manager.global_manager.attach_to_app(app)
 
 logger.debug("Parsing command line arguments")
 args = cli.parse_args()
 subject_directories = cli.get_subject_folders(args)
 
 logger.debug("Creating app layout")
-app.layout = components.layout(subject_directories)
+header = html.Img(
+    src="/assets/CMI_Logo_title.png", style={"height": "60%", "width": "60%"}
+)
+app.layout = html.Div(
+    (
+        dcc.Store(id="file_manager", storage_type="session"),
+        dcc.Store(id="check-done", storage_type="session"),
+        dcc.Store(id="annotations-save", storage_type="session"),
+        header,
+        file_selection.file_selection(subject_directories),
+        html.Pre(id="annotations-data"),
+        app_license.app_license(),
+    ),
+)
 
 if __name__ == "__main__":
     logger.debug("Running app")

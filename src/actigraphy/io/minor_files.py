@@ -83,6 +83,14 @@ def write_ggir(hour_vector: list[datetime.datetime], filepath: str) -> None:
 
 
 def write_log_file(name: str, filepath: str, identifier: str) -> None:
+    """Writes a log file with the given name, filepath, and identifier.
+
+    Args:
+        name: The name of the user.
+        filepath: The path to the file where the log will be written.
+        identifier: The identifier for the log file.
+
+    """
     filename = "sleeplog_" + identifier + ".csv"
 
     log_info = [name, identifier, datetime.date.today(), filename]
@@ -98,6 +106,13 @@ def write_log_file(name: str, filepath: str, identifier: str) -> None:
 
 
 def write_log_analysis_completed(identifier: str, filepath: str) -> None:
+    """Writes log information to a CSV file indicating that the sleep log
+    analysis has been completed for a given participant.
+
+    Args:
+        identifier: The identifier of the participant.
+        filepath: The path to the CSV file to write the log information to.
+    """
     log_info = [identifier, "Yes", datetime.datetime.now()]
 
     if not path.exists(filepath):
