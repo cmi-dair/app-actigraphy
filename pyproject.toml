@@ -12,7 +12,6 @@ python = "^3.11"
 dash = "^2.12.1"
 dash-bootstrap-components = "^1.4.2"
 dash-daq = "^0.5.0"
-matplotlib = "^3.7.2"
 numpy = "^1.25.2"
 pandas = "^2.0.3"
 plotly = "^5.16.1"
@@ -26,6 +25,9 @@ black = "^23.3.0"
 isort = "^5.12.0"
 pre-commit = "^3.3.3"
 pytest-cov = "^4.1.0"
+
+[tool.poetry.group.jupyter.dependencies]
+ipykernel = "^6.25.1"
 
 [tool.poetry.group.docs.dependencies]
 pdoc = "^14.0.0"
@@ -44,3 +46,7 @@ pythonpath = [
 
 [tool.mypy]
 ignore_missing_imports = true
+plugins =[ 
+  "pydantic.mypy" 
+]
+
