@@ -227,7 +227,7 @@ def _adjust_timepoint_for_daylight_savings(
     """
     day_length = end - start
     if (day_length + 1) // (3600 / window_size) == 25:
-        end = end - (60 * 60 / window_size)
+        end = end - int(60 * 60 / window_size)
     if (day_length + 1) // (3600 / window_size) == 23:
-        end = end + (60 * 60 / window_size)
-    return int(end)
+        end = end + int(60 * 60 / window_size)
+    return end
