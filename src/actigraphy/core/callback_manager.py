@@ -108,5 +108,11 @@ def initialize_components():
         callbacks are registered.
     """
     # pylint: disable=import-outside-toplevel disable=unused-import
-    from actigraphy.components import (app_license, day_slider, file_selection,
-                                       finished_checkbox, graph, switches)
+    from actigraphy.components import (
+        app_license,
+        day_slider,
+        file_selection,
+        finished_checkbox,
+        graph,
+        switches,
+    )
