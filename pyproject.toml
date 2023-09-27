@@ -35,6 +35,9 @@ pdoc = "^14.0.0"
 [tool.poetry.extras]
 docs = ["pdoc"]
 
+[tool.poetry.scripts]
+actigraphy = "actigraphy:__main__"
+
 [build-system]
 requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
@@ -46,7 +49,6 @@ pythonpath = [
 
 [tool.mypy]
 ignore_missing_imports = true
-plugins =[ 
-  "pydantic.mypy" 
+plugins =[
+  "pydantic.mypy"
 ]
-

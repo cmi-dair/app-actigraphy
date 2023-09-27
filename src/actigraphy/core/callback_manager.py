@@ -3,6 +3,9 @@
 The CallbackManager class allows registering Dash callbacks and attaching them
 to a Dash app. This is useful for defining callbacks in a separate file from
 the Dash app itself.
+
+At the bottom of this file, the global_manager object is created. This object
+is used to register callbacks across multiple files.
 """
 import dataclasses
 import logging
@@ -104,12 +107,6 @@ def initialize_components():
         file. As such, a side-effect of importing these files is that all the
         callbacks are registered.
     """
-    # pylint: disable=import-outside-toplevel
-    from actigraphy.components import (
-        app_license,
-        day_slider,
-        file_selection,
-        finished_checkbox,
-        graph,
-        switches,
-    )
+    # pylint: disable=import-outside-toplevel disable=unused-import
+    from actigraphy.components import (app_license, day_slider, file_selection,
+                                       finished_checkbox, graph, switches)

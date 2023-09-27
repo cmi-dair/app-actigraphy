@@ -27,4 +27,8 @@ def get_subject_folders(args: argparse.Namespace) -> list[str]:
         list[str]: A list of subject folders sorted by name.
     """
     input_datapath = args.input_folder
-    return [str(x) for x in sorted(input_datapath.glob("output_*"))]
+    return [
+        str(directory)
+        for directory in sorted(input_datapath.glob("output_*"))
+        if directory.is_dir()
+    ]

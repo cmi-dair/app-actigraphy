@@ -20,7 +20,7 @@ The app may be installed either through Poetry or through Docker (recommended), 
    ```
 4. Run the app:
    ```bash
-    poetry run python src/actigraphy/app.py {DATA_DIR}
+   poetry run actigraphy {DATA_DIR}
    ```
 
 ### Running the App through Docker
@@ -30,3 +30,14 @@ The app may be installed either through Poetry or through Docker (recommended), 
    ```bash
    docker run -p 8051:8051 ghcr.io/cmi-dair/app-actigraphy:main {DATA_DIR}
    ```
+
+## Developer notes
+
+The Actigraphy app is designed to annotate sleep data. While traditional Dash apps might not scale to complex applications, this repository employs a custom Dash architecture to address this:
+
+- `app.py` contains the main Dash app, which is responsible for the layout of the app and the navigation between pages.
+- `components/` directory houses the components utilized by the app. Each component is tasked with its specific layout and logic. Some of the components include file selection, day slider, and graph visualization.
+- `core/` contains the core tools of the app, including configurations, utilities, command line interface and the callback manager.
+- `core/callback_manager.py` is responsible for registering callbacks for the app. It is also responsible for registering callbacks for the components. This file allows the callbacks to be placed across multiple files by defining a global manager.
+- `io/` contains the tools for loading and saving data.
+- `plotting` contains the tools for plotting data.
