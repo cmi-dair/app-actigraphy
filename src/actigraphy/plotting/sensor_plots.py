@@ -1,11 +1,13 @@
 """Module for all plotting functions."""
+from typing import Sequence
+
 from plotly import graph_objects
 
 
 def build_sensor_plot(
     timestamps: list[str],
-    sensor_angle: list[float],
-    arm_movement: list[float],
+    sensor_angle: Sequence[float | int],
+    arm_movement: Sequence[float | int],
     title_day: str,
     n_ticks: int = 36,
 ) -> graph_objects.Figure:
