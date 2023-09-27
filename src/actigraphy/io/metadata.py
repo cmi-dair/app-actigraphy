@@ -1,57 +1,22 @@
 """Metadata class for actigraphy data import."""
 import pathlib
 import re
-from typing import Any, Literal
+from typing import Any
 
 import pandas as pd
 import pydantic
 import rdata
 
 
-class MetaData_C(pydantic.BaseModel):
-    cal_error_end: float
-    cal_error_start: float
-    scale: list[float]
-    offset: list[float]
-    tempoffset: list[float]
-    qc_message: str
-    npoints: int
-    nhoursused: float
-    use_temp: bool
-
-
-class MetaData_I(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-    header: pd.DataFrame
-    monc: float
-    monn: str
-    dformc: float
-    dformn: str
-    sf: int
-    filename: str
-
-
 class MetaData_M(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-    filecorrupt: bool
-    filetooshort: bool
-    nfile_pages_skipped: int
     metalong: pd.DataFrame
     metashort: pd.DataFrame
-    wday: int
-    wdayname: Literal[
-        "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
-    ]
     windowsizes: list[int]
-    bsc_qc: pd.DataFrame
 
 
 class MetaData(pydantic.BaseModel):
-    c: MetaData_C
-    i: MetaData_I
     m: MetaData_M
-    filefoldername: str
-    filename_dir: pathlib.Path
 
     @classmethod
     def from_file(cls, filepath: str | pathlib.Path) -> "MetaData":
@@ -64,10 +29,8 @@ class MetaData(pydantic.BaseModel):
             A Metadata object.
         """
         metadata = _rdata_to_datadict(filepath)
-        metadata["C"]["qc_message"] = metadata["C"]["QCmessage"]
-        del metadata["C"]["QCmessage"]
-        metadata = _recursive_clean_rdata(metadata)
-        return cls(**metadata)
+        metadata_clean = _recursive_clean_rdata(metadata)
+        return cls(**metadata_clean)
 
 
 def _clean_key(key: str) -> str:

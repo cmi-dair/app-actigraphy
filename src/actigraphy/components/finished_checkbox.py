@@ -15,8 +15,6 @@ LOGGER_NAME = settings.LOGGER_NAME
 
 logger = logging.getLogger(LOGGER_NAME)
 
-manager = callback_manager.CallbackManager()
-
 
 def finished_checkbox() -> dcc.Checklist:
     """Returns a Dash checklist component that allows the user to indicate

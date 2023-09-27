@@ -21,8 +21,6 @@ LOGGER_NAME = settings.LOGGER_NAME
 
 logger = logging.getLogger(LOGGER_NAME)
 
-manager = callback_manager.CallbackManager()
-
 
 def switches() -> html.Div:
     """Returns a Dash HTML div containing three BooleanSwitch components for use

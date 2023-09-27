@@ -4,6 +4,7 @@ import functools
 import itertools
 import logging
 import pathlib
+from typing import Any
 
 import numpy as np
 
@@ -115,7 +116,7 @@ def get_dates(file_manager: dict[str, str]) -> list[datetime.date]:
     return sorted(dates)
 
 
-def create_graph(
+def get_graph_data(
     file_manager: dict[str, str], day: int
 ) -> tuple[list[float], list[float], list[float]]:
     """Loads data for a given day and prepares it for plotting.
@@ -130,10 +131,12 @@ def create_graph(
             - A list of angle values.
             - A list of non-wear values.
     """
-    # TODO: This function does a lot of type conversions. It should be refactored
     logger.debug("Loading data for day %s.", day)
     metadata_data = get_metadata(file_manager["base_dir"])
     passed_midnight = get_midnights(file_manager["base_dir"])
+
+    if len(passed_midnight) == 0:
+        raise ValueError("No midnight found in the data.")
 
     # Prepare nonwear information for plotting
     enmo = metadata_data.m.metashort.ENMO.reset_index(drop=True)
@@ -143,19 +146,13 @@ def create_graph(
     # take instances where nonwear was detected (on ws2 time vector) and map results onto a ws3 lenght vector for plotting purposes
     nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)[0]
 
+    window_size_ratio = (
+        metadata_data.m.windowsizes[1] // metadata_data.m.windowsizes[0] - 1
+    )
     for index in nonwear_elements:
-        nonwear[
-            index : (
-                index
-                + metadata_data.m.windowsizes[1] // metadata_data.m.windowsizes[0]
-                - 1
-            )
-        ] = 1
+        nonwear[index : index + window_size_ratio] = 1
 
     n_points_per_day = get_n_points_per_day(file_manager)
-
-    if len(passed_midnight) == 0:
-        raise ValueError("No midnight found in the data.")
 
     time_day_starts, time_day_ends = _day_start_and_end_time_points(
         file_manager, day, metadata_data.m.windowsizes[0]
@@ -167,19 +164,19 @@ def create_graph(
 
     extension = [0] * (n_points_per_day - len(acc))
     if time_day_starts == 0:
-        acc = extension + list(acc)
-        ang = extension + list(ang)
-        non_wear_list = extension + list(non_wear)
+        action = "prepend"
     elif time_day_ends is None:
-        acc = list(acc) + extension
-        ang = list(ang) + extension
-        non_wear_list = list(non_wear) + extension
+        action = "append"
     else:
-        non_wear_list = list(non_wear)
+        action = None
 
-    acc = (np.array(acc) / 14) - 210
+    acc = _extend_data(acc, extension, action)
+    ang = _extend_data(ang, extension, action)
+    non_wear_list = _extend_data(non_wear, extension, action)
 
-    return list(acc), list(ang), non_wear_list
+    acc = [value / 14 - 210 for value in acc]
+
+    return acc, ang, non_wear_list
 
 
 def _day_start_and_end_time_points(
@@ -231,3 +228,23 @@ def _adjust_timepoint_for_daylight_savings(
     if (day_length + 1) // (3600 / window_size) == 23:
         end = end + int(60 * 60 / window_size)
     return end
+
+
+def _extend_data(
+    data: Any, extension: list[Any], action: str | None = None
+) -> list[Any]:
+    """Extends the given data with the given extension using the specified action.
+
+    Args:
+        data: The data to be extended.
+        extension: The extension to be added to the data.
+        action: The action to be performed. Can be "prepend" or "append". Defaults to None.
+
+    Returns:
+        list: The extended data.
+    """
+    if action == "prepend":
+        return extension + list(data)
+    if action == "append":
+        return list(data) + extension
+    return list(data)

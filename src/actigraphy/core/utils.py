@@ -68,10 +68,9 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
         format "HH:MM".
     """
     logger.debug("Calculating datetime delta as HH:MM: %s", delta)
-    total_minutes = delta.total_seconds() // 60
-    hours = int(total_minutes // 60)
-    minutes = int(total_minutes % 60)
-    return f"{hours:02}:{minutes:02}"
+    hours, remainder = divmod(delta.total_seconds(), 3600)
+    minutes = remainder // 60
+    return f"{int(hours):02}:{int(minutes):02}"
 
 
 def time2point(time: datetime.datetime, date: datetime.date) -> int:
@@ -96,23 +95,22 @@ def point2time(point: float | None, date: datetime.date) -> datetime.datetime:
     Converts a point value to a datetime object.
 
     Args:
-        point (float | None): The point value to convert.
-        date (datetime.date): The date to combine with the converted time.
+        point: The point value to convert.
+        date: The date to combine with the converted time.
 
     Returns:
         datetime.datetime: The resulting datetime object.
     """
     logger.debug("Converting point to time: %s.", point)
     if point is None:
-        delta = datetime.timedelta(
+        # Default to 03:00AM the next day
+        return datetime.datetime.combine(date, datetime.time(0)) + datetime.timedelta(
             days=1, hours=3, minutes=0
-        )  # Default to 03:00AM the next day
-    else:
-        days = point // 1440
-        hour = (point - 1440 * days) // 60
-        minute = (point - 1440 * days - 60 * hour) % 60
-        offset = datetime.timedelta(hours=12)
-        delta = datetime.timedelta(days=days, hours=hour, minutes=minute) + offset
+        )
+    days, remainder_minutes = divmod(point, 1440)
+    hours, minutes = divmod(remainder_minutes, 60)
+    offset = datetime.timedelta(hours=12)
+    delta = datetime.timedelta(days=days, hours=hours, minutes=minutes) + offset
     return datetime.datetime.combine(date, datetime.time(0)) + delta
 
 

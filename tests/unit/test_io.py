@@ -57,10 +57,3 @@ def test_snakecase_from_consecutive_uppercase() -> None:
     actual = metadata._snakecase("COnsecutiveUppercase")
 
     assert actual == expected
-
-
-def test_metadata(data_dir: pathlib.Path) -> None:
-    """Test the Metadata class."""
-    metadata_data = metadata.MetaData.from_file(data_dir / "metadata.RData")
-
-    assert metadata_data.filefoldername == "raw_data"

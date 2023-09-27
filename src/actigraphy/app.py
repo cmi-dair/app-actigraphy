@@ -1,4 +1,4 @@
-""" Entrypoint for the Actigraphy app. """
+""" Main app setup for the Actigraphy app """
 import logging
 
 import dash

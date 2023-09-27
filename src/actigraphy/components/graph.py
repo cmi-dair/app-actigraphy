@@ -20,8 +20,6 @@ TIME_FORMATTING = "%A - %d %B %Y %H:%M"
 
 logger = logging.getLogger(LOGGER_NAME)
 
-manager = callback_manager.CallbackManager()
-
 
 def graph() -> html.Div:
     """Builds the graph component of the Actigraphy app.
@@ -55,7 +53,6 @@ def graph() -> html.Div:
                     ),
                     html.Pre(id="annotations-slider"),
                 ],
-                # html.Pre(id="annotations-nap"),
                 style={"margin-left": "55px", "margin-right": "55px"},
             ),
         ],
@@ -70,34 +67,18 @@ def graph() -> html.Div:
     prevent_initial_call=True,
 )
 def create_graph(day: int, drag_value: list[int], file_manager: dict[str, str]) -> dict:
-    """Creates a graph for a given day using data from the file manager.
-
-    Args:
-        day: The day for which to create the graph (0-indexed).
-        drag_value: The drag value for the slider.
-        file_manager: The file manager containing the data.
-
-    Returns:
-        dict: The figure object representing the graph.
-    """
+    """Creates a graph for a given day using data from the file manager."""
     logger.debug("Entering create graph callback")
 
     dates = data_import.get_dates(file_manager)
     n_points_per_day = data_import.get_n_points_per_day(file_manager)
 
-    day_1_sensor_angles, day_1_arm_movement, day_1_non_wear = data_import.create_graph(
-        file_manager, day
+    day_1_sensor_angles, day_1_arm_movement, day_1_non_wear = _get_day_data(
+        file_manager, day, n_points_per_day
     )
-    if day < len(dates):
-        (
-            day_2_sensor_angles,
-            day_2_arm_movement,
-            day_2_non_wear,
-        ) = data_import.create_graph(file_manager, day + 1)
-    else:
-        day_2_sensor_angles = [0] * n_points_per_day
-        day_2_arm_movement = [-210] * n_points_per_day
-        day_2_non_wear = [0] * n_points_per_day
+    day_2_sensor_angles, day_2_arm_movement, day_2_non_wear = _get_day_data(
+        file_manager, day + 1, n_points_per_day
+    )
 
     sensor_angle = day_1_sensor_angles[n_points_per_day // 2 :] + day_2_sensor_angles
     arm_movement = day_1_arm_movement[n_points_per_day // 2 :] + day_2_arm_movement
@@ -108,7 +89,7 @@ def create_graph(day: int, drag_value: list[int], file_manager: dict[str, str]) 
         [dates[day] + datetime.timedelta(days=1)]
     ) * n_points_per_day
 
-    timestamp = [
+    timestamps = [
         " ".join(
             [
                 day_timestamps[point].strftime("%d/%b/%Y"),
@@ -118,33 +99,16 @@ def create_graph(day: int, drag_value: list[int], file_manager: dict[str, str]) 
         for point in range(len(day_timestamps))
     ]
 
-    nonwear_changes = []
-    for index in range(1, len(nonwear)):
-        if nonwear[index] != nonwear[index - 1]:
-            nonwear_changes += [index]
-    if nonwear[0]:
-        nonwear_changes.insert(0, 0)
-    if len(nonwear_changes) % 2 != 0:
-        nonwear_changes.append(len(timestamp) - 1)
-
-    figure = sensor_plots.build_sensor_plot(
-        timestamp, sensor_angle, arm_movement, title_day
+    nonwear_changes = _get_nonwear_changes(nonwear)
+    return _build_figure(
+        timestamps,
+        sensor_angle,
+        arm_movement,
+        title_day,
+        drag_value,
+        n_points_per_day,
+        nonwear_changes,
     )
-
-    rectangle_timepoints = utils.slider_values_to_graph_values(
-        drag_value, n_points_per_day
-    )
-
-    if rectangle_timepoints[0] != rectangle_timepoints[1]:
-        sensor_plots.add_rectangle(figure, rectangle_timepoints, "red", "sleep window")
-    for index in range(0, len(nonwear_changes), 2):
-        sensor_plots.add_rectangle(
-            figure,
-            [nonwear_changes[index], nonwear_changes[index + 1]],
-            "green",
-            "non-wear",
-        )
-    return figure
 
 
 @callback_manager.global_manager.callback(
@@ -223,3 +187,60 @@ def adjust_range_slider(drag_value: list[int], file_manager: dict[str, str], day
         f"Sleep offset: {wake_time.strftime(TIME_FORMATTING)}\n",
         f"Sleep duration: {utils.datetime_delta_as_hh_mm(wake_time - sleep_time)}\n",
     )
+
+
+def _get_day_data(
+    file_manager: dict[str, str], day: int, n_points_per_day: int
+) -> tuple:
+    """Get data for a given day."""
+    dates = data_import.get_dates(file_manager)
+    if day < len(dates):
+        return data_import.get_graph_data(file_manager, day)
+    else:
+        return (
+            [0] * n_points_per_day,
+            [-210] * n_points_per_day,
+            [0] * n_points_per_day,
+        )
+
+
+def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
+    """Get indices where non-wear data changes."""
+    changes = [
+        index
+        for index in range(1, len(nonwear))
+        if nonwear[index] != nonwear[index - 1]
+    ]
+    if nonwear[0]:
+        changes.insert(0, 0)
+    if len(changes) % 2 != 0:
+        changes.append(len(nonwear) - 1)
+    return changes
+
+
+def _build_figure(
+    timestamps: list[str],
+    sensor_angle: list[int],
+    arm_movement: list[int],
+    title_day: str,
+    drag_value: list[int],
+    n_points_per_day: int,
+    nonwear_changes: list[int],
+) -> dict:
+    """Build the graph figure."""
+    figure = sensor_plots.build_sensor_plot(
+        timestamps, sensor_angle, arm_movement, title_day
+    )
+    sleep_timepoints = utils.slider_values_to_graph_values(drag_value, n_points_per_day)
+
+    if sleep_timepoints[0] != sleep_timepoints[1]:
+        sensor_plots.add_rectangle(figure, sleep_timepoints, "red", "sleep window")
+
+    for index in range(0, len(nonwear_changes), 2):
+        sensor_plots.add_rectangle(
+            figure,
+            [nonwear_changes[index], nonwear_changes[index + 1]],
+            "green",
+            "non-wear",
+        )
+    return figure
