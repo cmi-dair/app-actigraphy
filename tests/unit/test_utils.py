@@ -3,7 +3,7 @@ import datetime
 from actigraphy.core import utils
 
 
-def test_calculate_sleep_duration() -> None:
+def test_datetime_delta_as_hh_mm() -> None:
     """Test the datetime_delta_as_hh_mm function."""
     delta = datetime.timedelta(hours=4, minutes=30)
     expected = "04:30"

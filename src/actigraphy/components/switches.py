@@ -137,7 +137,7 @@ def toggle_review_night(
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
-def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]):
+def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]) -> None:
     """
     Toggles the nap status for a given day in the multiple sleep log file.
 

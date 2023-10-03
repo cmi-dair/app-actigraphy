@@ -118,7 +118,7 @@ def get_dates(file_manager: dict[str, str]) -> list[datetime.date]:
 
 def get_graph_data(
     file_manager: dict[str, str], day: int
-) -> tuple[list[float], list[float], list[float]]:
+) -> tuple[list[float], list[float], list[int]]:
     """Loads data for a given day and prepares it for plotting.
 
     Args:
@@ -126,7 +126,7 @@ def get_graph_data(
         day: The day for which to load data.
 
     Returns:
-        tuple[list[float], list[float], list[float]]: A tuple containing three lists:
+        tuple[list[float], list[float], list[int]]: A tuple containing three lists:
             - A list of acceleration values.
             - A list of angle values.
             - A list of non-wear values.
@@ -141,7 +141,7 @@ def get_graph_data(
     # Prepare nonwear information for plotting
     enmo = metadata_data.m.metashort.ENMO.reset_index(drop=True)
     anglez = metadata_data.m.metashort.anglez.reset_index(drop=True)
-    nonwear = np.zeros(len(enmo))
+    nonwear = np.zeros(len(enmo), dtype=int)
 
     # take instances where nonwear was detected (on ws2 time vector) and map results onto a ws3 lenght vector for plotting purposes
     nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)[0]

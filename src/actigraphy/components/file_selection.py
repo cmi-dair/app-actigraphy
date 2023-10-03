@@ -88,7 +88,7 @@ def parse_files(
     n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionallty unused.
     filepath: str,
     evaluator_name: str,
-):
+) -> tuple[list[html.Div], str, bool, dict[str, str]]:
     """
     Parses the contents of the selected files and returns the UI components to be displayed.
 
@@ -105,7 +105,7 @@ def parse_files(
     """
     logger.debug("Parsing files...")
     if not evaluator_name:
-        return "", "", True, None
+        return [], "", True, {}
 
     file_manager = utils.FileManager(base_dir=filepath).__dict__
     n_midnights = len(data_import.get_midnights(file_manager["base_dir"]))

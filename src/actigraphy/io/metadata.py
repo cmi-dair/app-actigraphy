@@ -87,10 +87,10 @@ def _rdata_to_datadict(filepath: str | pathlib.Path) -> dict[str, Any]:
         filepath: The path to the Rdata file.
 
     Returns:
-        np.ndarray: The numpy array.
+        dict[str, Any]: A dictionary containing the data from the Rdata file.
     """
     data = rdata.parser.parse_file(filepath)
-    return rdata.conversion.convert(data)
+    return rdata.conversion.convert(data)  # type: ignore[no-any-return]
 
 
 def _snakecase(string: str) -> str:
