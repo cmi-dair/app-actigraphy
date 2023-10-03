@@ -9,6 +9,7 @@ import logging
 
 import dash
 from dash import dcc, html
+from plotly import graph_objects
 
 from actigraphy.core import callback_manager, config, utils
 from actigraphy.io import data_import, minor_files
@@ -66,7 +67,9 @@ def graph() -> html.Div:
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
-def create_graph(day: int, drag_value: list[int], file_manager: dict[str, str]) -> dict:
+def create_graph(
+    day: int, drag_value: list[int], file_manager: dict[str, str]
+) -> graph_objects.Figure:
     """Creates a graph for a given day using data from the file manager."""
     logger.debug("Entering create graph callback")
 
@@ -163,7 +166,9 @@ def refresh_range_slider(
     dash.State("day_slider", "value"),
     prevent_initial_call=True,
 )
-def adjust_range_slider(drag_value: list[int], file_manager: dict[str, str], day: int):
+def adjust_range_slider(
+    drag_value: list[int], file_manager: dict[str, str], day: int
+) -> tuple[str, str, str, str]:
     """Adjusts the text labels fora  given day and writes the sleep log to a file.
 
     Args:
@@ -191,17 +196,16 @@ def adjust_range_slider(drag_value: list[int], file_manager: dict[str, str], day
 
 def _get_day_data(
     file_manager: dict[str, str], day: int, n_points_per_day: int
-) -> tuple:
+) -> tuple[list[float], list[float], list[int]]:
     """Get data for a given day."""
     dates = data_import.get_dates(file_manager)
     if day < len(dates):
         return data_import.get_graph_data(file_manager, day)
-    else:
-        return (
-            [0] * n_points_per_day,
-            [-210] * n_points_per_day,
-            [0] * n_points_per_day,
-        )
+    return (
+        [0] * n_points_per_day,
+        [-210] * n_points_per_day,
+        [0] * n_points_per_day,
+    )
 
 
 def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
@@ -220,13 +224,13 @@ def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
 
 def _build_figure(
     timestamps: list[str],
-    sensor_angle: list[int],
-    arm_movement: list[int],
+    sensor_angle: list[float],
+    arm_movement: list[float],
     title_day: str,
     drag_value: list[int],
     n_points_per_day: int,
     nonwear_changes: list[int],
-) -> dict:
+) -> graph_objects.Figure:
     """Build the graph figure."""
     figure = sensor_plots.build_sensor_plot(
         timestamps, sensor_angle, arm_movement, title_day

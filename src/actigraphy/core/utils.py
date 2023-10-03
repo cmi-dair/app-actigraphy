@@ -114,7 +114,7 @@ def point2time(point: float | None, date: datetime.date) -> datetime.datetime:
     return datetime.datetime.combine(date, datetime.time(0)) + delta
 
 
-def point2time_timestamp(point: int, npointsperday: int, offset: int = 0):
+def point2time_timestamp(point: int, npointsperday: int, offset: int = 0) -> str:
     """Converts a point to a time string in the format of 'hour:minute'.
 
     Args:

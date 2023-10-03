@@ -34,11 +34,11 @@ class Callback:
         kwargs (dict): Additional keyword arguments to be passed to the callback.
     """
 
-    func: Callable
+    func: Callable[[Any], Any]
     outputs: dash.Output | list[dash.Output]
     inputs: dash.Input | list[dash.Input]
     states: dash.State | list[dash.State] = dataclasses.field(default_factory=list)
-    kwargs: dict = dataclasses.field(
+    kwargs: dict[str, Any] = dataclasses.field(
         default_factory=lambda: {"prevent_initial_call": False}
     )
 
@@ -54,7 +54,7 @@ class CallbackManager:
     def __init__(self) -> None:
         self._callbacks: list[Callback] = []
 
-    def callback(self, *args: Any, **kwargs: Any) -> Callable:
+    def callback(self, *args: Any, **kwargs: Any) -> Callable[[Any], Any]:
         """A decorator for registering a Dash callback.
 
         Args:
@@ -68,7 +68,7 @@ class CallbackManager:
             args, kwargs
         )
 
-        def wrapper(func: Callable) -> None:
+        def wrapper(func: Callable[[Any], Any]) -> None:
             self._callbacks.append(
                 Callback(
                     func,
@@ -98,7 +98,7 @@ class CallbackManager:
 global_manager = CallbackManager()
 
 
-def initialize_components():
+def initialize_components() -> None:
     """Initializes the components of the Actigraphy app.
 
     Notes:

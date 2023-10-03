@@ -1,7 +1,5 @@
 """ Tests for the IO module. """
 # pylint: disable=protected-access
-import pathlib
-
 from actigraphy.io import metadata
 
 
