@@ -8,7 +8,18 @@ import pydantic
 import rdata
 
 
-class MetaData_M(pydantic.BaseModel):
+class MetaDataM(pydantic.BaseModel):
+    """
+    A Pydantic model representing the M subclass of the metadata for actigraphy data.
+    Only the required data is retained.
+
+    Attributes:
+        model_config (pydantic.ConfigDict): A dictionary containing configuration options for the model.
+        metalong (pd.DataFrame): A pandas DataFrame containing long-format metadata.
+        metashort (pd.DataFrame): A pandas DataFrame containing short-format metadata.
+        windowsizes (list[int]): A list of integers representing window sizes for the data.
+    """
+
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
     metalong: pd.DataFrame
     metashort: pd.DataFrame
@@ -16,17 +27,29 @@ class MetaData_M(pydantic.BaseModel):
 
 
 class MetaData(pydantic.BaseModel):
-    m: MetaData_M
+    """
+    A class representing metadata for actigraphy data.
+
+    Attributes:
+        m: The metadata object.
+
+    Methods:
+        from_file(cls, filepath: str | pathlib.Path) -> "MetaData": Reads a
+        metadata file from disk and returns a Metadata object.
+    """
+
+    m: MetaDataM
 
     @classmethod
     def from_file(cls, filepath: str | pathlib.Path) -> "MetaData":
-        """Reads a metadata file from disk and returns a Metadata object.
+        """
+        Load metadata from a file.
 
         Args:
             filepath: The path to the metadata file.
 
         Returns:
-            A Metadata object.
+            MetaData: An instance of the MetaData class with the loaded metadata.
         """
         metadata = _rdata_to_datadict(filepath)
         metadata_clean = _recursive_clean_rdata(metadata)

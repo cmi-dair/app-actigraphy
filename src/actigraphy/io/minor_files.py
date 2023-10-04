@@ -1,4 +1,5 @@
-"""This module contains functions for reading and writing minor files."""
+"""This module contains functions for reading and writing minor files to a
+format accepted by GGIR."""
 import csv
 import datetime
 from os import path
