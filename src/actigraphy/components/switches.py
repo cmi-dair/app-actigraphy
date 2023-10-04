@@ -46,13 +46,13 @@ def switches() -> html.Div:
             ),
             html.Pre(id="checklist-items"),
             dash_daq.BooleanSwitch(
-                id="exclude-night",
+                id="exclude_night",
                 on=False,
                 label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
             ),
             html.Pre(id="checklist-items2"),
             dash_daq.BooleanSwitch(
-                id="review-night",
+                id="review_night",
                 on=False,
                 label=" Do you need to review this night?",
             ),
@@ -62,8 +62,8 @@ def switches() -> html.Div:
 
 @callback_manager.global_manager.callback(
     dash.Output("multiple_sleep", "on"),
-    dash.Output("exclude-night", "on"),
-    dash.Output("review-night", "on"),
+    dash.Output("exclude_night", "on"),
+    dash.Output("review_night", "on"),
     dash.Input("day_slider", "value"),
     dash.State("file_manager", "data"),
 )
@@ -86,12 +86,12 @@ def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool,
     naps = minor_files.read_vector(file_manager["multiple_sleeplog_file"])
     missing = minor_files.read_vector(file_manager["missing_sleep_file"])
     nights = minor_files.read_vector(file_manager["review_night_file"])
-    return bool(naps[day]), bool(missing[day]), bool(nights[day])
+    return naps[day] == "1", missing[day] == "1", nights[day] == "1"
 
 
 @callback_manager.global_manager.callback(
     dash.Output("null-data", "children", allow_duplicate=True),
-    dash.Input("exclude-night", "on"),
+    dash.Input("exclude_night", "on"),
     dash.State("day_slider", "value"),
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
@@ -106,18 +106,19 @@ def toggle_exclude_night(
         day : The day to toggle the exclusion for.
         file_manager: A dictionary containing file paths for the missing sleep file.
     """
+    logger.debug("Entering toggle exclude night callback")
     _toggle_vector_value(exclude_button, day, file_manager["missing_sleep_file"])
 
 
 @callback_manager.global_manager.callback(
     dash.Output("null-data", "children", allow_duplicate=True),
-    dash.Input("review-night", "on"),
+    dash.Input("review_night", "on"),
     dash.State("day_slider", "value"),
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
 def toggle_review_night(
-    review_night: int, day: int, file_manager: dict[str, str]
+    review_night: bool, day: int, file_manager: dict[str, str]
 ) -> None:
     """
     Toggles the review night flag for a given day in the review night file.
@@ -127,7 +128,8 @@ def toggle_review_night(
         day: The day index to toggle the flag for.
         file_manager: A dictionary containing file paths for the review night file.
     """
-    _toggle_vector_value(bool(review_night), day, file_manager["review_night_file"])
+    logger.debug("Entering toggle review night callback")
+    _toggle_vector_value(review_night, day, file_manager["review_night_file"])
 
 
 @callback_manager.global_manager.callback(
@@ -146,6 +148,7 @@ def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]) -> 
         day: The day to toggle the nap status for.
         file_manager: A dictionary containing file paths for various files.
     """
+    logger.debug("Entering toggle nap callback")
     _toggle_vector_value(multiple_sleep, day, file_manager["multiple_sleeplog_file"])
 
 
