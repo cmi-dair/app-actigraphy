@@ -36,7 +36,7 @@ pdoc = "^14.0.0"
 docs = ["pdoc"]
 
 [tool.poetry.scripts]
-actigraphy = "actigraphy:__main__"
+actigraphy = "actigraphy.__main__:__main__"
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
