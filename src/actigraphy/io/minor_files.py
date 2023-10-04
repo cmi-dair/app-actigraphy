@@ -105,28 +105,28 @@ def write_log_file(name: str, filepath: str, identifier: str) -> None:
         writer.writerow(log_info)
 
 
-def write_log_analysis_completed(identifier: str, filepath: str) -> None:
+def write_log_analysis_completed(
+    is_completed: bool, identifier: str, filepath: str
+) -> None:
     """Writes log information to a CSV file indicating that the sleep log
     analysis has been completed for a given participant.
 
     Args:
+        is_completed: Whether the analysis has been completed.
         identifier: The identifier of the participant.
         filepath: The path to the CSV file to write the log information to.
     """
-    log_info = [identifier, "Yes", datetime.datetime.now()]
+    completion_word = "Yes" if is_completed else "No"
+    log_info = [identifier, completion_word, datetime.datetime.now()]
 
-    if not path.exists(filepath):
-        header = [
-            "Participant",
-            "Is the sleep log analysis completed?",
-            "Last modified",
-        ]
-        with open(filepath, "w", encoding="utf-8") as file_buffer:
-            writer = csv.writer(file_buffer)
-            writer.writerow(header)
-
-    with open(filepath, "a", encoding="utf-8") as file_buffer:
+    header = [
+        "Participant",
+        "Is the sleep log analysis completed?",
+        "Last modified",
+    ]
+    with open(filepath, "w", encoding="utf-8") as file_buffer:
         writer = csv.writer(file_buffer)
+        writer.writerow(header)
         writer.writerow(log_info)
 
 

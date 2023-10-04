@@ -44,8 +44,9 @@ def write_log_done(is_user_done: bool, file_manager: dict[str, str]) -> bool:
         file_manager: A dictionary containing information about the file being analyzed.
     """
     logger.debug("Entering write log done callback")
-    if is_user_done:
-        minor_files.write_log_analysis_completed(
-            file_manager["identifier"], file_manager["completed_analysis_file"]
-        )
+    minor_files.write_log_analysis_completed(
+        is_user_done,
+        file_manager["identifier"],
+        file_manager["completed_analysis_file"],
+    )
     return is_user_done
