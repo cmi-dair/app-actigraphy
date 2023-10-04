@@ -1,4 +1,4 @@
-""" Graph preparation functions. """
+"""Functions for importing data needed for the Actigraphy graph."""
 import datetime
 import functools
 import itertools
@@ -18,6 +18,17 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
+    """Get the data file from the specified directory.
+
+    Args:
+        data_sub_dir: The directory containing the data file.
+
+    Returns:
+        pathlib.Path: The path to the data file.
+
+    Raises:
+        ValueError: If there is not exactly one data file in the directory.
+    """
     data_files = list(data_sub_dir.glob("*.RData"))
     if len(data_files) == 1:
         return data_files[0]
@@ -27,7 +38,16 @@ def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
 
 
 @functools.lru_cache(maxsize=None)
-def get_metadata(base_dir: str) -> metadata.MetaData:
+def get_metadata(base_dir: str | pathlib.Path) -> metadata.MetaData:
+    """Get metadata from the specified base directory.
+
+    Args:
+        base_dir: The base directory to search for metadata.
+
+    Returns:
+        metadata.MetaData: The metadata object.
+
+    """
     logger.debug("Getting metadata from %s", "base_dir")
     metadata_file = _get_data_file(pathlib.Path(base_dir) / "meta" / "basic")
     return metadata.MetaData.from_file(metadata_file)
@@ -174,6 +194,7 @@ def get_graph_data(
     ang = _extend_data(ang, extension, action)
     non_wear_list = _extend_data(non_wear, extension, action)
 
+    # Rescale for plotting.
     acc = [value / 14 - 210 for value in acc]
 
     return acc, ang, non_wear_list
