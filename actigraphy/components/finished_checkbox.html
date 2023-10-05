@@ -115,11 +115,11 @@ one.</p>
 </span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">        is_user_done: Whether the user has completed the analysis.</span>
 </span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="sd">        file_manager: A dictionary containing information about the file being analyzed.</span>
 </span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Entering write log done callback&quot;</span><span class="p">)</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>    <span class="k">if</span> <span class="n">is_user_done</span><span class="p">:</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="n">minor_files</span><span class="o">.</span><span class="n">write_log_analysis_completed</span><span class="p">(</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>            <span class="n">file_manager</span><span class="p">[</span><span class="s2">&quot;identifier&quot;</span><span class="p">],</span> <span class="n">file_manager</span><span class="p">[</span><span class="s2">&quot;completed_analysis_file&quot;</span><span class="p">]</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>        <span class="p">)</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>    <span class="n">minor_files</span><span class="o">.</span><span class="n">write_log_analysis_completed</span><span class="p">(</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>        <span class="n">is_user_done</span><span class="p">,</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="n">file_manager</span><span class="p">[</span><span class="s2">&quot;identifier&quot;</span><span class="p">],</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="n">file_manager</span><span class="p">[</span><span class="s2">&quot;completed_analysis_file&quot;</span><span class="p">],</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>    <span class="p">)</span>
 </span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="k">return</span> <span class="n">is_user_done</span>
 </span></pre></div>
 
@@ -152,7 +152,7 @@ one.</p>
                 <section id="logger">
                     <div class="attr variable">
             <span class="name">logger</span>        =
-<span class="default_value">&lt;Logger Actigraphy (DEBUG)&gt;</span>
+<span class="default_value">&lt;Logger Actigraphy (WARNING)&gt;</span>
 
         
     </div>
