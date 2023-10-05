@@ -1,6 +1,14 @@
 """Command line interface for the actigraphy APP."""
 import argparse
+import logging
 import pathlib
+from typing import Any
+
+from actigraphy.core import config
+
+settings = config.get_settings()
+LOGGER_NAME = settings.LOGGER_NAME
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def parse_args() -> argparse.Namespace:
@@ -10,11 +18,24 @@ def parse_args() -> argparse.Namespace:
         argparse.Namespace: The parsed command line arguments.
     """
     parser = argparse.ArgumentParser(
-        description="""Actigraphy APP to manually correct annotations for the sleep log diary. """,
-        epilog="""APP developed by Child Mind Institute.""",
+        description="""Actigraphy webapp to manually correct annotations for the sleep log diary. """,
+        epilog="""Developed by the Child Mind Institute.""",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("input_folder", help="GGIR output folder", type=pathlib.Path)
-    return parser.parse_args()
+    parser.add_argument("input_folder", help="GGIR output folder.", type=pathlib.Path)
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        help="Logging verbosity, uses Python's logging module's logging levels.",
+        type=int,
+        default=20,
+        choices=[10, 20, 30, 40, 50],
+    )
+    args = parser.parse_args()
+    logger.debug("Parsed arguments:")
+    for arg in vars(args):
+        logger.debug("  %s = %s", arg, _add_string_quotation(getattr(args, arg)))
+    return args
 
 
 def get_subject_folders(args: argparse.Namespace) -> list[str]:
@@ -32,3 +53,18 @@ def get_subject_folders(args: argparse.Namespace) -> list[str]:
         for directory in sorted(input_datapath.glob("output_*"))
         if directory.is_dir()
     ]
+
+
+def _add_string_quotation(to_print: Any) -> Any:
+    """Adds quotation marks around a string or pathlib.Path object.
+
+    Args:
+        to_print: The object to add quotation marks to.
+
+    Returns:
+        Any: The object with quotation marks added, if it is a string or
+            pathlib.Path object. Otherwise, the original object is returned.
+    """
+    if isinstance(to_print, (str, pathlib.Path)):
+        return f'"{to_print}"'
+    return to_print

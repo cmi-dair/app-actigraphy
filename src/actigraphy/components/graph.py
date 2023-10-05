@@ -26,7 +26,8 @@ def graph() -> html.Div:
     """Builds the graph component of the Actigraphy app.
 
     Returns:
-    html.Div: A Dash HTML div containing a graph and range slider components.
+        html.Div: A Dash HTML div containing a graph and range slider
+        components.
     """
     return html.Div(
         children=[
@@ -71,8 +72,6 @@ def create_graph(
     day: int, drag_value: list[int], file_manager: dict[str, str]
 ) -> graph_objects.Figure:
     """Creates a graph for a given day using data from the file manager."""
-    logger.debug("Entering create graph callback")
-
     dates = data_import.get_dates(file_manager)
     n_points_per_day = data_import.get_n_points_per_day(file_manager)
 
@@ -138,7 +137,6 @@ def refresh_range_slider(
         tuple[str, str, str]: A tuple of strings containing the sleep onset,
             sleep offset, and sleep duration.
     """
-    logger.debug("Entering refresh range slider callback")
     dates = data_import.get_dates(file_manager)
 
     sleep_onset, wake_up = minor_files.read_sleeplog(file_manager["sleeplog_file"])
@@ -157,7 +155,6 @@ def refresh_range_slider(
 
 
 @callback_manager.global_manager.callback(
-    dash.Output("annotations-save", "children"),
     dash.Output("sleep-onset", "children", allow_duplicate=True),
     dash.Output("sleep-offset", "children", allow_duplicate=True),
     dash.Output("sleep-duration", "children", allow_duplicate=True),
@@ -168,7 +165,7 @@ def refresh_range_slider(
 )
 def adjust_range_slider(
     drag_value: list[int], file_manager: dict[str, str], day: int
-) -> tuple[str, str, str, str]:
+) -> tuple[str, str, str]:
     """Adjusts the text labels fora  given day and writes the sleep log to a file.
 
     Args:
@@ -179,7 +176,6 @@ def adjust_range_slider(
     Returns:
         Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep offset, and sleep duration.
     """
-    logger.debug("Entering write info callback")
     dates = data_import.get_dates(file_manager)
     minor_files.write_sleeplog(file_manager, day, drag_value[0], drag_value[1])
 
@@ -187,7 +183,6 @@ def adjust_range_slider(
     wake_time = utils.point2time(drag_value[1], dates[day])
 
     return (
-        "",
         f"Sleep onset: {sleep_time.strftime(TIME_FORMATTING)}\n",
         f"Sleep offset: {wake_time.strftime(TIME_FORMATTING)}\n",
         f"Sleep duration: {utils.datetime_delta_as_hh_mm(wake_time - sleep_time)}\n",

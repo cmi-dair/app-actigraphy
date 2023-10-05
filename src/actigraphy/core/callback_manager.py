@@ -8,6 +8,7 @@ At the bottom of this file, the global_manager object is created. This object
 is used to register callbacks across multiple files.
 """
 import dataclasses
+import inspect
 import logging
 from typing import Any, Callable
 
@@ -55,7 +56,8 @@ class CallbackManager:
         self._callbacks: list[Callback] = []
 
     def callback(self, *args: Any, **kwargs: Any) -> Callable[[Any], Any]:
-        """A decorator for registering a Dash callback.
+        """A decorator for registering a Dash callback. This decorator is used
+        to log the name of the callback when it is triggered.
 
         Args:
             *args: The arguments of the callback.
@@ -69,9 +71,25 @@ class CallbackManager:
         )
 
         def wrapper(func: Callable[[Any], Any]) -> None:
+            def logging_func(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
+                def wrapper(*args: Any, **kwargs: Any) -> Any:
+                    module = inspect.getmodule(func)
+                    if not module:
+                        raise ValueError(
+                            "The function to be decorated must be defined in a module."
+                        )
+                    logger.info(
+                        "Calling callback: %s.%s.", module.__name__, func.__name__
+                    )
+                    return func(*args, **kwargs)
+
+                wrapper.__name__ = func.__name__
+
+                return wrapper
+
             self._callbacks.append(
                 Callback(
-                    func,
+                    logging_func(func),
                     output,
                     inputs,
                     state,
