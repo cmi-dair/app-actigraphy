@@ -2,7 +2,7 @@
 import argparse
 import logging
 import pathlib
-from typing import Any, overload
+from typing import Any
 
 from actigraphy.core import config
 
@@ -55,22 +55,7 @@ def get_subject_folders(args: argparse.Namespace) -> list[str]:
     ]
 
 
-@overload
-def _add_string_quotation(to_print: str) -> str:
-    ...
-
-
-@overload
-def _add_string_quotation(to_print: pathlib.Path) -> str:
-    ...
-
-
-@overload
-def _add_string_quotation(to_print: Any) -> Any:
-    ...
-
-
-def _add_string_quotation(to_print: Any) -> Any:
+def _add_string_quotation(to_print: Any) -> str:
     """Adds quotation marks around a string or pathlib.Path object.
 
     Args:
@@ -82,4 +67,4 @@ def _add_string_quotation(to_print: Any) -> Any:
     """
     if isinstance(to_print, (str, pathlib.Path)):
         return f'"{to_print}"'
-    return to_print
+    return str(to_print)
