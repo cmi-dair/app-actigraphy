@@ -2,7 +2,7 @@
 import argparse
 import logging
 import pathlib
-from typing import Any
+from typing import Any, overload
 
 from actigraphy.core import config
 
@@ -53,6 +53,21 @@ def get_subject_folders(args: argparse.Namespace) -> list[str]:
         for directory in sorted(input_datapath.glob("output_*"))
         if directory.is_dir()
     ]
+
+
+@overload
+def _add_string_quotation(to_print: str) -> str:
+    ...
+
+
+@overload
+def _add_string_quotation(to_print: pathlib.Path) -> str:
+    ...
+
+
+@overload
+def _add_string_quotation(to_print: Any) -> Any:
+    ...
 
 
 def _add_string_quotation(to_print: Any) -> Any:

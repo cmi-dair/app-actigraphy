@@ -65,15 +65,19 @@ def write_ggir(hour_vector: list[datetime.datetime], filepath: str) -> None:
         hour_vector: A 1D array-like object containing hourly activity counts.
         filepath: The path to the output file.
 
+    Notes:
+        The last day is discarded as each frontend "day" displays two days.
+
     """
+    hour_vector_no_end = hour_vector[:-2]
     data_line = ["identifier"]
-    data_line.extend([str(date) for date in hour_vector])
+    data_line.extend([str(date) for date in hour_vector_no_end])
     data_line = [data if data else "NA" for data in data_line]
 
     header = ["ID"] + io_utils.flatten(
         [
             [f"onset_N{day+1}", f"wakeup_N{day+1}"]
-            for day in range(len(hour_vector) // 2)
+            for day in range(len(hour_vector_no_end) // 2)
         ]
     )
 
