@@ -4,8 +4,6 @@ Due to the custom nature of the callbacks, it is not possible to call them
 directly. Instead, we use global manager to get the callback function and then
 call it with the appropriate arguments.
 """
-from typing import Any, Callable
-
 from pytest_mock import plugin
 
 from . import callback_test_manager
