@@ -9,7 +9,7 @@ def test___main__(mocker: plugin.MockerFixture) -> None:
     server."""
     mock_dash_app = mocker.MagicMock()
     mock_create_app = mocker.patch(
-        "actigraphy.entrypoint.app.create_app", return_value=mock_dash_app
+        "actigraphy.__main__.app.create_app", return_value=mock_dash_app
     )
 
     __main__.__main__()
