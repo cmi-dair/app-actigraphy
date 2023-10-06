@@ -62,7 +62,7 @@ def test__get_day_data_in_range(mocker: plugin.MockerFixture) -> None:
 
     actual = graph._get_day_data({"data_file": ""}, 0, 10)
 
-    assert actual == expected
+    assert actual == expected  # type: ignore[comparison-overlap]
 
 
 def test__get_day_data_out_range(mocker: plugin.MockerFixture) -> None:
