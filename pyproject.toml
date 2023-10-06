@@ -9,7 +9,6 @@ packages = [{include = "actigraphy", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-dash = "^2.12.1"
 dash-bootstrap-components = "^1.4.2"
 dash-daq = "^0.5.0"
 numpy = "^1.25.2"
@@ -17,6 +16,8 @@ pandas = "^2.0.3"
 plotly = "^5.16.1"
 rdata = "^0.9"
 pydantic = "^2.2.0"
+pytest-mock = "^3.11.1"
+dash = "^2.13.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.2"
