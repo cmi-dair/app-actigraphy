@@ -1,4 +1,5 @@
 """Test the minor_files module."""
+import csv
 import datetime
 import os
 import pathlib
@@ -117,6 +118,59 @@ def test_read_vector(tmp_path: pathlib.Path) -> None:
     read_result = minor_files.read_vector(str(vector_path))
 
     assert read_result == expected
+
+
+@pytest.fixture
+def patch_datetime_now(monkeypatch: pytest.MonkeyPatch) -> datetime.datetime:
+    """
+    A helper function to patch the datetime module's `datetime.now()` method to always return a fixed datetime object.
+
+    Args:
+        monkeypatch: A pytest monkeypatch fixture object.
+
+    Returns:
+        datetime.datetime: A datetime object representing the fixed datetime value that `datetime.now()` will return after patching.
+
+    Example usage:
+        def test_something(monkeypatch):
+            fixed_datetime = patch_datetime_now(monkeypatch)
+            # ... test code that uses datetime.now() ...
+    """
+
+    class MyDateTime(datetime.datetime):
+        @classmethod
+        # type: ignore[override] # Intentional override without args
+        def now(cls) -> datetime.datetime:  # pylint: disable=arguments-differ
+            return datetime.datetime(2021, 1, 1)
+
+    monkeypatch.setattr(datetime, "datetime", MyDateTime)
+    return datetime.datetime(2021, 1, 1)
+
+
+def test_write_log_analysis_completed(
+    tmp_path: pathlib.Path,
+    patch_datetime_now: datetime.datetime,  # pylint: disable=redefined-outer-name
+) -> None:
+    """Test the write_log_analysis_completed function."""
+    identifier = "test_participant"
+    is_completed = True
+    test_file = tmp_path / "test_log.csv"
+    expected_header = [
+        "Participant",
+        "Is the sleep log analysis completed?",
+        "Last modified",
+    ]
+    expected_data = [identifier, "Yes", str(patch_datetime_now)]
+
+    minor_files.write_log_analysis_completed(is_completed, identifier, str(test_file))
+
+    with open(test_file, "r", encoding="utf-8") as file_buffer:
+        reader = csv.reader(file_buffer)
+        header_row = next(reader)
+        data_row = next(reader)
+
+    assert header_row == expected_header
+    assert data_row == expected_data
 
 
 def test_initialize_files(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) -> None:
