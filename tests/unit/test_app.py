@@ -1,6 +1,7 @@
 """Unit tests for the app module."""
 from unittest import mock
 
+import dash_bootstrap_components
 from pytest_mock import plugin
 
 from actigraphy import app
@@ -39,6 +40,6 @@ def test_create_app(mocker: plugin.MockerFixture) -> None:
     assert isinstance(actual, mock.NonCallableMagicMock)
     mock_dash.assert_called_once_with(
         app.APP_NAME,
-        external_stylesheets=[app.dash_bootstrap_components.themes.BOOTSTRAP],
+        external_stylesheets=[dash_bootstrap_components.themes.BOOTSTRAP],
     )
     assert actual.title == app.APP_NAME

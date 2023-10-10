@@ -1,8 +1,6 @@
 """Tests for the io utilities module."""
 import os
-import tempfile
-
-from pytest import mark
+import pathlib
 
 from actigraphy.io import utils
 
@@ -22,14 +20,13 @@ def test_flatten() -> None:
     assert actual == expected
 
 
-@mark.skipif(is_windows(), reason="Not supported on Windows.")  # type: ignore[misc]
-def test_read_one_line_from_csv_file() -> None:
+def test_read_one_line_from_csv_file(tmp_path: pathlib.Path) -> None:
     """Test the read_one_line_from_csv_file function."""
     expected = ["1", "2", "3"]
-    with tempfile.NamedTemporaryFile() as file_buffer:
-        file_buffer.write(b"a,b,c\n1,2,3")
-        file_buffer.seek(0)
 
-        actual = utils.read_one_line_from_csv_file(file_buffer.name, 1)
+    test_file = tmp_path / "test.csv"
+    test_file.write_text("a,b,c\n1,2,3")
+
+    actual = utils.read_one_line_from_csv_file(str(test_file), 1)
 
     assert actual == expected
