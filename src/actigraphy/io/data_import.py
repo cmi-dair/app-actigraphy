@@ -54,7 +54,7 @@ def get_metadata(base_dir: str | pathlib.Path) -> metadata.MetaData:
 
 
 @functools.lru_cache()
-def get_time(times: list[str]) -> list[datetime.datetime]:
+def get_time(times: tuple[str]) -> list[datetime.datetime]:
     """Source data is shifted by negative twelve hours. This function returns a
     list of datetime objects that represent the standard time.
 
@@ -71,7 +71,7 @@ def get_time(times: list[str]) -> list[datetime.datetime]:
 
 @functools.lru_cache()
 def get_midnights(base_dir: str) -> list[int]:
-    """Returns a list of indices of midnight timestamps in the metadata file.
+    """Returns a list of indices of timestamps just after midnight in the metadata file.
 
     Args:
         base_dir: The base directory containing the metadata file.
@@ -268,4 +268,6 @@ def _extend_data(
         return extension + list(data)
     if action == "append":
         return list(data) + extension
+    if action is not None:
+        raise ValueError(f"Invalid action: {action}")
     return list(data)
