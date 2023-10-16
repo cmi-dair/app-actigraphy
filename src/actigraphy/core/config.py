@@ -28,7 +28,7 @@ def get_settings() -> Settings:
     return Settings()
 
 
-def initialize_logger(logging_level: int = logging.INFO) -> None:
+def initialize_logger(logging_level: int | None = None) -> None:
     """Initializes the logger.
 
     Args:
@@ -36,7 +36,8 @@ def initialize_logger(logging_level: int = logging.INFO) -> None:
     """
     settings = get_settings()
     logger = logging.getLogger(settings.LOGGER_NAME)
-    logger.setLevel(logging_level)
+    if logging_level:
+        logger.setLevel(logging_level)
 
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

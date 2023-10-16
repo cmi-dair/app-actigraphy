@@ -412,13 +412,13 @@ toml = ["tomli"]
 
 [[package]]
 name = "dash"
-version = "2.12.1"
+version = "2.13.0"
 description = "A Python framework for building reactive web-apps. Developed by Plotly."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "dash-2.12.1-py3-none-any.whl", hash = "sha256:23fcde95e59e353c34712c8fa3e90e784a7247a9e5f6ef47e467add10b7e91ab"},
-    {file = "dash-2.12.1.tar.gz", hash = "sha256:c7d3dccafff2d041a371dcf5bbb2a1701a38ca178c12dce93e64207e3aecbaeb"},
+    {file = "dash-2.13.0-py3-none-any.whl", hash = "sha256:ca21f01f720652c7e2d16d04d4e27803c2b60c4c2a382e750c3d8d778c06e209"},
+    {file = "dash-2.13.0.tar.gz", hash = "sha256:07c192db694b9bb4c87d57b6da877413f2695bfcb1d5c51f08995de7dcdd1e92"},
 ]
 
 [package.dependencies]
@@ -1489,6 +1489,23 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
+name = "pytest-mock"
+version = "3.11.1"
+description = "Thin-wrapper around the mock package for easier use with pytest"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest-mock-3.11.1.tar.gz", hash = "sha256:7f6b125602ac6d743e523ae0bfa71e1a697a2f5534064528c6ff84c2f7c2fc7f"},
+    {file = "pytest_mock-3.11.1-py3-none-any.whl", hash = "sha256:21c279fff83d70763b05f8874cc9cfb3fcacd6d354247a976f9529d19f9acf39"},
+]
+
+[package.dependencies]
+pytest = ">=5.0"
+
+[package.extras]
+dev = ["pre-commit", "pytest-asyncio", "tox"]
+
+[[package]]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
@@ -1953,4 +1970,4 @@ docs = []
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "a33d7c4fda0b41493efd088f671c579b64f52a11c11a01e24311ddd8725d4158"
+content-hash = "d05dad6a274d4656919cbadff64f5560c2eb21330549a9aec9591af14d826bd5"

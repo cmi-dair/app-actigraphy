@@ -213,6 +213,8 @@ def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
     if nonwear[0]:
         changes.insert(0, 0)
     if len(changes) % 2 != 0:
+        # If the number of changes is odd, then insert the end of the day
+        # as the last change.
         changes.append(len(nonwear) - 1)
     return changes
 

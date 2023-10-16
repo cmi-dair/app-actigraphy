@@ -23,6 +23,11 @@ def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
     """
     sleep_hours = io_utils.read_one_line_from_csv_file(filepath, 1)[1:]
 
+    if len(sleep_hours) == 0:
+        raise ValueError("The sleep log file is empty.")
+    if len(sleep_hours) % 2 != 0:
+        raise ValueError("The sleep log file has an odd number of entries.")
+
     wake = [sleep_hours[index] for index in range(len(sleep_hours)) if index % 2 == 1]
     sleep = [sleep_hours[index] for index in range(len(sleep_hours)) if index % 2 != 1]
 
