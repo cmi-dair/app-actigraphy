@@ -139,7 +139,7 @@
 </span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>
 </span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>
 </span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="k">def</span> <span class="nf">get_time</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a><span class="k">def</span> <span class="nf">get_time</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
 </span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Source data is shifted by negative twelve hours. This function returns a</span>
 </span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a><span class="sd">    list of datetime objects that represent the standard time.</span>
 </span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>
@@ -156,7 +156,7 @@
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>
 </span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
 </span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="k">def</span> <span class="nf">get_midnights</span><span class="p">(</span><span class="n">base_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of indices of midnight timestamps in the metadata file.</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of indices of timestamps just after midnight in the metadata file.</span>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a><span class="sd">    Args:</span>
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">        base_dir: The base directory containing the metadata file.</span>
@@ -353,7 +353,9 @@
 </span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>        <span class="k">return</span> <span class="n">extension</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a>    <span class="k">if</span> <span class="n">action</span> <span class="o">==</span> <span class="s2">&quot;append&quot;</span><span class="p">:</span>
 </span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">+</span> <span class="n">extension</span>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a>    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a>    <span class="k">if</span> <span class="n">action</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid action: </span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a>    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -446,14 +448,14 @@
                     <div class="decorator">@functools.lru_cache()</div>
 
         <span class="def">def</span>
-        <span class="name">get_time</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">times</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span>:</span></span>
+        <span class="name">get_time</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">times</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="get_time-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#get_time"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="get_time-57"><a href="#get_time-57"><span class="linenos">57</span></a><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
-</span><span id="get_time-58"><a href="#get_time-58"><span class="linenos">58</span></a><span class="k">def</span> <span class="nf">get_time</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
+</span><span id="get_time-58"><a href="#get_time-58"><span class="linenos">58</span></a><span class="k">def</span> <span class="nf">get_time</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
 </span><span id="get_time-59"><a href="#get_time-59"><span class="linenos">59</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Source data is shifted by negative twelve hours. This function returns a</span>
 </span><span id="get_time-60"><a href="#get_time-60"><span class="linenos">60</span></a><span class="sd">    list of datetime objects that represent the standard time.</span>
 </span><span id="get_time-61"><a href="#get_time-61"><span class="linenos">61</span></a>
@@ -501,7 +503,7 @@ list of datetime objects that represent the standard time.</p>
     <a class="headerlink" href="#get_midnights"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="get_midnights-73"><a href="#get_midnights-73"><span class="linenos">73</span></a><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
 </span><span id="get_midnights-74"><a href="#get_midnights-74"><span class="linenos">74</span></a><span class="k">def</span> <span class="nf">get_midnights</span><span class="p">(</span><span class="n">base_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-</span><span id="get_midnights-75"><a href="#get_midnights-75"><span class="linenos">75</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of indices of midnight timestamps in the metadata file.</span>
+</span><span id="get_midnights-75"><a href="#get_midnights-75"><span class="linenos">75</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of indices of timestamps just after midnight in the metadata file.</span>
 </span><span id="get_midnights-76"><a href="#get_midnights-76"><span class="linenos">76</span></a>
 </span><span id="get_midnights-77"><a href="#get_midnights-77"><span class="linenos">77</span></a><span class="sd">    Args:</span>
 </span><span id="get_midnights-78"><a href="#get_midnights-78"><span class="linenos">78</span></a><span class="sd">        base_dir: The base directory containing the metadata file.</span>
@@ -521,7 +523,7 @@ list of datetime objects that represent the standard time.</p>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Returns a list of indices of midnight timestamps in the metadata file.</p>
+            <div class="docstring"><p>Returns a list of indices of timestamps just after midnight in the metadata file.</p>
 
 <h6 id="arguments">Arguments:</h6>
 

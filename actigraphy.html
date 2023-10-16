@@ -100,7 +100,10 @@ actigraphy    </h1>
 <li>Ensure you have Docker installed.</li>
 <li>Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with <code>docker login</code>.
 <div class="pdoc-code codehilite">
-<pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8051</span>:8051<span class="w"> </span>--volume<span class="w"> </span><span class="si">${</span><span class="nv">LOCAL_DATA_DIR</span><span class="si">}</span>:/data<span class="w"> </span>ghcr.io/cmi-dair/app-actigraphy:main
+<pre><span></span><code><span class="c1"># On Apple Silicon</span>
+docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8051</span>:8051<span class="w"> </span>--platform<span class="w"> </span>linux/amd64<span class="w"> </span>--volume<span class="w"> </span><span class="si">${</span><span class="nv">LOCAL_DATA_DIR</span><span class="si">}</span>:/data<span class="w"> </span>ghcr.io/cmi-dair/app-actigraphy:main
+<span class="c1"># On other machines</span>
+docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8051</span>:8051<span class="w"> </span>--volume<span class="w"> </span><span class="si">${</span><span class="nv">LOCAL_DATA_DIR</span><span class="si">}</span>:/data<span class="w"> </span>ghcr.io/cmi-dair/app-actigraphy:main
 </code></pre>
 </div></li>
 </ol>
