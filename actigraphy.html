@@ -67,7 +67,25 @@ actigraphy    </h1>
 
 <h2 id="getting-started">Getting Started</h2>
 
-<p>The app may be installed either through Poetry or through Docker (recommended), see the instructions for each below. Whichever method you use to launch the app, the app will be available at <a href="http://localhost:8051">http://localhost:8051</a>.</p>
+<p>The app may be installed either through Docker (recommended) or Poetry, see the instructions for each below. Whichever method you use to launch the app, the app will be available at <a href="http://localhost:8051">http://localhost:8051</a>.</p>
+
+<h3 id="running-the-app-through-docker">Running the App through Docker</h3>
+
+<ol>
+<li>Ensure you have Docker installed.</li>
+<li><p>Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with <code>docker login</code>.</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>-p<span class="w"> </span><span class="m">8051</span>:8051<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--volume<span class="w"> </span><span class="si">${</span><span class="nv">LOCAL_DATA_DIR</span><span class="si">}</span>:/data<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--volume<span class="w"> </span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/assets:/app/assets<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>ghcr.io/cmi-dair/app-actigraphy:main
+</code></pre>
+</div>
+
+<p>Apple Silicon users will have to include a <code>--platform linux/amd64</code> flag.</p></li>
+</ol>
 
 <h3 id="running-the-app-through-poetry">Running the App through Poetry</h3>
 
@@ -92,24 +110,6 @@ actigraphy    </h1>
 <pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>actigraphy<span class="w"> </span><span class="o">{</span>DATA_DIR<span class="o">}</span>
 </code></pre>
 </div></li>
-</ol>
-
-<h3 id="running-the-app-through-docker">Running the App through Docker</h3>
-
-<ol>
-<li>Ensure you have Docker installed.</li>
-<li><p>Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with <code>docker login</code>.</p>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>-p<span class="w"> </span><span class="m">8051</span>:8051<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>--volume<span class="w"> </span><span class="si">${</span><span class="nv">LOCAL_DATA_DIR</span><span class="si">}</span>:/data<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>--volume<span class="w"> </span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/assets:/app/assets<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>ghcr.io/cmi-dair/app-actigraphy:main
-</code></pre>
-</div>
-
-<p>Apple Silicon users will have to include a <code>--platform linux/amd64</code> flag.</p></li>
 </ol>
 
 <h2 id="developer-notes">Developer notes</h2>
