@@ -136,6 +136,23 @@ def get_dates(file_manager: dict[str, str]) -> list[datetime.date]:
     return sorted(dates)
 
 
+def get_timezone(file_manager: dict[str, str]) -> datetime.tzinfo | None:
+    """Returns the timezone from the metadata.
+
+    Args:
+        file_manager: A dictionary containing the base directory of the metadata.
+
+    Returns:
+        str: The timezone extracted from the metadata.
+
+    """
+    logger.debug("Getting timezone from %s", file_manager["base_dir"])
+    metadata_data = get_metadata(file_manager["base_dir"])
+    timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
+    timezone = timestamps[0].tzinfo
+    return timezone
+
+
 def get_graph_data(
     file_manager: dict[str, str], day: int
 ) -> tuple[list[float], list[float], list[int]]:

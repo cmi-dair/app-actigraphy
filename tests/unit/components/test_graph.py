@@ -40,7 +40,7 @@ def test_adjust_range_slider(mocker: plugin.MockerFixture) -> None:
         "actigraphy.io.data_import.get_dates",
         return_value=[datetime.datetime.fromisoformat("1993-08-26T00:00:00.000000")],
     )
-    mocker.patch("actigraphy.io.minor_files.write_sleeplog")
+    mocker.patch("actigraphy.io.minor_files.modify_sleeplog")
 
     expected = (
         "Sleep onset: Thursday - 26 August 1993 12:00\n",
