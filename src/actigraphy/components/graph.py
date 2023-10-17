@@ -177,7 +177,7 @@ def adjust_range_slider(
         Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep offset, and sleep duration.
     """
     dates = data_import.get_dates(file_manager)
-    minor_files.write_sleeplog(file_manager, day, drag_value[0], drag_value[1])
+    minor_files.modify_sleeplog(file_manager, day, drag_value[0], drag_value[1])
 
     sleep_time = utils.point2time(drag_value[0], dates[day])
     wake_time = utils.point2time(drag_value[1], dates[day])

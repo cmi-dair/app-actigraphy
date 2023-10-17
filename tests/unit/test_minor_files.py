@@ -42,20 +42,23 @@ def test_read_sleeplog_odd_entries(mocker: plugin.MockerFixture) -> None:
         minor_files.read_sleeplog("dummy_filepath.csv")
 
 
-def test_write_sleeplog(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) -> None:
-    """Test write_sleeplog function."""
+def test_modify_sleeplog(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) -> None:
+    """Test modify_sleeplog function."""
     file_manager = {
         "sleeplog_file": str(tmp_path / "test_sleeplog.csv"),
         "identifier": "test_identifier",
     }
     mocker.patch("actigraphy.io.data_import.get_dates", return_value=["2023-10-10"])
     mocker.patch("actigraphy.core.utils.point2time", side_effect=["23:00", "07:00"])
+    mocker.patch(
+        "actigraphy.io.data_import.get_timezone", return_value=datetime.timezone.utc
+    )
     # Initialize file
     with open(file_manager["sleeplog_file"], "w", encoding="utf-8") as file_buffer:
         file_buffer.write("Dummy, first, line\n")
         file_buffer.write("Dummy, second, line\n")
 
-    minor_files.write_sleeplog(file_manager, 0, 23.0, 7.0)
+    minor_files.modify_sleeplog(file_manager, 0, 23.0, 7.0)
 
     with open(file_manager["sleeplog_file"], "r", encoding="utf-8") as f:
         lines = f.readlines()
@@ -64,9 +67,9 @@ def test_write_sleeplog(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) ->
         assert "07:00" in lines[1]
 
 
-def test_write_ggir(tmp_path: pathlib.Path) -> None:
+def test_write_sleeplog(tmp_path: pathlib.Path) -> None:
     """Test write_ggir function."""
-    hour_vector = [
+    date_vector = [
         datetime.datetime(2023, 10, 10, 23, 0),
         datetime.datetime(2023, 10, 11, 7, 0),
         datetime.datetime(2023, 10, 11, 23, 0),
@@ -74,7 +77,7 @@ def test_write_ggir(tmp_path: pathlib.Path) -> None:
     ]
     filepath = tmp_path / "test_ggir.csv"
 
-    minor_files.write_ggir(hour_vector, str(filepath))
+    minor_files.write_sleeplog(date_vector, str(filepath))
     with open(filepath, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
@@ -181,6 +184,9 @@ def test_initialize_files(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) 
         return_value=[str(datetime.datetime.now())],
     )
     mocker.patch("actigraphy.io.data_import.get_daycount", return_value=1)
+    mocker.patch(
+        "actigraphy.io.data_import.get_timezone", return_value=datetime.timezone.utc
+    )
     file_manager = {
         "base_dir": str(tmp_path),
         "sleeplog_file": os.path.join(str(tmp_path), "sleeplog.csv"),

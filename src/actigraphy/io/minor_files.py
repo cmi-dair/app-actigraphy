@@ -34,7 +34,7 @@ def read_sleeplog(filepath: str) -> tuple[list[str], list[str]]:
     return sleep, wake
 
 
-def write_sleeplog(
+def modify_sleeplog(
     file_manager: dict[str, str], day: int, sleep: float, wake: float
 ) -> None:
     """Writes sleep and wake times to the sleeplog file for a given day.
@@ -52,8 +52,9 @@ def write_sleeplog(
     dates = data_import.get_dates(file_manager)
     sleeplog[1][0] = file_manager["identifier"]
 
-    sleep_time = core_utils.point2time(sleep, dates[day])
-    wake_time = core_utils.point2time(wake, dates[day])
+    timezone = data_import.get_timezone(file_manager)
+    sleep_time = core_utils.point2time(sleep, dates[day], timezone)
+    wake_time = core_utils.point2time(wake, dates[day], timezone)
 
     sleeplog[1][(day * 2) + 1] = str(sleep_time)
     sleeplog[1][(day * 2) + 2] = str(wake_time)
@@ -63,8 +64,8 @@ def write_sleeplog(
         writer.writerows(sleeplog)
 
 
-def write_ggir(hour_vector: list[datetime.datetime], filepath: str) -> None:
-    """Save the given hour vector to a CSV file in GGIR format.
+def write_sleeplog(dates: list[datetime.datetime], filepath: str) -> None:
+    """Save the given hour vector to a CSV file .
 
     Args:
         hour_vector: A 1D array-like object containing hourly activity counts.
@@ -74,15 +75,15 @@ def write_ggir(hour_vector: list[datetime.datetime], filepath: str) -> None:
         The last day is discarded as each frontend "day" displays two days.
 
     """
-    hour_vector_no_end = hour_vector[:-2]
+    dates_no_end = dates[:-2]
     data_line = ["identifier"]
-    data_line.extend([str(date) for date in hour_vector_no_end])
+    data_line.extend([str(date) for date in dates_no_end])
     data_line = [data if data else "NA" for data in data_line]
 
     header = ["ID"] + io_utils.flatten(
         [
             [f"onset_N{day+1}", f"wakeup_N{day+1}"]
-            for day in range(len(hour_vector_no_end) // 2)
+            for day in range(len(dates_no_end) // 2)
         ]
     )
 
@@ -183,9 +184,12 @@ def initialize_files(
     """
     if not path.exists(file_manager["sleeplog_file"]):
         dates = data_import.get_dates(file_manager)
-        hour_vector = [[core_utils.point2time(None, date)] * 2 for date in dates]
-        hour_vector_flat = io_utils.flatten(hour_vector)
-        write_ggir(hour_vector_flat, file_manager["sleeplog_file"])
+        timezone = data_import.get_timezone(file_manager)
+        date_vector = [
+            [core_utils.point2time(None, date, timezone)] * 2 for date in dates
+        ]
+        date_vector_flat = io_utils.flatten(date_vector)
+        write_sleeplog(date_vector_flat, file_manager["sleeplog_file"])
 
     daycount = data_import.get_daycount(file_manager["base_dir"])
     vector_files = [
