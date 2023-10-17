@@ -35,11 +35,13 @@ The app may be installed either through Poetry or through Docker (recommended), 
 1. Ensure you have Docker installed.
 2. Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with `docker login`.
    ```bash
-   # On Apple Silicon
-   docker run -p 8051:8051 --platform linux/amd64 --volume ${LOCAL_DATA_DIR}:/data ghcr.io/cmi-dair/app-actigraphy:main
-   # On other machines
-   docker run -p 8051:8051 --volume ${LOCAL_DATA_DIR}:/data ghcr.io/cmi-dair/app-actigraphy:main
+   docker run \
+      -p 8051:8051 \
+      --volume ${LOCAL_DATA_DIR}:/data \
+      --volume `pwd`/assets:/app/assets \
+      ghcr.io/cmi-dair/app-actigraphy:main
    ```
+   Apple Silicon users will have to include a `--platform linux/amd64` flag.
 
 ## Developer notes
 
