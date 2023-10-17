@@ -11,7 +11,21 @@ This webapp is an application designed for annotating sleep data. This repositor
 
 ## Getting Started
 
-The app may be installed either through Poetry or through Docker (recommended), see the instructions for each below. Whichever method you use to launch the app, the app will be available at http://localhost:8051.
+The app may be installed either through Docker (recommended) or Poetry, see the instructions for each below. Whichever method you use to launch the app, the app will be available at http://localhost:8051.
+
+### Running the App through Docker
+
+1. Ensure you have Docker installed.
+2. Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with `docker login`.
+   ```bash
+   docker run \
+      -p 8051:8051 \
+      --volume ${LOCAL_DATA_DIR}:/data \
+      --volume `pwd`/assets:/app/assets \
+      ghcr.io/cmi-dair/app-actigraphy:main
+   ```
+   Apple Silicon users will have to include a `--platform linux/amd64` flag.
+
 
 ### Running the App through Poetry
 
@@ -30,18 +44,6 @@ The app may be installed either through Poetry or through Docker (recommended), 
    poetry run actigraphy {DATA_DIR}
    ```
 
-### Running the App through Docker
-
-1. Ensure you have Docker installed.
-2. Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with `docker login`.
-   ```bash
-   docker run \
-      -p 8051:8051 \
-      --volume ${LOCAL_DATA_DIR}:/data \
-      --volume `pwd`/assets:/app/assets \
-      ghcr.io/cmi-dair/app-actigraphy:main
-   ```
-   Apple Silicon users will have to include a `--platform linux/amd64` flag.
 
 ## Developer notes
 
