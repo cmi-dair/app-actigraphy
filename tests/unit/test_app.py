@@ -8,9 +8,12 @@ from actigraphy import app
 
 
 def test_create_app(mocker: plugin.MockerFixture) -> None:
-    """Test the create_app function. As this function calls other functions, we only
-    check that the correct functions are called with the correct arguments. The
-    functions themselves are tested in their own unit tests."""
+    """Test the create_app function.
+
+    As this function calls other functions, we only check that the correct
+    functions are called with the correct arguments. The functions themselves
+    are tested in their own unit tests.
+    """
     mocker.patch(
         "actigraphy.app.cli.parse_args",
         return_value=mocker.MagicMock(verbosity=20),

@@ -10,7 +10,8 @@ is used to register callbacks across multiple files.
 import dataclasses
 import inspect
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import dash
 from dash import dependencies
@@ -40,24 +41,25 @@ class Callback:
     inputs: dash.Input | list[dash.Input]
     states: dash.State | list[dash.State] = dataclasses.field(default_factory=list)
     kwargs: dict[str, Any] = dataclasses.field(
-        default_factory=lambda: {"prevent_initial_call": False}
+        default_factory=lambda: {"prevent_initial_call": False},
     )
 
 
 class CallbackManager:
-    """
-    A class for managing Dash callbacks.
+    """A class for managing Dash callbacks.
 
     Attributes:
         _callbacks (list[Callback]): A list of Callback objects.
     """
 
     def __init__(self) -> None:
+        """Initializes a new instance of the CallbackManager class."""
         self._callbacks: list[Callback] = []
 
-    def callback(self, *args: Any, **kwargs: Any) -> Callable[[Any], Any]:
-        """A decorator for registering a Dash callback. This decorator is used
-        to log the name of the callback when it is triggered.
+    def callback(self, *args: Any, **kwargs: Any) -> Callable[[Any], Any]:  # noqa: ANN401
+        """A decorator for registering a Dash callback.
+
+        This decorator is used to log the name of the callback when it is triggered.
 
         Args:
             *args: The arguments of the callback.
@@ -67,19 +69,25 @@ class CallbackManager:
             Callable: The decorated function.
         """
         output, inputs, state, prevent_initial_call = dependencies.handle_callback_args(
-            args, kwargs
+            args,
+            kwargs,
         )
 
         def wrapper(func: Callable[[Any], Any]) -> None:
             def logging_func(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
-                def wrapper(*args: Any, **kwargs: Any) -> Any:
+                def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
                     module = inspect.getmodule(func)
                     if not module:
-                        raise ValueError(
+                        msg = (
                             "The function to be decorated must be defined in a module."
                         )
+                        raise ValueError(
+                            msg,
+                        )
                     logger.info(
-                        "Calling callback: %s.%s.", module.__name__, func.__name__
+                        "Calling callback: %s.%s.",
+                        module.__name__,
+                        func.__name__,
                     )
                     return func(*args, **kwargs)
 
@@ -94,7 +102,7 @@ class CallbackManager:
                     inputs,
                     state,
                     {"prevent_initial_call": prevent_initial_call},
-                )
+                ),
             )
 
         return wrapper
@@ -108,7 +116,10 @@ class CallbackManager:
         for callback in self._callbacks:
             logger.debug("Attaching callback: %s.", callback.func.__name__)
             app.callback(
-                callback.outputs, callback.inputs, callback.states, **callback.kwargs
+                callback.outputs,
+                callback.inputs,
+                callback.states,
+                **callback.kwargs,
             )(callback.func)
 
 
@@ -119,18 +130,17 @@ global_manager = CallbackManager()
 def initialize_components() -> None:
     """Initializes the components of the Actigraphy app.
 
-    Notes:
-        This is a workaround to allow callbacks to be placed across multiple
-        files. All these files use the global_manager object defined in this
-        file. As such, a side-effect of importing these files is that all the
-        callbacks are registered.
+    This is a workaround to allow callbacks to be placed across multiple
+    files. All these files use the global_manager object defined in this
+    file. As such, a side-effect of importing these files is that all the
+    callbacks are registered.
     """
     # pylint: disable=import-outside-toplevel disable=unused-import
     from actigraphy.components import (
-        app_license,
-        day_slider,
-        file_selection,
-        finished_checkbox,
-        graph,
-        switches,
+        app_license,  # noqa: F401
+        day_slider,  # noqa: F401
+        file_selection,  # noqa: F401
+        finished_checkbox,  # noqa: F401
+        graph,  # noqa: F401
+        switches,  # noqa: F401
     )

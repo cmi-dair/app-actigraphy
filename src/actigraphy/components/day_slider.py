@@ -1,12 +1,9 @@
-"""Dash HTML div containing a slider component for selecting a day for a
-participant.
-"""
+"""Dash HTML div for a slider component for selecting days."""
 from dash import dcc, html
 
 
 def day_slider(participant_name: str, max_count: int) -> html.Div:
-    """Returns a Dash HTML div containing a slider component for selecting a day
-    for a participant.
+    """A slider component for selecting a day for a participant.
 
     Args:
         participant_name : The name of the participant.

@@ -1,6 +1,7 @@
-"""Defines a Dash checklist component that allows the user to indicate whether
-they are done with the current participant and would like to proceed to the next
-one.
+"""Defines a Dash checklist component.
+
+The checklist allows the user to indicate whether they are done with the
+current participant and would like to proceed to the next one.
 """
 import logging
 
@@ -17,9 +18,10 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 def finished_checkbox() -> dcc.Checklist:
-    """Returns a Dash checklist component that allows the user to indicate
-    whether they are done with the current participant and would like to proceed
-    to the next one.
+    """Create a Dash checklist component.
+
+    This checklist allows the user to indicate whether they are done with the
+    current participant and would like to proceed to the next one.
 
     Returns:
         dcc.Checklist: A Dash checklist component with a single checkbox option.
@@ -36,7 +38,7 @@ def finished_checkbox() -> dcc.Checklist:
     dash.Input("are-you-done", "value"),
     dash.State("file_manager", "data"),
 )
-def write_log_done(is_user_done: bool, file_manager: dict[str, str]) -> bool:
+def write_log_done(is_user_done: bool, file_manager: dict[str, str]) -> bool:  # noqa: FBT001
     """Writes a log message indicating that the analysis has been completed.
 
     Args:

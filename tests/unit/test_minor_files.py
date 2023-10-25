@@ -27,7 +27,7 @@ def test_read_sleeplog_empty_file(mocker: plugin.MockerFixture) -> None:
     """Mock the utility function for an empty file."""
     mocker.patch("actigraphy.io.utils.read_one_line_from_csv_file", return_value=[])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="The sleep log file is empty."):
         minor_files.read_sleeplog("dummy_filepath.csv")
 
 
@@ -38,7 +38,10 @@ def test_read_sleeplog_odd_entries(mocker: plugin.MockerFixture) -> None:
         return_value=["Identifier", "23:00", "07:00", "23:30"],
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="The sleep log file has an odd number of entries.",
+    ):
         minor_files.read_sleeplog("dummy_filepath.csv")
 
 
@@ -51,7 +54,8 @@ def test_modify_sleeplog(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) -
     mocker.patch("actigraphy.io.data_import.get_dates", return_value=["2023-10-10"])
     mocker.patch("actigraphy.core.utils.point2time", side_effect=["23:00", "07:00"])
     mocker.patch(
-        "actigraphy.io.data_import.get_timezone", return_value=datetime.timezone.utc
+        "actigraphy.io.data_import.get_timezone",
+        return_value=datetime.UTC,
     )
     # Initialize file
     with open(file_manager["sleeplog_file"], "w", encoding="utf-8") as file_buffer:
@@ -60,7 +64,7 @@ def test_modify_sleeplog(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) -
 
     minor_files.modify_sleeplog(file_manager, 0, 23.0, 7.0)
 
-    with open(file_manager["sleeplog_file"], "r", encoding="utf-8") as f:
+    with open(file_manager["sleeplog_file"], encoding="utf-8") as f:
         lines = f.readlines()
         assert "test_identifier" in lines[1]
         assert "23:00" in lines[1]
@@ -78,7 +82,7 @@ def test_write_sleeplog(tmp_path: pathlib.Path) -> None:
     filepath = tmp_path / "test_ggir.csv"
 
     minor_files.write_sleeplog(date_vector, str(filepath))
-    with open(filepath, "r", encoding="utf-8") as f:
+    with open(filepath, encoding="utf-8") as f:
         lines = f.readlines()
 
     assert lines[0] == "ID,onset_N1,wakeup_N1\n"
@@ -91,7 +95,7 @@ def test_write_log_file(tmp_path: pathlib.Path) -> None:
     filepath = tmp_path / "test_log.csv"
 
     minor_files.write_log_file("JohnDoe", str(filepath), "test_identifier")
-    with open(filepath, "r", encoding="utf-8") as f:
+    with open(filepath, encoding="utf-8") as f:
         lines = f.readlines()
 
     assert lines[0] == "Username,Participant,Date,Filename\n"
@@ -105,7 +109,7 @@ def test_write_vector(tmp_path: pathlib.Path) -> None:
     vector_path = tmp_path / "test_vector.csv"
 
     minor_files.write_vector(str(vector_path), sample_vector)
-    with open(vector_path, "r", encoding="utf-8") as file_buffer:
+    with open(vector_path, encoding="utf-8") as file_buffer:
         actual = file_buffer.read()
 
     assert actual == expected
@@ -123,16 +127,16 @@ def test_read_vector(tmp_path: pathlib.Path) -> None:
     assert read_result == expected
 
 
-@pytest.fixture
+@pytest.fixture()
 def patch_datetime_now(monkeypatch: pytest.MonkeyPatch) -> datetime.datetime:
-    """
-    A helper function to patch the datetime module's `datetime.now()` method to always return a fixed datetime object.
+    """Patch `datetime.now()` return a fixed datetime object.
 
     Args:
         monkeypatch: A pytest monkeypatch fixture object.
 
     Returns:
-        datetime.datetime: A datetime object representing the fixed datetime value that `datetime.now()` will return after patching.
+        datetime.datetime: A datetime object representing the fixed datetime
+            value that `datetime.now()` will return after patching.
 
     Example usage:
         def test_something(monkeypatch):
@@ -167,7 +171,7 @@ def test_write_log_analysis_completed(
 
     minor_files.write_log_analysis_completed(is_completed, identifier, str(test_file))
 
-    with open(test_file, "r", encoding="utf-8") as file_buffer:
+    with open(test_file, encoding="utf-8") as file_buffer:
         reader = csv.reader(file_buffer)
         header_row = next(reader)
         data_row = next(reader)
@@ -185,7 +189,8 @@ def test_initialize_files(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) 
     )
     mocker.patch("actigraphy.io.data_import.get_daycount", return_value=1)
     mocker.patch(
-        "actigraphy.io.data_import.get_timezone", return_value=datetime.timezone.utc
+        "actigraphy.io.data_import.get_timezone",
+        return_value=datetime.UTC,
     )
     file_manager = {
         "base_dir": str(tmp_path),
@@ -204,9 +209,9 @@ def test_initialize_files(tmp_path: pathlib.Path, mocker: plugin.MockerFixture) 
     for key, filepath in file_manager.items():
         if key != "identifier":
             assert os.path.exists(filepath)
-    with open(file_manager["sleeplog_file"], "r", encoding="utf-8") as file_buffer:
+    with open(file_manager["sleeplog_file"], encoding="utf-8") as file_buffer:
         content = file_buffer.read()
         assert "ID,onset_N1,wakeup_N1\nidentifier," in content
-    with open(file_manager["log_file"], "r", encoding="utf-8") as file_buffer:
+    with open(file_manager["log_file"], encoding="utf-8") as file_buffer:
         content = file_buffer.read()
         assert evaluator_name in content

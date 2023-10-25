@@ -1,6 +1,7 @@
 """Tests for the cli module."""
 # pylint: disable=protected-access
 import argparse
+import logging
 import pathlib
 
 from pytest_mock import plugin
@@ -13,18 +14,19 @@ def test_parse_args(mocker: plugin.MockerFixture) -> None:
     mocker.patch(
         "argparse.ArgumentParser.parse_args",
         return_value=argparse.Namespace(
-            input_folder=pathlib.Path("test_folder"), verbosity=20
+            input_folder=pathlib.Path("test_folder"),
+            verbosity=20,
         ),
     )
 
     args = cli.parse_args()
 
     assert args.input_folder == pathlib.Path("test_folder")
-    assert args.verbosity == 20
+    assert args.verbosity == logging.INFO
 
 
 def test_get_subject_folders(mocker: plugin.MockerFixture) -> None:
-    """Test that get_subject_folders finds all output_ directories"""
+    """Test that get_subject_folders finds all output_ directories."""
     mocked_path = mocker.MagicMock()
     mocked_subfolder = mocker.MagicMock()
     mocked_subfolder.is_dir.return_value = True

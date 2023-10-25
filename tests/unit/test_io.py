@@ -1,4 +1,4 @@
-""" Tests for the IO module. """
+"""Tests for the IO module."""
 # pylint: disable=protected-access
 from actigraphy.io import metadata
 

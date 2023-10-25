@@ -1,3 +1,4 @@
+"""Unit tests for the utils module."""
 import datetime
 
 from actigraphy.core import utils

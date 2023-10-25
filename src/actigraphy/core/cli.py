@@ -18,7 +18,9 @@ def parse_args() -> argparse.Namespace:
         argparse.Namespace: The parsed command line arguments.
     """
     parser = argparse.ArgumentParser(
-        description="""Actigraphy webapp to manually correct annotations for the sleep log diary. """,
+        description=(
+            "Actigraphy webapp to manually correct annotations for the sleep log diary."
+        ),
         epilog="""Developed by the Child Mind Institute.""",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -55,7 +57,7 @@ def get_subject_folders(args: argparse.Namespace) -> list[str]:
     ]
 
 
-def _add_string_quotation(to_print: Any) -> str:
+def _add_string_quotation(to_print: Any) -> str:  # noqa: ANN401
     """Adds quotation marks around a string or pathlib.Path object.
 
     Args:
@@ -65,6 +67,6 @@ def _add_string_quotation(to_print: Any) -> str:
         Any: The object with quotation marks added, if it is a string or
             pathlib.Path object. Otherwise, the original object is returned.
     """
-    if isinstance(to_print, (str, pathlib.Path)):
+    if isinstance(to_print, str | pathlib.Path):
         return f'"{to_print}"'
     return str(to_print)

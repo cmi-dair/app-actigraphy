@@ -1,3 +1,4 @@
+"""Unit tests for the graph component."""
 # pylint: disable=protected-access
 import datetime
 

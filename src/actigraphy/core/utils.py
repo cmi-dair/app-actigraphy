@@ -31,6 +31,7 @@ class FileManager:
     """
 
     def __init__(self, base_dir: str) -> None:
+        """Initializes the FileManager class."""
         self.base_dir = base_dir
         self.log_dir = path.join(self.base_dir, "logs")
         self.identifier = self.base_dir.rsplit("_", maxsplit=1)[-1]
@@ -38,27 +39,31 @@ class FileManager:
         self.log_file = path.join(self.log_dir, "log_file.csv")
         self.sleeplog_file = path.join(self.log_dir, f"sleeplog_{self.identifier}.csv")
         self.multiple_sleeplog_file = path.join(
-            self.log_dir, f"multiple_sleeplog_{self.identifier}.csv"
+            self.log_dir,
+            f"multiple_sleeplog_{self.identifier}.csv",
         )
         self.data_cleaning_file = path.join(
-            self.log_dir, f"data_cleaning_{self.identifier}.csv"
+            self.log_dir,
+            f"data_cleaning_{self.identifier}.csv",
         )
         self.missing_sleep_file = path.join(
-            self.log_dir, f"missing_sleep_{self.identifier}.csv"
+            self.log_dir,
+            f"missing_sleep_{self.identifier}.csv",
         )
         self.review_night_file = path.join(
-            self.log_dir, f"review_night_{self.identifier}.csv"
+            self.log_dir,
+            f"review_night_{self.identifier}.csv",
         )
         self.completed_analysis_file = path.join(
-            self.log_dir, "participants_with_completed_analysis.csv"
+            self.log_dir,
+            "participants_with_completed_analysis.csv",
         )
 
         os.makedirs(self.log_dir, exist_ok=True)
 
 
 def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
-    """Calculates the difference between two datetime objects and returns the
-    result as a string in the format "HH:MM".
+    """Calculates the difference between two datetime objects.
 
     Args:
         delta: The difference between two datetime objects.
@@ -74,10 +79,12 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
 
 
 def time2point(
-    time: datetime.datetime, date: datetime.date, ignore_timezone: bool = True
+    time: datetime.datetime,
+    date: datetime.date,
+    *,
+    ignore_timezone: bool = True,
 ) -> int:
-    """Converts a datetime object to a float representing the number of minutes
-    since midnight on the given date.
+    """Converts a datetime to the number of minutes since the given day's midnight.
 
     Args:
         time: The datetime object to convert.
@@ -97,14 +104,16 @@ def time2point(
 
 
 def point2time(
-    point: float | None, date: datetime.date, timezone: datetime.tzinfo | None = None
+    point: float | None,
+    date: datetime.date,
+    timezone: datetime.tzinfo | None = None,
 ) -> datetime.datetime:
-    """
-    Converts a point value to a datetime object.
+    """Converts a point value to a datetime object.
 
     Args:
         point: The point value to convert.
         date: The date to combine with the converted time.
+        timezone: The timezone to use for the resulting datetime object.
 
     Returns:
         datetime.datetime: The resulting datetime object.
@@ -113,7 +122,8 @@ def point2time(
     if point is None:
         # Default to 03:00AM the next day
         default_date = datetime.datetime.combine(
-            date, datetime.time(0)
+            date,
+            datetime.time(0),
         ) + datetime.timedelta(days=1, hours=3, minutes=0)
         if timezone:
             return default_date.astimezone(timezone)
@@ -148,7 +158,8 @@ def point2time_timestamp(point: int, npointsperday: int, offset: int = 0) -> str
 
 
 def slider_values_to_graph_values(
-    values: list[int], n_points_per_day: int
+    values: list[int],
+    n_points_per_day: int,
 ) -> list[int]:
     """Converts the values of the slider to the values of the graph.
 
