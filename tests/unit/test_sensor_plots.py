@@ -1,4 +1,4 @@
-""" Unit tests for the plotting module. """
+"""Unit tests for the plotting module."""
 import pytest
 from plotly import graph_objects
 
@@ -12,13 +12,18 @@ def test_build_sensor_plot() -> None:
     arm_movement = [5, 10, 15]
     title_day = "Day 1"
     n_ticks = 1
+    expected_num_data = 2
 
     figure = sensor_plots.build_sensor_plot(
-        timestamps, sensor_angle, arm_movement, title_day, n_ticks
+        timestamps,
+        sensor_angle,
+        arm_movement,
+        title_day,
+        n_ticks,
     )
 
     assert isinstance(figure, graph_objects.Figure)
-    assert len(figure.data) == 2
+    assert len(figure.data) == expected_num_data
     assert figure.data[0].name == "Angle of sensor's z-axis"
     assert figure.data[1].name == "Arm movement"
     assert figure.layout.title.text == title_day
@@ -31,6 +36,7 @@ def test_add_rectangle() -> None:
     limits = [1, 2]
     color = "blue"
     label = "Test"
+    expected_opacity = 0.2
 
     new_figure = sensor_plots.add_rectangle(figure, limits, color, label)
 
@@ -39,14 +45,20 @@ def test_add_rectangle() -> None:
     assert new_figure.layout.shapes[0].x0 == limits[0]
     assert new_figure.layout.shapes[0].x1 == limits[1]
     assert new_figure.layout.shapes[0].fillcolor == color
-    assert new_figure.layout.shapes[0].opacity == 0.2
+    assert new_figure.layout.shapes[0].opacity == expected_opacity
 
 
 def test_build_sensor_plot_unequal_lengths() -> None:
-    """Test that build_sensor_plot raises a ValueError when input sequences have unequal lengths."""
+    """Test if a ValueError is raised for sequences with unequal length."""
     timestamps = ["2022-01-01 00:00", "2022-01-01 00:01", "2022-01-01 00:02"]
     sensor_angle = [30, 45]
     arm_movement = [5, 10, 15]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "The lengths of the timestamps, sensor angle "
+            "and arm movement must be equal."
+        ),
+    ):
         sensor_plots.build_sensor_plot(timestamps, sensor_angle, arm_movement, "Day 1")

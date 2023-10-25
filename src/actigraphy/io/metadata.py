@@ -9,15 +9,19 @@ import rdata
 
 
 class MetaDataM(pydantic.BaseModel):
-    """
-    A Pydantic model representing the M subclass of the metadata for actigraphy data.
+    """A Pydantic model representing the M subclass of the metadata for actigraphy data.
+
     Only the required data is retained.
 
     Attributes:
-        model_config (pydantic.ConfigDict): A dictionary containing configuration options for the model.
-        metalong (pd.DataFrame): A pandas DataFrame containing long-format metadata.
-        metashort (pd.DataFrame): A pandas DataFrame containing short-format metadata.
-        windowsizes (list[int]): A list of integers representing window sizes for the data.
+        model_config (pydantic.ConfigDict): A dictionary containing
+            configuration options for the model.
+        metalong (pd.DataFrame): A pandas DataFrame containing long-format
+            metadata.
+        metashort (pd.DataFrame): A pandas DataFrame containing short-format
+            metadata.
+        windowsizes (list[int]): A list of integers representing window sizes
+            for the data.
     """
 
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
@@ -27,8 +31,7 @@ class MetaDataM(pydantic.BaseModel):
 
 
 class MetaData(pydantic.BaseModel):
-    """
-    A class representing metadata for actigraphy data.
+    """A class representing metadata for actigraphy data.
 
     Attributes:
         m: The metadata object.
@@ -42,8 +45,7 @@ class MetaData(pydantic.BaseModel):
 
     @classmethod
     def from_file(cls, filepath: str | pathlib.Path) -> "MetaData":
-        """
-        Load metadata from a file.
+        """Load metadata from a file.
 
         Args:
             filepath: The path to the metadata file.
@@ -67,11 +69,10 @@ def _clean_key(key: str) -> str:
 
     """
     key = key.replace(".", "_")
-    key = _snakecase(key)
-    return key
+    return _snakecase(key)
 
 
-def _clean_value(value: Any) -> Any:
+def _clean_value(value: Any) -> Any:  # noqa: ANN401
     """Cleans a value."""
     if isinstance(value, list) and len(value) == 1:
         return value[0]
@@ -80,10 +81,9 @@ def _clean_value(value: Any) -> Any:
 
 def _recursive_clean_rdata(r_data: dict[str, Any]) -> dict[str, Any]:
     """Replaces dictionary keys with snakecase characters and legal attribute names.
-    Replaces single length lists in dictionary values with their first element.
 
     Args:
-        rdata: The dictionary to clean.
+        r_data: The dictionary to clean.
 
     Returns:
         A dictionary with cleaned keys.
@@ -92,14 +92,16 @@ def _recursive_clean_rdata(r_data: dict[str, Any]) -> dict[str, Any]:
         - This function acts recursively on nested dictionaries.
         - Replaces `.` in keys with `_`.
         - Sets all attributes to snakecase.
+        - Replaces single length lists in dictionary values with their first element.
+
     """
     cleaned_rdata = {}
     for key, value in r_data.items():
-        key = _clean_key(key)
-        value = _clean_value(value)
+        clean_key = _clean_key(key)
+        clean_value = _clean_value(value)
         if isinstance(value, dict):
-            value = _recursive_clean_rdata(value)
-        cleaned_rdata[key] = value
+            clean_value = _recursive_clean_rdata(clean_value)
+        cleaned_rdata[clean_key] = clean_value
     return cleaned_rdata
 
 
@@ -117,13 +119,16 @@ def _rdata_to_datadict(filepath: str | pathlib.Path) -> dict[str, Any]:
 
 
 def _snakecase(string: str) -> str:
-    """Converts a string to snake case. Consecutive uppercase letters
-    do not receive underscores between them.
+    """Converts a string to snake case.
 
     Args:
         string: The string to convert.
 
     Returns:
         The converted string.
+
+    Notes:
+        Consecutive uppercase letters do not receive underscores between them.
+
     """
     return re.sub(r"(?<=[A-Z])(?!$)(?!_)(?![A-Z])", "_", string[::-1]).lower()[::-1]

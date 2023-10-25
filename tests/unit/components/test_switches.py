@@ -28,7 +28,8 @@ def test_update_switches(mocker: plugin.MockerFixture) -> None:
 def test_toggle_exclude_night(mocker: plugin.MockerFixture) -> None:
     """Test the toggle_exclude_night function."""
     mocker.patch(
-        "actigraphy.components.switches._toggle_vector_value", return_value=None
+        "actigraphy.components.switches._toggle_vector_value",
+        return_value=None,
     )
     func = callback_test_manager.get_callback("toggle_exclude_night")
 
@@ -40,7 +41,8 @@ def test_toggle_exclude_night(mocker: plugin.MockerFixture) -> None:
 def test_toggle_review_night(mocker: plugin.MockerFixture) -> None:
     """Test the toggle_review_night function."""
     mocker.patch(
-        "actigraphy.components.switches._toggle_vector_value", return_value=None
+        "actigraphy.components.switches._toggle_vector_value",
+        return_value=None,
     )
     func = callback_test_manager.get_callback("toggle_review_night")
 
@@ -52,7 +54,8 @@ def test_toggle_review_night(mocker: plugin.MockerFixture) -> None:
 def test_toggle_nap(mocker: plugin.MockerFixture) -> None:
     """Test the toggle_nap function."""
     mocker.patch(
-        "actigraphy.components.switches._toggle_vector_value", return_value=None
+        "actigraphy.components.switches._toggle_vector_value",
+        return_value=None,
     )
     func = callback_test_manager.get_callback("toggle_nap")
 

@@ -9,7 +9,9 @@ class Settings(pydantic.BaseModel):
     """Represents the app settings."""
 
     APP_NAME: str = pydantic.Field(
-        "Actigraphy", description="The name of the app.", env="ACTIGRAPHY_APP_NAME"
+        "Actigraphy",
+        description="The name of the app.",
+        env="ACTIGRAPHY_APP_NAME",
     )
     LOGGER_NAME: str = pydantic.Field(
         "Actigraphy",
@@ -18,7 +20,7 @@ class Settings(pydantic.BaseModel):
     )
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_settings() -> Settings:
     """Cached function to get the app settings.
 
@@ -40,7 +42,7 @@ def initialize_logger(logging_level: int | None = None) -> None:
         logger.setLevel(logging_level)
 
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     handler = logging.StreamHandler()

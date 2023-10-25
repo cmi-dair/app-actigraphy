@@ -1,4 +1,4 @@
-""" Unit tests for the data_import module. """
+"""Unit tests for the data_import module."""
 # pylint: disable=protected-access
 # pylint: disable=redefined-outer-name
 import datetime
@@ -12,7 +12,7 @@ from actigraphy.io import data_import, metadata
 
 
 def test_get_data_file_one_file(tmp_path: pathlib.Path) -> None:
-    """Test that the function returns the correct file when there is only one file"""
+    """Test that the function returns the correct file when there is only one file."""
     tmp_file = tmp_path / "test.RData"
     tmp_file.touch()
 
@@ -22,18 +22,18 @@ def test_get_data_file_one_file(tmp_path: pathlib.Path) -> None:
 
 
 def test_get_data_file_multiple_files(tmp_path: pathlib.Path) -> None:
-    """Test that the function raises an error when there are multiple files"""
+    """Test that the function raises an error when there are multiple files."""
     tmp_file = tmp_path / "test.RData"
     tmp_file.touch()
     extra_file = tmp_path / "extra.RData"
     extra_file.touch()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Expected one data file"):
         data_import._get_data_file(tmp_path)
 
 
 def test_get_data_file_no_files(tmp_path: pathlib.Path) -> None:
-    """Test that the function raises an error when there are no files"""
-    with pytest.raises(ValueError):
+    """Test that the function raises an error when there are no files."""
+    with pytest.raises(ValueError, match="Expected one data file"):
         data_import._get_data_file(tmp_path)
 
 
@@ -45,7 +45,8 @@ def test_get_metadata(mocker: plugin.MockerFixture, tmp_path: pathlib.Path) -> N
     meta_file.touch()
     mock_metadata = mocker.Mock(spec=metadata.MetaData)
     mocker.patch(
-        "actigraphy.io.metadata.MetaData.from_file", return_value=mock_metadata
+        "actigraphy.io.metadata.MetaData.from_file",
+        return_value=mock_metadata,
     )
 
     actual = data_import.get_metadata(tmp_path)
@@ -57,7 +58,7 @@ def test_get_metadata(mocker: plugin.MockerFixture, tmp_path: pathlib.Path) -> N
 
 def test_get_metadata_no_file(tmp_path: pathlib.Path) -> None:
     """Test that get_metadata raises an error when the metadata file is missing."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Expected one data file"):
         data_import.get_metadata(tmp_path)
 
 
@@ -65,8 +66,8 @@ def test_get_time() -> None:
     """Test that get_time correctly parses time strings."""
     times = ("2020-01-01T12:00:00+0000", "2020-01-01T13:00:00+0000")
     expected = [
-        datetime.datetime(2020, 1, 1, 12, 0, tzinfo=datetime.timezone.utc),
-        datetime.datetime(2020, 1, 1, 13, 0, tzinfo=datetime.timezone.utc),
+        datetime.datetime(2020, 1, 1, 12, 0, tzinfo=datetime.UTC),
+        datetime.datetime(2020, 1, 1, 13, 0, tzinfo=datetime.UTC),
     ]
 
     actual = data_import.get_time(times)
@@ -85,9 +86,9 @@ def test_get_midnights(mocker: plugin.MockerFixture) -> None:
     ]
     mocker.patch("actigraphy.io.data_import.get_metadata", return_value=mock_metadata)
     mocked_times = [
-        datetime.datetime(2022, 10, 15, 23, 59, 59, tzinfo=datetime.timezone.utc),
-        datetime.datetime(2022, 10, 16, 0, 0, 0, tzinfo=datetime.timezone.utc),
-        datetime.datetime(2022, 10, 16, 0, 0, 1, tzinfo=datetime.timezone.utc),
+        datetime.datetime(2022, 10, 15, 23, 59, 59, tzinfo=datetime.UTC),
+        datetime.datetime(2022, 10, 16, 0, 0, 0, tzinfo=datetime.UTC),
+        datetime.datetime(2022, 10, 16, 0, 0, 1, tzinfo=datetime.UTC),
     ]
     mocker.patch("actigraphy.io.data_import.get_time", return_value=mocked_times)
 
@@ -100,11 +101,12 @@ def test_get_midnights(mocker: plugin.MockerFixture) -> None:
 def test_get_daycount(mocker: plugin.MockerFixture) -> None:
     """Test get_daycount with mocked get_midnights data."""
     mocker.patch("actigraphy.io.data_import.get_midnights", return_value=[1, 2, 3])
+    expected_days = 4
 
     actual = data_import.get_daycount("base_dir")
 
     data_import.get_midnights.assert_called_once_with("base_dir")  # type: ignore[attr-defined]
-    assert actual == 4
+    assert actual == expected_days
 
 
 def test_get_n_points_per_day(mocker: plugin.MockerFixture) -> None:
@@ -114,11 +116,12 @@ def test_get_n_points_per_day(mocker: plugin.MockerFixture) -> None:
     mock_metadata.m.windowsizes = [30]
     mocker.patch("actigraphy.io.data_import.get_metadata", return_value=mock_metadata)
     file_manager = {"base_dir": "base_dir"}
+    expected_points = 2880
 
     actual = data_import.get_n_points_per_day(file_manager)
 
     data_import.get_metadata.assert_called_once_with("base_dir")  # type: ignore[attr-defined]
-    assert actual == 2880
+    assert actual == expected_points
 
 
 def test_get_dates(mocker: plugin.MockerFixture) -> None:
@@ -132,8 +135,8 @@ def test_get_dates(mocker: plugin.MockerFixture) -> None:
     ]
     mocker.patch("actigraphy.io.data_import.get_metadata", return_value=mock_metadata)
     mocked_times = [
-        datetime.datetime(2022, 10, 15, 12, 34, 56, tzinfo=datetime.timezone.utc),
-        datetime.datetime(2022, 10, 16, 12, 34, 56, tzinfo=datetime.timezone.utc),
+        datetime.datetime(2022, 10, 15, 12, 34, 56, tzinfo=datetime.UTC),
+        datetime.datetime(2022, 10, 16, 12, 34, 56, tzinfo=datetime.UTC),
     ]
     mocker.patch("actigraphy.io.data_import.get_time", return_value=mocked_times)
     file_manager = {"base_dir": "base_dir"}
@@ -179,12 +182,12 @@ def test_extend_data_invalid_action() -> None:
     data = [1, 2, 3]
     extension = [4, 5, 6]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid action"):
         data_import._extend_data(data, extension, "invalid")
 
 
 @pytest.mark.parametrize(
-    "data,extension,expected",
+    ("data", "extension", "expected"),
     [
         ([], [7, 8, 9], [7, 8, 9]),
         ([1, 2, 3], [], [1, 2, 3]),
@@ -192,7 +195,9 @@ def test_extend_data_invalid_action() -> None:
     ],
 )
 def test_extend_data_edge_cases(
-    data: list[Any], extension: list[Any], expected: list[Any]
+    data: list[Any],
+    extension: list[Any],
+    expected: list[Any],
 ) -> None:
     """Test _extend_data with various edge cases."""
     actual = data_import._extend_data(data, extension, "prepend")
@@ -224,7 +229,7 @@ def test_adjust_for_daylight_savings_add_hour() -> None:
 
 
 def test_adjust_for_daylight_savings_subtract_hour() -> None:
-    """Test _adjust_timepoint_for_daylight_savings when an hour needs to be subtracted."""
+    """Test functioning when an hour needs to be subtracted."""
     start = 0
     end = 25 * 3600 - 1
     window_size = 1
@@ -248,7 +253,8 @@ def test_adjust_for_daylight_savings_invalid_window_size() -> None:
 def test_day_start_and_end_time_points_first_day(mocker: plugin.MockerFixture) -> None:
     """Test the _day_start_and_end_time_points function for the first day."""
     mock_get_midnights = mocker.patch(
-        "actigraphy.io.data_import.get_midnights", autospec=True
+        "actigraphy.io.data_import.get_midnights",
+        autospec=True,
     )
     mock_adjust_timepoint_for_daylight_savings = mocker.patch(
         "actigraphy.io.data_import._adjust_timepoint_for_daylight_savings",
@@ -262,19 +268,23 @@ def test_day_start_and_end_time_points_first_day(mocker: plugin.MockerFixture) -
     file_manager = {"base_dir": "dummy_directory"}
     day = 0
     window_size = 1
+    expected_end = mock_adjust_timepoint_for_daylight_savings.return_value
 
     start, end = data_import._day_start_and_end_time_points(
-        file_manager, day, window_size
+        file_manager,
+        day,
+        window_size,
     )
 
     assert start == 0
-    assert end == 3600
+    assert end == expected_end
 
 
 def test_day_start_and_end_time_points_no_end(mocker: plugin.MockerFixture) -> None:
     """Test the _day_start_and_end_time_points function for a day with no end."""
     mock_get_midnights = mocker.patch(
-        "actigraphy.io.data_import.get_midnights", autospec=True
+        "actigraphy.io.data_import.get_midnights",
+        autospec=True,
     )
     mock_adjust_timepoint_for_daylight_savings = mocker.patch(
         "actigraphy.io.data_import._adjust_timepoint_for_daylight_savings",
@@ -286,10 +296,13 @@ def test_day_start_and_end_time_points_no_end(mocker: plugin.MockerFixture) -> N
     file_manager = {"base_dir": "dummy_directory"}
     day = 1
     window_size = 1
+    expected_start = mock_get_midnights.return_value[0]
 
     start, end = data_import._day_start_and_end_time_points(
-        file_manager, day, window_size
+        file_manager,
+        day,
+        window_size,
     )
 
-    assert start == 3600
+    assert start == expected_start
     assert end is None

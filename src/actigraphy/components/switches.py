@@ -1,4 +1,4 @@
-""" This module contains the switches component for the Actigraphy app.
+"""This module contains the switches component for the Actigraphy app.
 
 The switches component contains three BooleanSwitch components for use in the
 Actigraphy app. The first switch is used to indicate whether the participant
@@ -23,8 +23,7 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 def switches() -> html.Div:
-    """Returns a Dash HTML div containing three BooleanSwitch components for use
-    in the Actigraphy app.
+    """Returns a Dash HTML div containing three BooleanSwitch components.
 
     - The first switch is used to indicate whether the participant has multiple
         sleep periods in a 24-hour period.
@@ -42,12 +41,18 @@ def switches() -> html.Div:
             dash_daq.BooleanSwitch(
                 id="multiple_sleep",
                 on=False,
-                label=" Does this participant have multiple sleep periods in this 24h period?",
+                label=(
+                    " Does this participant have multiple sleep "
+                    "periods in this 24h period?",
+                ),
             ),
             dash_daq.BooleanSwitch(
                 id="exclude_night",
                 on=False,
-                label=" Does this participant have more than 2 hours of missing sleep data from 8PM to 8AM?",
+                label=(
+                    " Does this participant have more than 2 hours of "
+                    "missing sleep data from 8PM to 8AM?",
+                ),
             ),
             dash_daq.BooleanSwitch(
                 id="review_night",
@@ -57,7 +62,7 @@ def switches() -> html.Div:
             html.Div(id="null-data-sleep"),
             html.Div(id="null-data-night"),
             html.Div(id="null-data-review"),
-        ]
+        ],
     )
 
 
@@ -69,9 +74,7 @@ def switches() -> html.Div:
     dash.State("file_manager", "data"),
 )
 def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool, bool]:
-    """Reads the sleep logs for the given day from the file manager and returns a
-    tuple of boolean values indicating whether there are naps, missing sleep,
-    and reviewed nights for that day.
+    """Reads the sleep logs for the given day.
 
     Args:
         day: The day for which to retrieve the sleep logs.
@@ -98,7 +101,9 @@ def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool,
     prevent_initial_call=True,
 )
 def toggle_exclude_night(
-    exclude_button: bool, day: int, file_manager: dict[str, str]
+    exclude_button: bool,  # noqa: FBT001
+    day: int,
+    file_manager: dict[str, str],
 ) -> None:
     """Toggles the exclusion of a night in the missing sleep file.
 
@@ -118,10 +123,11 @@ def toggle_exclude_night(
     prevent_initial_call=True,
 )
 def toggle_review_night(
-    review_night: bool, day: int, file_manager: dict[str, str]
+    review_night: bool,  # noqa: FBT001
+    day: int,
+    file_manager: dict[str, str],
 ) -> None:
-    """
-    Toggles the review night flag for a given day in the review night file.
+    """Toggles the review night flag for a given day in the review night file.
 
     Args:
         review_night: The new review night flag value (0 or 1).
@@ -138,9 +144,8 @@ def toggle_review_night(
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
-def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]) -> None:
-    """
-    Toggles the nap status for a given day in the multiple sleep log file.
+def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]) -> None:  # noqa: FBT001
+    """Toggles the nap status for a given day in the multiple sleep log file.
 
     Args:
         multiple_sleep:: The new nap status for the given day.
@@ -160,7 +165,10 @@ def _toggle_vector_value(new_value: int | bool, index: int, file_path: str) -> N
 
     """
     logger.debug(
-        "Setting index %s to value %s for file %s", index, int(new_value), file_path
+        "Setting index %s to value %s for file %s",
+        index,
+        int(new_value),
+        file_path,
     )
     vector = minor_files.read_vector(file_path)
     vector[index] = int(new_value)

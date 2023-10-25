@@ -32,12 +32,11 @@ def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
     data_files = list(data_sub_dir.glob("*.RData"))
     if len(data_files) == 1:
         return data_files[0]
-    raise ValueError(
-        f"Expected one data file in {data_sub_dir}, found {len(data_files)}"
-    )
+    msg = f"Expected one data file in {data_sub_dir}, found {len(data_files)}"
+    raise ValueError(msg)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def get_metadata(base_dir: str | pathlib.Path) -> metadata.MetaData:
     """Get metadata from the specified base directory.
 
@@ -53,13 +52,12 @@ def get_metadata(base_dir: str | pathlib.Path) -> metadata.MetaData:
     return metadata.MetaData.from_file(metadata_file)
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_time(times: tuple[str]) -> list[datetime.datetime]:
-    """Source data is shifted by negative twelve hours. This function returns a
-    list of datetime objects that represent the standard time.
+    """Get the datetime objects from a list of times.
 
     Args:
-        meta: The metadata object.
+        times: The metadata object.
 
     Returns:
         A list of datetime objects that represent the standard time.
@@ -69,7 +67,7 @@ def get_time(times: tuple[str]) -> list[datetime.datetime]:
     return [datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z") for time in times]
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_midnights(base_dir: str) -> list[int]:
     """Returns a list of indices of timestamps just after midnight in the metadata file.
 
@@ -82,15 +80,16 @@ def get_midnights(base_dir: str) -> list[int]:
     logger.debug("Getting midnights from %s", base_dir)
     metadata_data = get_metadata(base_dir)
     timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
-    midnight_indices = []
-    for date_pairs in itertools.pairwise(timestamps):
-        if date_pairs[0].day != date_pairs[1].day:
-            midnight_indices.append(timestamps.index(date_pairs[1]) + 1)
+    midnight_indices = [
+        timestamps.index(date_pairs[1]) + 1
+        for date_pairs in itertools.pairwise(timestamps)
+        if date_pairs[0].day != date_pairs[1].day
+    ]
     logger.debug("Found %s midnights.", len(midnight_indices))
     return midnight_indices
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_daycount(base_dir: str) -> int:
     """Returns the number of days in the subject's data.
 
@@ -149,12 +148,12 @@ def get_timezone(file_manager: dict[str, str]) -> datetime.tzinfo | None:
     logger.debug("Getting timezone from %s", file_manager["base_dir"])
     metadata_data = get_metadata(file_manager["base_dir"])
     timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
-    timezone = timestamps[0].tzinfo
-    return timezone
+    return timestamps[0].tzinfo
 
 
 def get_graph_data(
-    file_manager: dict[str, str], day: int
+    file_manager: dict[str, str],
+    day: int,
 ) -> tuple[list[float], list[float], list[int]]:
     """Loads data for a given day and prepares it for plotting.
 
@@ -173,14 +172,16 @@ def get_graph_data(
     passed_midnight = get_midnights(file_manager["base_dir"])
 
     if len(passed_midnight) == 0:
-        raise ValueError("No midnight found in the data.")
+        msg = "No midnight found in the data."
+        raise ValueError(msg)
 
     # Prepare nonwear information for plotting
     enmo = metadata_data.m.metashort.ENMO.reset_index(drop=True)
     anglez = metadata_data.m.metashort.anglez.reset_index(drop=True)
     nonwear = np.zeros(len(enmo), dtype=int)
 
-    # take instances where nonwear was detected (on ws2 time vector) and map results onto a ws3 lenght vector for plotting purposes
+    # take instances where nonwear was detected (on ws2 time vector) and map
+    # results onto a ws3 lenght vector for plotting purposes
     nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)[0]
 
     window_size_ratio = (
@@ -192,7 +193,9 @@ def get_graph_data(
     n_points_per_day = get_n_points_per_day(file_manager)
 
     time_day_starts, time_day_ends = _day_start_and_end_time_points(
-        file_manager, day, metadata_data.m.windowsizes[0]
+        file_manager,
+        day,
+        metadata_data.m.windowsizes[0],
     )
 
     acc = abs(enmo[time_day_starts:time_day_ends] * 1000)
@@ -218,10 +221,11 @@ def get_graph_data(
 
 
 def _day_start_and_end_time_points(
-    file_manager: dict[str, str], day: int, window_size: int
+    file_manager: dict[str, str],
+    day: int,
+    window_size: int,
 ) -> tuple[int, int | None]:
-    """Given a file manager, a day index, and a window size, returns the start
-    and end time points for the given day.
+    """Returns the start and end time points for the given day.
 
     Args:
         file_manager: A dictionary containing file paths.
@@ -229,17 +233,21 @@ def _day_start_and_end_time_points(
         window_size: The size of the window in minutes.
 
     Returns:
-        tuple[int, int | None]: A tuple containing the start and end time points for the given day.
+        tuple[int, int | None]: A tuple containing the start and end time points
+            for the given day.
     """
-    target_timepoints = [0] + get_midnights(file_manager["base_dir"]) + [None]
+    target_timepoints = [0, *get_midnights(file_manager["base_dir"]), None]
 
     start, end = list(itertools.pairwise(target_timepoints))[day]
     if start is None:
-        raise ValueError(f"No start time found for day {day}.")
+        msg = f"No start time found for day {day}."
+        raise ValueError(msg)
 
     if end:
         time_day_ends: int | None = _adjust_timepoint_for_daylight_savings(
-            start, end, window_size
+            start,
+            end,
+            window_size,
         )
     else:
         time_day_ends = end
@@ -247,10 +255,11 @@ def _day_start_and_end_time_points(
 
 
 def _adjust_timepoint_for_daylight_savings(
-    start: int, end: int, window_size: int
+    start: int,
+    end: int,
+    window_size: int,
 ) -> int:
-    """
-    Adjusts the end timepoint for daylight savings time.
+    """Adjusts the end timepoint for daylight savings time.
 
     Args:
         start: The start timepoint.
@@ -261,22 +270,25 @@ def _adjust_timepoint_for_daylight_savings(
         int: The adjusted end timepoint.
     """
     day_length = end - start
-    if (day_length + 1) // (3600 / window_size) == 25:
+    if (day_length + 1) // (3600 / window_size) == 25:  # noqa: PLR2004
         end = end - int(60 * 60 / window_size)
-    if (day_length + 1) // (3600 / window_size) == 23:
+    if (day_length + 1) // (3600 / window_size) == 23:  # noqa: PLR2004
         end = end + int(60 * 60 / window_size)
     return end
 
 
 def _extend_data(
-    data: Any, extension: list[Any], action: str | None = None
+    data: Any,  # noqa: ANN401
+    extension: list[Any],
+    action: str | None = None,
 ) -> list[Any]:
     """Extends the given data with the given extension using the specified action.
 
     Args:
         data: The data to be extended.
         extension: The extension to be added to the data.
-        action: The action to be performed. Can be "prepend" or "append". Defaults to None.
+        action: The action to be performed. Can be "prepend" or "append".
+            Defaults to None.
 
     Returns:
         list: The extended data.
@@ -286,5 +298,6 @@ def _extend_data(
     if action == "append":
         return list(data) + extension
     if action is not None:
-        raise ValueError(f"Invalid action: {action}")
+        msg = f"Invalid action: {action}"
+        raise ValueError(msg)
     return list(data)

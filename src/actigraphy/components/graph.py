@@ -69,24 +69,32 @@ def graph() -> html.Div:
     prevent_initial_call=True,
 )
 def create_graph(
-    day: int, drag_value: list[int], file_manager: dict[str, str]
+    day: int,
+    drag_value: list[int],
+    file_manager: dict[str, str],
 ) -> graph_objects.Figure:
     """Creates a graph for a given day using data from the file manager."""
     dates = data_import.get_dates(file_manager)
     n_points_per_day = data_import.get_n_points_per_day(file_manager)
 
     day_1_sensor_angles, day_1_arm_movement, day_1_non_wear = _get_day_data(
-        file_manager, day, n_points_per_day
+        file_manager,
+        day,
+        n_points_per_day,
     )
     day_2_sensor_angles, day_2_arm_movement, day_2_non_wear = _get_day_data(
-        file_manager, day + 1, n_points_per_day
+        file_manager,
+        day + 1,
+        n_points_per_day,
     )
 
     sensor_angle = day_1_sensor_angles[n_points_per_day // 2 :] + day_2_sensor_angles
     arm_movement = day_1_arm_movement[n_points_per_day // 2 :] + day_2_arm_movement
     nonwear = day_1_non_wear[n_points_per_day // 2 :] + day_2_non_wear
 
-    title_day = f"Day {day+1}: {dates[day].strftime('%A - %d %B %Y')}"  # Frontend uses 1-indexed days.
+    title_day = (
+        f"Day {day+1}: {dates[day].strftime('%A - %d %B %Y')}"
+    )  # Frontend uses 1-indexed days.
     day_timestamps = [dates[day]] * (n_points_per_day // 2) + (
         [dates[day] + datetime.timedelta(days=1)]
     ) * n_points_per_day
@@ -96,7 +104,7 @@ def create_graph(
             [
                 day_timestamps[point].strftime("%d/%b/%Y"),
                 utils.point2time_timestamp(point, n_points_per_day, offset=12),
-            ]
+            ],
         )
         for point in range(len(day_timestamps))
     ]
@@ -123,10 +131,10 @@ def create_graph(
     prevent_initial_call=True,
 )
 def refresh_range_slider(
-    day: int, file_manager: dict[str, str]
+    day: int,
+    file_manager: dict[str, str],
 ) -> tuple[str, str, str, list[int]]:
-    """Reads the sleep logs for the given day from the file manager and returns
-    the sleep onset, sleep offset, and sleep duration as strings.
+    """Reads the sleep logs for the given day.
 
     Args:
         day: The day for which to retrieve the sleep logs.
@@ -164,7 +172,9 @@ def refresh_range_slider(
     prevent_initial_call=True,
 )
 def adjust_range_slider(
-    drag_value: list[int], file_manager: dict[str, str], day: int
+    drag_value: list[int],
+    file_manager: dict[str, str],
+    day: int,
 ) -> tuple[str, str, str]:
     """Adjusts the text labels fora  given day and writes the sleep log to a file.
 
@@ -174,7 +184,8 @@ def adjust_range_slider(
         day: The day for which to adjust the range slider.
 
     Returns:
-        Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep offset, and sleep duration.
+        Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep
+            offset, and sleep duration.
     """
     dates = data_import.get_dates(file_manager)
     minor_files.modify_sleeplog(file_manager, day, drag_value[0], drag_value[1])
@@ -190,7 +201,9 @@ def adjust_range_slider(
 
 
 def _get_day_data(
-    file_manager: dict[str, str], day: int, n_points_per_day: int
+    file_manager: dict[str, str],
+    day: int,
+    n_points_per_day: int,
 ) -> tuple[list[float], list[float], list[int]]:
     """Get data for a given day."""
     dates = data_import.get_dates(file_manager)
@@ -219,7 +232,7 @@ def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
     return changes
 
 
-def _build_figure(
+def _build_figure(  # noqa: PLR0913
     timestamps: list[str],
     sensor_angle: list[float],
     arm_movement: list[float],
@@ -230,7 +243,10 @@ def _build_figure(
 ) -> graph_objects.Figure:
     """Build the graph figure."""
     figure = sensor_plots.build_sensor_plot(
-        timestamps, sensor_angle, arm_movement, title_day
+        timestamps,
+        sensor_angle,
+        arm_movement,
+        title_day,
     )
     sleep_timepoints = utils.slider_values_to_graph_values(drag_value, n_points_per_day)
 

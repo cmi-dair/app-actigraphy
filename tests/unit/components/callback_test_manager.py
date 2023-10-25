@@ -1,5 +1,6 @@
 """Initialize the callback manager for unit tests."""
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from actigraphy.core import callback_manager
 
@@ -19,4 +20,5 @@ def get_callback(name: str) -> Callable[..., Any]:
     for callback in manager._callbacks:  # pylint: disable=protected-access
         if callback.func.__name__ == name:
             return callback.func
-    raise ValueError(f"Callback {name} not found.")
+    msg = f"Callback {name} not found."
+    raise ValueError(msg)

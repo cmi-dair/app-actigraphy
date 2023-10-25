@@ -1,4 +1,4 @@
-""" Main app setup for the Actigraphy app """
+"""Main app setup for the Actigraphy app."""
 import logging
 
 import dash
@@ -14,8 +14,7 @@ LOGGER_NAME = settings.LOGGER_NAME
 
 
 def create_app() -> dash.Dash:
-    """
-    Creates a new instance of the Actigraphy app.
+    """Creates a new instance of the Actigraphy app.
 
     Returns:
         A new instance of the Actigraphy app.
@@ -26,7 +25,8 @@ def create_app() -> dash.Dash:
 
     logger.info("Starting Actigraphy app")
     app = dash.Dash(
-        APP_NAME, external_stylesheets=[dash_bootstrap_components.themes.BOOTSTRAP]
+        APP_NAME,
+        external_stylesheets=[dash_bootstrap_components.themes.BOOTSTRAP],
     )
     app.title = APP_NAME
 
@@ -36,7 +36,8 @@ def create_app() -> dash.Dash:
 
     logger.info("Creating app layout")
     header = html.Img(
-        src="/assets/CMI_Logo_title.png", style={"height": "60%", "width": "60%"}
+        src="/assets/CMI_Logo_title.png",
+        style={"height": "60%", "width": "60%"},
     )
     subject_directories = cli.get_subject_folders(args)
     app.layout = html.Div(

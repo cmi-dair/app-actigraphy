@@ -6,8 +6,7 @@ from actigraphy.io import utils
 
 
 def is_windows() -> bool:
-    """Returns True if the current operating system is Windows, False
-    otherwise."""
+    """Returns True if the current operating system is Windows."""
     return os.name == "nt"
 
 

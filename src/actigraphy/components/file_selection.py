@@ -20,8 +20,10 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 def file_selection(dropdown_choices: list[str]) -> html.Div:
-    """Returns a Dash HTML div containing an input box for the evaluator's name,
-    a dropdown menu for selecting a subject, and a spinner for indicating loading.
+    """Create a file selection Dash HTML div.
+
+    Contains an input box for the evaluator's name, a dropdown menu for
+    selecting a subject, and a spinner for indicating loading.
 
     Args:
         dropdown_choices: A list of choices for the dropdown menu.
@@ -85,12 +87,11 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
     prevent_initial_call=True,
 )
 def parse_files(
-    n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionallty unused.
+    n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionallty unused.  # noqa: ARG001
     filepath: str,
     evaluator_name: str,
 ) -> tuple[list[html.Div], str, bool, dict[str, str]]:
-    """
-    Parses the contents of the selected files and returns the UI components to be displayed.
+    """Parses the contents of the selected files and returns the UI components.
 
     Args:
         n_clicks: The number of times the parse button has been clicked. Used to trigger

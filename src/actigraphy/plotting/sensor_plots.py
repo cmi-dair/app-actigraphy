@@ -1,5 +1,5 @@
 """Module for all plotting functions."""
-from typing import Sequence
+from collections.abc import Sequence
 
 from plotly import graph_objects
 
@@ -23,10 +23,12 @@ def build_sensor_plot(
     Returns:
         The plot.
     """
-    if len(sensor_angle) != len(arm_movement) != len(timestamps):
-        raise ValueError(
-            "The lengths of the timestamps, sensor angle and arm movement must be equal."
+    if len(sensor_angle) != len(arm_movement) or len(sensor_angle) != len(timestamps):
+        msg = (
+            "The lengths of the timestamps, sensor angle "
+            "and arm movement must be equal."
         )
+        raise ValueError(msg)
 
     x_values = list(range(len(timestamps)))
     x_tick_values = list(range(0, len(timestamps), len(timestamps) // n_ticks))
@@ -40,7 +42,7 @@ def build_sensor_plot(
             mode="lines",
             name="Angle of sensor's z-axis",
             line_color="blue",
-        )
+        ),
     )
     figure.add_trace(
         graph_objects.Scatter(
@@ -49,7 +51,7 @@ def build_sensor_plot(
             mode="lines",
             name="Arm movement",
             line_color="black",
-        )
+        ),
     )
     figure.update_layout(
         {
@@ -67,13 +69,16 @@ def build_sensor_plot(
                 "ticktext": x_tick_text,
                 "tickangle": 90,
             },
-        }
+        },
     )
     return figure
 
 
 def add_rectangle(
-    figure: graph_objects.Figure, limits: list[int], color: str, label: str
+    figure: graph_objects.Figure,
+    limits: list[int],
+    color: str,
+    label: str,
 ) -> graph_objects.Figure:
     """Adds a rectangle to the figure.
 
