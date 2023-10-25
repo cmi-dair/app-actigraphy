@@ -62,46 +62,49 @@
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;Utility functions for the actigraphy.io module.&quot;&quot;&quot;</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span> <span class="nn">csv</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">itertools</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">abc</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">iterable_of_iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Recursively flattens an iterable of iterables into a single list.</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="sd">    Args:</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">        iterable_of_iterables: The list of lists to flatten.</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">    Returns:</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">        list[any]: The flattened list.</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable_of_iterables</span><span class="p">:</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="k">return</span> <span class="n">new_list</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="k">def</span> <span class="nf">read_one_line_from_csv_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">line_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads one line from a .csv file in a memory efficient way.</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">    Args:</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">        line_number: The line number to read from the file.</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">    Returns:</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">        list[str]: A list of strings representing the contents of the line read</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">            from the file.</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">    Notes:</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">        Is using itertools for memory-efficient access overkill? Yes. But</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        separating this functionality into its own function makes other</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">        functions easier to read.</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_buffer</span><span class="p">:</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">file_buffer</span><span class="p">)</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">import</span> <span class="nn">pathlib</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">abc</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">iterable_of_iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Recursively flattens an iterable of iterables into a single list.</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">    Args:</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="sd">        iterable_of_iterables: The list of lists to flatten.</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">    Returns:</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="sd">        list[any]: The flattened list.</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>    <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable_of_iterables</span><span class="p">:</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">):</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>    <span class="k">return</span> <span class="n">new_list</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="k">def</span> <span class="nf">read_one_line_from_csv_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">line_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads one line from a .csv file in a memory efficient way.</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">    Args:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">        filepath: The path to the .csv file.</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">        line_number: The line number to read from the file.</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">    Returns:</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">        list[str]: A list of strings representing the contents of the line read</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">            from the file.</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">    Notes:</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">        Is using itertools for memory-efficient access overkill? Yes. But</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="sd">        separating this functionality into its own function makes other</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">        functions easier to read.</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>    <span class="k">with</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="k">as</span> <span class="n">file_buffer</span><span class="p">:</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">file_buffer</span><span class="p">)</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
 </span></pre></div>
 
 
@@ -111,28 +114,28 @@
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">flatten</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">iterable_of_iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>:</span></span>
+        <span class="name">flatten</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">iterable_of_iterables</span><span class="p">:</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="flatten-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#flatten"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="flatten-9"><a href="#flatten-9"><span class="linenos"> 9</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">iterable_of_iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
-</span><span id="flatten-10"><a href="#flatten-10"><span class="linenos">10</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Recursively flattens an iterable of iterables into a single list.</span>
-</span><span id="flatten-11"><a href="#flatten-11"><span class="linenos">11</span></a>
-</span><span id="flatten-12"><a href="#flatten-12"><span class="linenos">12</span></a><span class="sd">    Args:</span>
-</span><span id="flatten-13"><a href="#flatten-13"><span class="linenos">13</span></a><span class="sd">        iterable_of_iterables: The list of lists to flatten.</span>
-</span><span id="flatten-14"><a href="#flatten-14"><span class="linenos">14</span></a>
-</span><span id="flatten-15"><a href="#flatten-15"><span class="linenos">15</span></a><span class="sd">    Returns:</span>
-</span><span id="flatten-16"><a href="#flatten-16"><span class="linenos">16</span></a><span class="sd">        list[any]: The flattened list.</span>
-</span><span id="flatten-17"><a href="#flatten-17"><span class="linenos">17</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="flatten-18"><a href="#flatten-18"><span class="linenos">18</span></a>    <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="flatten-19"><a href="#flatten-19"><span class="linenos">19</span></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable_of_iterables</span><span class="p">:</span>
-</span><span id="flatten-20"><a href="#flatten-20"><span class="linenos">20</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
-</span><span id="flatten-21"><a href="#flatten-21"><span class="linenos">21</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
-</span><span id="flatten-22"><a href="#flatten-22"><span class="linenos">22</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="flatten-23"><a href="#flatten-23"><span class="linenos">23</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-</span><span id="flatten-24"><a href="#flatten-24"><span class="linenos">24</span></a>    <span class="k">return</span> <span class="n">new_list</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="flatten-11"><a href="#flatten-11"><span class="linenos">11</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">iterable_of_iterables</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="flatten-12"><a href="#flatten-12"><span class="linenos">12</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Recursively flattens an iterable of iterables into a single list.</span>
+</span><span id="flatten-13"><a href="#flatten-13"><span class="linenos">13</span></a>
+</span><span id="flatten-14"><a href="#flatten-14"><span class="linenos">14</span></a><span class="sd">    Args:</span>
+</span><span id="flatten-15"><a href="#flatten-15"><span class="linenos">15</span></a><span class="sd">        iterable_of_iterables: The list of lists to flatten.</span>
+</span><span id="flatten-16"><a href="#flatten-16"><span class="linenos">16</span></a>
+</span><span id="flatten-17"><a href="#flatten-17"><span class="linenos">17</span></a><span class="sd">    Returns:</span>
+</span><span id="flatten-18"><a href="#flatten-18"><span class="linenos">18</span></a><span class="sd">        list[any]: The flattened list.</span>
+</span><span id="flatten-19"><a href="#flatten-19"><span class="linenos">19</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="flatten-20"><a href="#flatten-20"><span class="linenos">20</span></a>    <span class="n">new_list</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="flatten-21"><a href="#flatten-21"><span class="linenos">21</span></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">iterable_of_iterables</span><span class="p">:</span>
+</span><span id="flatten-22"><a href="#flatten-22"><span class="linenos">22</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">abc</span><span class="o">.</span><span class="n">Iterable</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">):</span>
+</span><span id="flatten-23"><a href="#flatten-23"><span class="linenos">23</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+</span><span id="flatten-24"><a href="#flatten-24"><span class="linenos">24</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="flatten-25"><a href="#flatten-25"><span class="linenos">25</span></a>            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span><span id="flatten-26"><a href="#flatten-26"><span class="linenos">26</span></a>    <span class="k">return</span> <span class="n">new_list</span>
 </span></pre></div>
 
 
@@ -164,24 +167,25 @@
 
     </div>
     <a class="headerlink" href="#read_one_line_from_csv_file"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="read_one_line_from_csv_file-27"><a href="#read_one_line_from_csv_file-27"><span class="linenos">27</span></a><span class="k">def</span> <span class="nf">read_one_line_from_csv_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">line_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="read_one_line_from_csv_file-28"><a href="#read_one_line_from_csv_file-28"><span class="linenos">28</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads one line from a .csv file in a memory efficient way.</span>
-</span><span id="read_one_line_from_csv_file-29"><a href="#read_one_line_from_csv_file-29"><span class="linenos">29</span></a>
-</span><span id="read_one_line_from_csv_file-30"><a href="#read_one_line_from_csv_file-30"><span class="linenos">30</span></a><span class="sd">    Args:</span>
-</span><span id="read_one_line_from_csv_file-31"><a href="#read_one_line_from_csv_file-31"><span class="linenos">31</span></a><span class="sd">        line_number: The line number to read from the file.</span>
-</span><span id="read_one_line_from_csv_file-32"><a href="#read_one_line_from_csv_file-32"><span class="linenos">32</span></a>
-</span><span id="read_one_line_from_csv_file-33"><a href="#read_one_line_from_csv_file-33"><span class="linenos">33</span></a><span class="sd">    Returns:</span>
-</span><span id="read_one_line_from_csv_file-34"><a href="#read_one_line_from_csv_file-34"><span class="linenos">34</span></a><span class="sd">        list[str]: A list of strings representing the contents of the line read</span>
-</span><span id="read_one_line_from_csv_file-35"><a href="#read_one_line_from_csv_file-35"><span class="linenos">35</span></a><span class="sd">            from the file.</span>
-</span><span id="read_one_line_from_csv_file-36"><a href="#read_one_line_from_csv_file-36"><span class="linenos">36</span></a>
-</span><span id="read_one_line_from_csv_file-37"><a href="#read_one_line_from_csv_file-37"><span class="linenos">37</span></a><span class="sd">    Notes:</span>
-</span><span id="read_one_line_from_csv_file-38"><a href="#read_one_line_from_csv_file-38"><span class="linenos">38</span></a><span class="sd">        Is using itertools for memory-efficient access overkill? Yes. But</span>
-</span><span id="read_one_line_from_csv_file-39"><a href="#read_one_line_from_csv_file-39"><span class="linenos">39</span></a><span class="sd">        separating this functionality into its own function makes other</span>
-</span><span id="read_one_line_from_csv_file-40"><a href="#read_one_line_from_csv_file-40"><span class="linenos">40</span></a><span class="sd">        functions easier to read.</span>
-</span><span id="read_one_line_from_csv_file-41"><a href="#read_one_line_from_csv_file-41"><span class="linenos">41</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="read_one_line_from_csv_file-42"><a href="#read_one_line_from_csv_file-42"><span class="linenos">42</span></a>    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_buffer</span><span class="p">:</span>
-</span><span id="read_one_line_from_csv_file-43"><a href="#read_one_line_from_csv_file-43"><span class="linenos">43</span></a>        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">file_buffer</span><span class="p">)</span>
-</span><span id="read_one_line_from_csv_file-44"><a href="#read_one_line_from_csv_file-44"><span class="linenos">44</span></a>        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="read_one_line_from_csv_file-29"><a href="#read_one_line_from_csv_file-29"><span class="linenos">29</span></a><span class="k">def</span> <span class="nf">read_one_line_from_csv_file</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">line_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="read_one_line_from_csv_file-30"><a href="#read_one_line_from_csv_file-30"><span class="linenos">30</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads one line from a .csv file in a memory efficient way.</span>
+</span><span id="read_one_line_from_csv_file-31"><a href="#read_one_line_from_csv_file-31"><span class="linenos">31</span></a>
+</span><span id="read_one_line_from_csv_file-32"><a href="#read_one_line_from_csv_file-32"><span class="linenos">32</span></a><span class="sd">    Args:</span>
+</span><span id="read_one_line_from_csv_file-33"><a href="#read_one_line_from_csv_file-33"><span class="linenos">33</span></a><span class="sd">        filepath: The path to the .csv file.</span>
+</span><span id="read_one_line_from_csv_file-34"><a href="#read_one_line_from_csv_file-34"><span class="linenos">34</span></a><span class="sd">        line_number: The line number to read from the file.</span>
+</span><span id="read_one_line_from_csv_file-35"><a href="#read_one_line_from_csv_file-35"><span class="linenos">35</span></a>
+</span><span id="read_one_line_from_csv_file-36"><a href="#read_one_line_from_csv_file-36"><span class="linenos">36</span></a><span class="sd">    Returns:</span>
+</span><span id="read_one_line_from_csv_file-37"><a href="#read_one_line_from_csv_file-37"><span class="linenos">37</span></a><span class="sd">        list[str]: A list of strings representing the contents of the line read</span>
+</span><span id="read_one_line_from_csv_file-38"><a href="#read_one_line_from_csv_file-38"><span class="linenos">38</span></a><span class="sd">            from the file.</span>
+</span><span id="read_one_line_from_csv_file-39"><a href="#read_one_line_from_csv_file-39"><span class="linenos">39</span></a>
+</span><span id="read_one_line_from_csv_file-40"><a href="#read_one_line_from_csv_file-40"><span class="linenos">40</span></a><span class="sd">    Notes:</span>
+</span><span id="read_one_line_from_csv_file-41"><a href="#read_one_line_from_csv_file-41"><span class="linenos">41</span></a><span class="sd">        Is using itertools for memory-efficient access overkill? Yes. But</span>
+</span><span id="read_one_line_from_csv_file-42"><a href="#read_one_line_from_csv_file-42"><span class="linenos">42</span></a><span class="sd">        separating this functionality into its own function makes other</span>
+</span><span id="read_one_line_from_csv_file-43"><a href="#read_one_line_from_csv_file-43"><span class="linenos">43</span></a><span class="sd">        functions easier to read.</span>
+</span><span id="read_one_line_from_csv_file-44"><a href="#read_one_line_from_csv_file-44"><span class="linenos">44</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="read_one_line_from_csv_file-45"><a href="#read_one_line_from_csv_file-45"><span class="linenos">45</span></a>    <span class="k">with</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">()</span> <span class="k">as</span> <span class="n">file_buffer</span><span class="p">:</span>
+</span><span id="read_one_line_from_csv_file-46"><a href="#read_one_line_from_csv_file-46"><span class="linenos">46</span></a>        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">file_buffer</span><span class="p">)</span>
+</span><span id="read_one_line_from_csv_file-47"><a href="#read_one_line_from_csv_file-47"><span class="linenos">47</span></a>        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">islice</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
 </span></pre></div>
 
 
@@ -190,6 +194,7 @@
 <h6 id="arguments">Arguments:</h6>
 
 <ul>
+<li><strong>filepath:</strong>  The path to the .csv file.</li>
 <li><strong>line_number:</strong>  The line number to read from the file.</li>
 </ul>
 

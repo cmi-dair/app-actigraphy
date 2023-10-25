@@ -67,6 +67,9 @@
                     <a class="class" href="#CallbackManager">CallbackManager</a>
                             <ul class="memberlist">
                         <li>
+                                <a class="function" href="#CallbackManager.__init__">CallbackManager</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#CallbackManager.callback">callback</a>
                         </li>
                         <li>
@@ -123,130 +126,140 @@ is used to register callbacks across multiple files.</p>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">import</span> <span class="nn">dataclasses</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">import</span> <span class="nn">inspect</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="kn">import</span> <span class="nn">logging</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="kn">import</span> <span class="nn">dash</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="kn">from</span> <span class="nn">dash</span> <span class="kn">import</span> <span class="n">dependencies</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>
-</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="kn">from</span> <span class="nn">actigraphy.core</span> <span class="kn">import</span> <span class="n">config</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="n">settings</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_settings</span><span class="p">()</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="n">LOGGER_NAME</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">LOGGER_NAME</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>
-</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="kn">import</span> <span class="nn">dash</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="kn">from</span> <span class="nn">dash</span> <span class="kn">import</span> <span class="n">dependencies</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="kn">from</span> <span class="nn">actigraphy.core</span> <span class="kn">import</span> <span class="n">config</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="n">settings</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_settings</span><span class="p">()</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="n">LOGGER_NAME</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">LOGGER_NAME</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
 </span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>
-</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="k">class</span> <span class="nc">Callback</span><span class="p">:</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a Dash callback.</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>
-</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="sd">    Attributes:</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">        func (Callable): The function to be called when the callback is triggered.</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">        outputs (dash.Output | list[dash.Output]): The output(s) of the callback.</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">        inputs (dash.Input | list[dash.Input]): The input(s) of the callback.</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">        states (dash.State | list[dash.State]): The state(s) of the callback.</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">        kwargs (dict): Additional keyword arguments to be passed to the callback.</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
-</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>    <span class="n">outputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Output</span><span class="p">]</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>    <span class="n">inputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Input</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Input</span><span class="p">]</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>    <span class="n">states</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">State</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>    <span class="p">)</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="k">class</span> <span class="nc">Callback</span><span class="p">:</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a Dash callback.</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">    Attributes:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">        func (Callable): The function to be called when the callback is triggered.</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">        outputs (dash.Output | list[dash.Output]): The output(s) of the callback.</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">        inputs (dash.Input | list[dash.Input]): The input(s) of the callback.</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">        states (dash.State | list[dash.State]): The state(s) of the callback.</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">        kwargs (dict): Additional keyword arguments to be passed to the callback.</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>    <span class="n">outputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Output</span><span class="p">]</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>    <span class="n">inputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Input</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Input</span><span class="p">]</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>    <span class="n">states</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">State</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>    <span class="p">)</span>
 </span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a><span class="k">class</span> <span class="nc">CallbackManager</span><span class="p">:</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="sd">    A class for managing Dash callbacks.</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="k">class</span> <span class="nc">CallbackManager</span><span class="p">:</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for managing Dash callbacks.</span>
 </span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>
 </span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="sd">    Attributes:</span>
 </span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">        _callbacks (list[Callback]): A list of Callback objects.</span>
 </span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>
 </span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>
-</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;A decorator for registering a Dash callback. This decorator is used</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="sd">        to log the name of the callback when it is triggered.</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the CallbackManager class.&quot;&quot;&quot;</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>  <span class="c1"># noqa: ANN401</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;A decorator for registering a Dash callback.</span>
 </span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>
-</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">        Args:</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">            *args: The arguments of the callback.</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a><span class="sd">            **kwargs: The keyword arguments of the callback.</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
-</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="sd">        Returns:</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="sd">            Callable: The decorated function.</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>        <span class="n">output</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">prevent_initial_call</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">handle_callback_args</span><span class="p">(</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>            <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="p">)</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>            <span class="k">def</span> <span class="nf">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>                <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>                    <span class="n">module</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>                            <span class="s2">&quot;The function to be decorated must be defined in a module.&quot;</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>                        <span class="p">)</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>                        <span class="s2">&quot;Calling callback: </span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>                    <span class="p">)</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>                    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>
-</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>                <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>                <span class="k">return</span> <span class="n">wrapper</span>
-</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>
-</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>                <span class="n">Callback</span><span class="p">(</span>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>                    <span class="n">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">),</span>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>                    <span class="n">output</span><span class="p">,</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>                    <span class="n">inputs</span><span class="p">,</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>                    <span class="n">state</span><span class="p">,</span>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>                    <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="n">prevent_initial_call</span><span class="p">},</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>                <span class="p">)</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>            <span class="p">)</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>        <span class="k">return</span> <span class="n">wrapper</span>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>    <span class="k">def</span> <span class="nf">attach_to_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attaches all registered callbacks to a Dash app.</span>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">        Args:</span>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="sd">            app: The Dash app to attach the callbacks to.</span>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attaching callback: </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>            <span class="n">app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">states</span><span class="p">,</span> <span class="o">**</span><span class="n">callback</span><span class="o">.</span><span class="n">kwargs</span>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>            <span class="p">)(</span><span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>
-</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="c1"># Allow a single manager to be used across multiple files.</span>
-</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="n">global_manager</span> <span class="o">=</span> <span class="n">CallbackManager</span><span class="p">()</span>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="k">def</span> <span class="nf">initialize_components</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the components of the Actigraphy app.</span>
-</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>
-</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">    Notes:</span>
-</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">        This is a workaround to allow callbacks to be placed across multiple</span>
-</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">        files. All these files use the global_manager object defined in this</span>
-</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">        file. As such, a side-effect of importing these files is that all the</span>
-</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">        callbacks are registered.</span>
-</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>    <span class="c1"># pylint: disable=import-outside-toplevel disable=unused-import</span>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>    <span class="kn">from</span> <span class="nn">actigraphy.components</span> <span class="kn">import</span> <span class="p">(</span>
-</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>        <span class="n">app_license</span><span class="p">,</span>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>        <span class="n">day_slider</span><span class="p">,</span>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>        <span class="n">file_selection</span><span class="p">,</span>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>        <span class="n">finished_checkbox</span><span class="p">,</span>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>        <span class="n">graph</span><span class="p">,</span>
-</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>        <span class="n">switches</span><span class="p">,</span>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>    <span class="p">)</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">        This decorator is used to log the name of the callback when it is triggered.</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a><span class="sd">        Args:</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a><span class="sd">            *args: The arguments of the callback.</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a><span class="sd">            **kwargs: The keyword arguments of the callback.</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">        Returns:</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">            Callable: The decorated function.</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="n">output</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">prevent_initial_call</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">handle_callback_args</span><span class="p">(</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>            <span class="n">args</span><span class="p">,</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>            <span class="n">kwargs</span><span class="p">,</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="p">)</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>            <span class="k">def</span> <span class="nf">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>                <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>                    <span class="n">module</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>                            <span class="s2">&quot;The function to be decorated must be defined in a module.&quot;</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>                        <span class="p">)</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>                            <span class="n">msg</span><span class="p">,</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>                        <span class="p">)</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>                        <span class="s2">&quot;Calling callback: </span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+</span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>                        <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>                        <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>                    <span class="p">)</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>                    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>                <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>                <span class="k">return</span> <span class="n">wrapper</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>                <span class="n">Callback</span><span class="p">(</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>                    <span class="n">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">),</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>                    <span class="n">output</span><span class="p">,</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>                    <span class="n">inputs</span><span class="p">,</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>                    <span class="n">state</span><span class="p">,</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>                    <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="n">prevent_initial_call</span><span class="p">},</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>                <span class="p">),</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>            <span class="p">)</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="k">return</span> <span class="n">wrapper</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>    <span class="k">def</span> <span class="nf">attach_to_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attaches all registered callbacks to a Dash app.</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">        Args:</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">            app: The Dash app to attach the callbacks to.</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attaching callback: </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>            <span class="n">app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">states</span><span class="p">,</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>                <span class="o">**</span><span class="n">callback</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>            <span class="p">)(</span><span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="c1"># Allow a single manager to be used across multiple files.</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="n">global_manager</span> <span class="o">=</span> <span class="n">CallbackManager</span><span class="p">()</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="k">def</span> <span class="nf">initialize_components</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the components of the Actigraphy app.</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">    This is a workaround to allow callbacks to be placed across multiple</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="sd">    files. All these files use the global_manager object defined in this</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="sd">    file. As such, a side-effect of importing these files is that all the</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="sd">    callbacks are registered.</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>    <span class="c1"># pylint: disable=import-outside-toplevel disable=unused-import</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>    <span class="kn">from</span> <span class="nn">actigraphy.components</span> <span class="kn">import</span> <span class="p">(</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>        <span class="n">app_license</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>        <span class="n">day_slider</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>        <span class="n">file_selection</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>        <span class="n">finished_checkbox</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>        <span class="n">graph</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>        <span class="n">switches</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a>    <span class="p">)</span>
 </span></pre></div>
 
 
@@ -299,25 +312,25 @@ is used to register callbacks across multiple files.</p>
 
     </div>
     <a class="headerlink" href="#Callback"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Callback-27"><a href="#Callback-27"><span class="linenos">27</span></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
-</span><span id="Callback-28"><a href="#Callback-28"><span class="linenos">28</span></a><span class="k">class</span> <span class="nc">Callback</span><span class="p">:</span>
-</span><span id="Callback-29"><a href="#Callback-29"><span class="linenos">29</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a Dash callback.</span>
-</span><span id="Callback-30"><a href="#Callback-30"><span class="linenos">30</span></a>
-</span><span id="Callback-31"><a href="#Callback-31"><span class="linenos">31</span></a><span class="sd">    Attributes:</span>
-</span><span id="Callback-32"><a href="#Callback-32"><span class="linenos">32</span></a><span class="sd">        func (Callable): The function to be called when the callback is triggered.</span>
-</span><span id="Callback-33"><a href="#Callback-33"><span class="linenos">33</span></a><span class="sd">        outputs (dash.Output | list[dash.Output]): The output(s) of the callback.</span>
-</span><span id="Callback-34"><a href="#Callback-34"><span class="linenos">34</span></a><span class="sd">        inputs (dash.Input | list[dash.Input]): The input(s) of the callback.</span>
-</span><span id="Callback-35"><a href="#Callback-35"><span class="linenos">35</span></a><span class="sd">        states (dash.State | list[dash.State]): The state(s) of the callback.</span>
-</span><span id="Callback-36"><a href="#Callback-36"><span class="linenos">36</span></a><span class="sd">        kwargs (dict): Additional keyword arguments to be passed to the callback.</span>
-</span><span id="Callback-37"><a href="#Callback-37"><span class="linenos">37</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="Callback-38"><a href="#Callback-38"><span class="linenos">38</span></a>
-</span><span id="Callback-39"><a href="#Callback-39"><span class="linenos">39</span></a>    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
-</span><span id="Callback-40"><a href="#Callback-40"><span class="linenos">40</span></a>    <span class="n">outputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Output</span><span class="p">]</span>
-</span><span id="Callback-41"><a href="#Callback-41"><span class="linenos">41</span></a>    <span class="n">inputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Input</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Input</span><span class="p">]</span>
-</span><span id="Callback-42"><a href="#Callback-42"><span class="linenos">42</span></a>    <span class="n">states</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">State</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-</span><span id="Callback-43"><a href="#Callback-43"><span class="linenos">43</span></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span>
-</span><span id="Callback-44"><a href="#Callback-44"><span class="linenos">44</span></a>        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
-</span><span id="Callback-45"><a href="#Callback-45"><span class="linenos">45</span></a>    <span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Callback-28"><a href="#Callback-28"><span class="linenos">28</span></a><span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span>
+</span><span id="Callback-29"><a href="#Callback-29"><span class="linenos">29</span></a><span class="k">class</span> <span class="nc">Callback</span><span class="p">:</span>
+</span><span id="Callback-30"><a href="#Callback-30"><span class="linenos">30</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a Dash callback.</span>
+</span><span id="Callback-31"><a href="#Callback-31"><span class="linenos">31</span></a>
+</span><span id="Callback-32"><a href="#Callback-32"><span class="linenos">32</span></a><span class="sd">    Attributes:</span>
+</span><span id="Callback-33"><a href="#Callback-33"><span class="linenos">33</span></a><span class="sd">        func (Callable): The function to be called when the callback is triggered.</span>
+</span><span id="Callback-34"><a href="#Callback-34"><span class="linenos">34</span></a><span class="sd">        outputs (dash.Output | list[dash.Output]): The output(s) of the callback.</span>
+</span><span id="Callback-35"><a href="#Callback-35"><span class="linenos">35</span></a><span class="sd">        inputs (dash.Input | list[dash.Input]): The input(s) of the callback.</span>
+</span><span id="Callback-36"><a href="#Callback-36"><span class="linenos">36</span></a><span class="sd">        states (dash.State | list[dash.State]): The state(s) of the callback.</span>
+</span><span id="Callback-37"><a href="#Callback-37"><span class="linenos">37</span></a><span class="sd">        kwargs (dict): Additional keyword arguments to be passed to the callback.</span>
+</span><span id="Callback-38"><a href="#Callback-38"><span class="linenos">38</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="Callback-39"><a href="#Callback-39"><span class="linenos">39</span></a>
+</span><span id="Callback-40"><a href="#Callback-40"><span class="linenos">40</span></a>    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
+</span><span id="Callback-41"><a href="#Callback-41"><span class="linenos">41</span></a>    <span class="n">outputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Output</span><span class="p">]</span>
+</span><span id="Callback-42"><a href="#Callback-42"><span class="linenos">42</span></a>    <span class="n">inputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Input</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">Input</span><span class="p">]</span>
+</span><span id="Callback-43"><a href="#Callback-43"><span class="linenos">43</span></a>    <span class="n">states</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">State</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span id="Callback-44"><a href="#Callback-44"><span class="linenos">44</span></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">field</span><span class="p">(</span>
+</span><span id="Callback-45"><a href="#Callback-45"><span class="linenos">45</span></a>        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+</span><span id="Callback-46"><a href="#Callback-46"><span class="linenos">46</span></a>    <span class="p">)</span>
 </span></pre></div>
 
 
@@ -338,7 +351,7 @@ is used to register callbacks across multiple files.</p>
                             <div id="Callback.__init__" class="classattr">
                                 <div class="attr function">
             
-        <span class="name">Callback</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>,</span><span class="param">	<span class="n">outputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Output</span><span class="p">]</span>,</span><span class="param">	<span class="n">inputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Input</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Input</span><span class="p">]</span>,</span><span class="param">	<span class="n">states</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">State</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span>,</span><span class="param">	<span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span></span>)</span>
+        <span class="name">Callback</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">func</span><span class="p">:</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>,</span><span class="param">	<span class="n">outputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Output</span><span class="p">]</span>,</span><span class="param">	<span class="n">inputs</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Input</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">Input</span><span class="p">]</span>,</span><span class="param">	<span class="n">states</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">State</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">dash</span><span class="o">.</span><span class="n">dependencies</span><span class="o">.</span><span class="n">State</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span>,</span><span class="param">	<span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">factory</span><span class="o">&gt;</span></span>)</span>
 
         
     </div>
@@ -349,7 +362,7 @@ is used to register callbacks across multiple files.</p>
                             </div>
                             <div id="Callback.func" class="classattr">
                                 <div class="attr variable">
-            <span class="name">func</span><span class="annotation">: Callable[[Any], Any]</span>
+            <span class="name">func</span><span class="annotation">: collections.abc.Callable[[typing.Any], typing.Any]</span>
 
         
     </div>
@@ -414,72 +427,82 @@ is used to register callbacks across multiple files.</p>
 
     </div>
     <a class="headerlink" href="#CallbackManager"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager-48"><a href="#CallbackManager-48"><span class="linenos"> 48</span></a><span class="k">class</span> <span class="nc">CallbackManager</span><span class="p">:</span>
-</span><span id="CallbackManager-49"><a href="#CallbackManager-49"><span class="linenos"> 49</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="CallbackManager-50"><a href="#CallbackManager-50"><span class="linenos"> 50</span></a><span class="sd">    A class for managing Dash callbacks.</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager-49"><a href="#CallbackManager-49"><span class="linenos"> 49</span></a><span class="k">class</span> <span class="nc">CallbackManager</span><span class="p">:</span>
+</span><span id="CallbackManager-50"><a href="#CallbackManager-50"><span class="linenos"> 50</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class for managing Dash callbacks.</span>
 </span><span id="CallbackManager-51"><a href="#CallbackManager-51"><span class="linenos"> 51</span></a>
 </span><span id="CallbackManager-52"><a href="#CallbackManager-52"><span class="linenos"> 52</span></a><span class="sd">    Attributes:</span>
 </span><span id="CallbackManager-53"><a href="#CallbackManager-53"><span class="linenos"> 53</span></a><span class="sd">        _callbacks (list[Callback]): A list of Callback objects.</span>
 </span><span id="CallbackManager-54"><a href="#CallbackManager-54"><span class="linenos"> 54</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="CallbackManager-55"><a href="#CallbackManager-55"><span class="linenos"> 55</span></a>
 </span><span id="CallbackManager-56"><a href="#CallbackManager-56"><span class="linenos"> 56</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="CallbackManager-57"><a href="#CallbackManager-57"><span class="linenos"> 57</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="CallbackManager-58"><a href="#CallbackManager-58"><span class="linenos"> 58</span></a>
-</span><span id="CallbackManager-59"><a href="#CallbackManager-59"><span class="linenos"> 59</span></a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="CallbackManager-60"><a href="#CallbackManager-60"><span class="linenos"> 60</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;A decorator for registering a Dash callback. This decorator is used</span>
-</span><span id="CallbackManager-61"><a href="#CallbackManager-61"><span class="linenos"> 61</span></a><span class="sd">        to log the name of the callback when it is triggered.</span>
+</span><span id="CallbackManager-57"><a href="#CallbackManager-57"><span class="linenos"> 57</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the CallbackManager class.&quot;&quot;&quot;</span>
+</span><span id="CallbackManager-58"><a href="#CallbackManager-58"><span class="linenos"> 58</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="CallbackManager-59"><a href="#CallbackManager-59"><span class="linenos"> 59</span></a>
+</span><span id="CallbackManager-60"><a href="#CallbackManager-60"><span class="linenos"> 60</span></a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>  <span class="c1"># noqa: ANN401</span>
+</span><span id="CallbackManager-61"><a href="#CallbackManager-61"><span class="linenos"> 61</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;A decorator for registering a Dash callback.</span>
 </span><span id="CallbackManager-62"><a href="#CallbackManager-62"><span class="linenos"> 62</span></a>
-</span><span id="CallbackManager-63"><a href="#CallbackManager-63"><span class="linenos"> 63</span></a><span class="sd">        Args:</span>
-</span><span id="CallbackManager-64"><a href="#CallbackManager-64"><span class="linenos"> 64</span></a><span class="sd">            *args: The arguments of the callback.</span>
-</span><span id="CallbackManager-65"><a href="#CallbackManager-65"><span class="linenos"> 65</span></a><span class="sd">            **kwargs: The keyword arguments of the callback.</span>
-</span><span id="CallbackManager-66"><a href="#CallbackManager-66"><span class="linenos"> 66</span></a>
-</span><span id="CallbackManager-67"><a href="#CallbackManager-67"><span class="linenos"> 67</span></a><span class="sd">        Returns:</span>
-</span><span id="CallbackManager-68"><a href="#CallbackManager-68"><span class="linenos"> 68</span></a><span class="sd">            Callable: The decorated function.</span>
-</span><span id="CallbackManager-69"><a href="#CallbackManager-69"><span class="linenos"> 69</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="CallbackManager-70"><a href="#CallbackManager-70"><span class="linenos"> 70</span></a>        <span class="n">output</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">prevent_initial_call</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">handle_callback_args</span><span class="p">(</span>
-</span><span id="CallbackManager-71"><a href="#CallbackManager-71"><span class="linenos"> 71</span></a>            <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
-</span><span id="CallbackManager-72"><a href="#CallbackManager-72"><span class="linenos"> 72</span></a>        <span class="p">)</span>
-</span><span id="CallbackManager-73"><a href="#CallbackManager-73"><span class="linenos"> 73</span></a>
-</span><span id="CallbackManager-74"><a href="#CallbackManager-74"><span class="linenos"> 74</span></a>        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="CallbackManager-75"><a href="#CallbackManager-75"><span class="linenos"> 75</span></a>            <span class="k">def</span> <span class="nf">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="CallbackManager-76"><a href="#CallbackManager-76"><span class="linenos"> 76</span></a>                <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="CallbackManager-77"><a href="#CallbackManager-77"><span class="linenos"> 77</span></a>                    <span class="n">module</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-</span><span id="CallbackManager-78"><a href="#CallbackManager-78"><span class="linenos"> 78</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
-</span><span id="CallbackManager-79"><a href="#CallbackManager-79"><span class="linenos"> 79</span></a>                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="CallbackManager-80"><a href="#CallbackManager-80"><span class="linenos"> 80</span></a>                            <span class="s2">&quot;The function to be decorated must be defined in a module.&quot;</span>
-</span><span id="CallbackManager-81"><a href="#CallbackManager-81"><span class="linenos"> 81</span></a>                        <span class="p">)</span>
-</span><span id="CallbackManager-82"><a href="#CallbackManager-82"><span class="linenos"> 82</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-</span><span id="CallbackManager-83"><a href="#CallbackManager-83"><span class="linenos"> 83</span></a>                        <span class="s2">&quot;Calling callback: </span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
-</span><span id="CallbackManager-84"><a href="#CallbackManager-84"><span class="linenos"> 84</span></a>                    <span class="p">)</span>
-</span><span id="CallbackManager-85"><a href="#CallbackManager-85"><span class="linenos"> 85</span></a>                    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="CallbackManager-86"><a href="#CallbackManager-86"><span class="linenos"> 86</span></a>
-</span><span id="CallbackManager-87"><a href="#CallbackManager-87"><span class="linenos"> 87</span></a>                <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
-</span><span id="CallbackManager-88"><a href="#CallbackManager-88"><span class="linenos"> 88</span></a>
-</span><span id="CallbackManager-89"><a href="#CallbackManager-89"><span class="linenos"> 89</span></a>                <span class="k">return</span> <span class="n">wrapper</span>
-</span><span id="CallbackManager-90"><a href="#CallbackManager-90"><span class="linenos"> 90</span></a>
-</span><span id="CallbackManager-91"><a href="#CallbackManager-91"><span class="linenos"> 91</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="CallbackManager-92"><a href="#CallbackManager-92"><span class="linenos"> 92</span></a>                <span class="n">Callback</span><span class="p">(</span>
-</span><span id="CallbackManager-93"><a href="#CallbackManager-93"><span class="linenos"> 93</span></a>                    <span class="n">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">),</span>
-</span><span id="CallbackManager-94"><a href="#CallbackManager-94"><span class="linenos"> 94</span></a>                    <span class="n">output</span><span class="p">,</span>
-</span><span id="CallbackManager-95"><a href="#CallbackManager-95"><span class="linenos"> 95</span></a>                    <span class="n">inputs</span><span class="p">,</span>
-</span><span id="CallbackManager-96"><a href="#CallbackManager-96"><span class="linenos"> 96</span></a>                    <span class="n">state</span><span class="p">,</span>
-</span><span id="CallbackManager-97"><a href="#CallbackManager-97"><span class="linenos"> 97</span></a>                    <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="n">prevent_initial_call</span><span class="p">},</span>
-</span><span id="CallbackManager-98"><a href="#CallbackManager-98"><span class="linenos"> 98</span></a>                <span class="p">)</span>
-</span><span id="CallbackManager-99"><a href="#CallbackManager-99"><span class="linenos"> 99</span></a>            <span class="p">)</span>
-</span><span id="CallbackManager-100"><a href="#CallbackManager-100"><span class="linenos">100</span></a>
-</span><span id="CallbackManager-101"><a href="#CallbackManager-101"><span class="linenos">101</span></a>        <span class="k">return</span> <span class="n">wrapper</span>
-</span><span id="CallbackManager-102"><a href="#CallbackManager-102"><span class="linenos">102</span></a>
-</span><span id="CallbackManager-103"><a href="#CallbackManager-103"><span class="linenos">103</span></a>    <span class="k">def</span> <span class="nf">attach_to_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="CallbackManager-104"><a href="#CallbackManager-104"><span class="linenos">104</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attaches all registered callbacks to a Dash app.</span>
-</span><span id="CallbackManager-105"><a href="#CallbackManager-105"><span class="linenos">105</span></a>
-</span><span id="CallbackManager-106"><a href="#CallbackManager-106"><span class="linenos">106</span></a><span class="sd">        Args:</span>
-</span><span id="CallbackManager-107"><a href="#CallbackManager-107"><span class="linenos">107</span></a><span class="sd">            app: The Dash app to attach the callbacks to.</span>
-</span><span id="CallbackManager-108"><a href="#CallbackManager-108"><span class="linenos">108</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="CallbackManager-109"><a href="#CallbackManager-109"><span class="linenos">109</span></a>        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
-</span><span id="CallbackManager-110"><a href="#CallbackManager-110"><span class="linenos">110</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attaching callback: </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-</span><span id="CallbackManager-111"><a href="#CallbackManager-111"><span class="linenos">111</span></a>            <span class="n">app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
-</span><span id="CallbackManager-112"><a href="#CallbackManager-112"><span class="linenos">112</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">states</span><span class="p">,</span> <span class="o">**</span><span class="n">callback</span><span class="o">.</span><span class="n">kwargs</span>
-</span><span id="CallbackManager-113"><a href="#CallbackManager-113"><span class="linenos">113</span></a>            <span class="p">)(</span><span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
+</span><span id="CallbackManager-63"><a href="#CallbackManager-63"><span class="linenos"> 63</span></a><span class="sd">        This decorator is used to log the name of the callback when it is triggered.</span>
+</span><span id="CallbackManager-64"><a href="#CallbackManager-64"><span class="linenos"> 64</span></a>
+</span><span id="CallbackManager-65"><a href="#CallbackManager-65"><span class="linenos"> 65</span></a><span class="sd">        Args:</span>
+</span><span id="CallbackManager-66"><a href="#CallbackManager-66"><span class="linenos"> 66</span></a><span class="sd">            *args: The arguments of the callback.</span>
+</span><span id="CallbackManager-67"><a href="#CallbackManager-67"><span class="linenos"> 67</span></a><span class="sd">            **kwargs: The keyword arguments of the callback.</span>
+</span><span id="CallbackManager-68"><a href="#CallbackManager-68"><span class="linenos"> 68</span></a>
+</span><span id="CallbackManager-69"><a href="#CallbackManager-69"><span class="linenos"> 69</span></a><span class="sd">        Returns:</span>
+</span><span id="CallbackManager-70"><a href="#CallbackManager-70"><span class="linenos"> 70</span></a><span class="sd">            Callable: The decorated function.</span>
+</span><span id="CallbackManager-71"><a href="#CallbackManager-71"><span class="linenos"> 71</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="CallbackManager-72"><a href="#CallbackManager-72"><span class="linenos"> 72</span></a>        <span class="n">output</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">prevent_initial_call</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">handle_callback_args</span><span class="p">(</span>
+</span><span id="CallbackManager-73"><a href="#CallbackManager-73"><span class="linenos"> 73</span></a>            <span class="n">args</span><span class="p">,</span>
+</span><span id="CallbackManager-74"><a href="#CallbackManager-74"><span class="linenos"> 74</span></a>            <span class="n">kwargs</span><span class="p">,</span>
+</span><span id="CallbackManager-75"><a href="#CallbackManager-75"><span class="linenos"> 75</span></a>        <span class="p">)</span>
+</span><span id="CallbackManager-76"><a href="#CallbackManager-76"><span class="linenos"> 76</span></a>
+</span><span id="CallbackManager-77"><a href="#CallbackManager-77"><span class="linenos"> 77</span></a>        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="CallbackManager-78"><a href="#CallbackManager-78"><span class="linenos"> 78</span></a>            <span class="k">def</span> <span class="nf">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
+</span><span id="CallbackManager-79"><a href="#CallbackManager-79"><span class="linenos"> 79</span></a>                <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
+</span><span id="CallbackManager-80"><a href="#CallbackManager-80"><span class="linenos"> 80</span></a>                    <span class="n">module</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+</span><span id="CallbackManager-81"><a href="#CallbackManager-81"><span class="linenos"> 81</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
+</span><span id="CallbackManager-82"><a href="#CallbackManager-82"><span class="linenos"> 82</span></a>                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="CallbackManager-83"><a href="#CallbackManager-83"><span class="linenos"> 83</span></a>                            <span class="s2">&quot;The function to be decorated must be defined in a module.&quot;</span>
+</span><span id="CallbackManager-84"><a href="#CallbackManager-84"><span class="linenos"> 84</span></a>                        <span class="p">)</span>
+</span><span id="CallbackManager-85"><a href="#CallbackManager-85"><span class="linenos"> 85</span></a>                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="CallbackManager-86"><a href="#CallbackManager-86"><span class="linenos"> 86</span></a>                            <span class="n">msg</span><span class="p">,</span>
+</span><span id="CallbackManager-87"><a href="#CallbackManager-87"><span class="linenos"> 87</span></a>                        <span class="p">)</span>
+</span><span id="CallbackManager-88"><a href="#CallbackManager-88"><span class="linenos"> 88</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+</span><span id="CallbackManager-89"><a href="#CallbackManager-89"><span class="linenos"> 89</span></a>                        <span class="s2">&quot;Calling callback: </span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+</span><span id="CallbackManager-90"><a href="#CallbackManager-90"><span class="linenos"> 90</span></a>                        <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+</span><span id="CallbackManager-91"><a href="#CallbackManager-91"><span class="linenos"> 91</span></a>                        <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+</span><span id="CallbackManager-92"><a href="#CallbackManager-92"><span class="linenos"> 92</span></a>                    <span class="p">)</span>
+</span><span id="CallbackManager-93"><a href="#CallbackManager-93"><span class="linenos"> 93</span></a>                    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="CallbackManager-94"><a href="#CallbackManager-94"><span class="linenos"> 94</span></a>
+</span><span id="CallbackManager-95"><a href="#CallbackManager-95"><span class="linenos"> 95</span></a>                <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="CallbackManager-96"><a href="#CallbackManager-96"><span class="linenos"> 96</span></a>
+</span><span id="CallbackManager-97"><a href="#CallbackManager-97"><span class="linenos"> 97</span></a>                <span class="k">return</span> <span class="n">wrapper</span>
+</span><span id="CallbackManager-98"><a href="#CallbackManager-98"><span class="linenos"> 98</span></a>
+</span><span id="CallbackManager-99"><a href="#CallbackManager-99"><span class="linenos"> 99</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="CallbackManager-100"><a href="#CallbackManager-100"><span class="linenos">100</span></a>                <span class="n">Callback</span><span class="p">(</span>
+</span><span id="CallbackManager-101"><a href="#CallbackManager-101"><span class="linenos">101</span></a>                    <span class="n">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">),</span>
+</span><span id="CallbackManager-102"><a href="#CallbackManager-102"><span class="linenos">102</span></a>                    <span class="n">output</span><span class="p">,</span>
+</span><span id="CallbackManager-103"><a href="#CallbackManager-103"><span class="linenos">103</span></a>                    <span class="n">inputs</span><span class="p">,</span>
+</span><span id="CallbackManager-104"><a href="#CallbackManager-104"><span class="linenos">104</span></a>                    <span class="n">state</span><span class="p">,</span>
+</span><span id="CallbackManager-105"><a href="#CallbackManager-105"><span class="linenos">105</span></a>                    <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="n">prevent_initial_call</span><span class="p">},</span>
+</span><span id="CallbackManager-106"><a href="#CallbackManager-106"><span class="linenos">106</span></a>                <span class="p">),</span>
+</span><span id="CallbackManager-107"><a href="#CallbackManager-107"><span class="linenos">107</span></a>            <span class="p">)</span>
+</span><span id="CallbackManager-108"><a href="#CallbackManager-108"><span class="linenos">108</span></a>
+</span><span id="CallbackManager-109"><a href="#CallbackManager-109"><span class="linenos">109</span></a>        <span class="k">return</span> <span class="n">wrapper</span>
+</span><span id="CallbackManager-110"><a href="#CallbackManager-110"><span class="linenos">110</span></a>
+</span><span id="CallbackManager-111"><a href="#CallbackManager-111"><span class="linenos">111</span></a>    <span class="k">def</span> <span class="nf">attach_to_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="CallbackManager-112"><a href="#CallbackManager-112"><span class="linenos">112</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attaches all registered callbacks to a Dash app.</span>
+</span><span id="CallbackManager-113"><a href="#CallbackManager-113"><span class="linenos">113</span></a>
+</span><span id="CallbackManager-114"><a href="#CallbackManager-114"><span class="linenos">114</span></a><span class="sd">        Args:</span>
+</span><span id="CallbackManager-115"><a href="#CallbackManager-115"><span class="linenos">115</span></a><span class="sd">            app: The Dash app to attach the callbacks to.</span>
+</span><span id="CallbackManager-116"><a href="#CallbackManager-116"><span class="linenos">116</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="CallbackManager-117"><a href="#CallbackManager-117"><span class="linenos">117</span></a>        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
+</span><span id="CallbackManager-118"><a href="#CallbackManager-118"><span class="linenos">118</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attaching callback: </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</span><span id="CallbackManager-119"><a href="#CallbackManager-119"><span class="linenos">119</span></a>            <span class="n">app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
+</span><span id="CallbackManager-120"><a href="#CallbackManager-120"><span class="linenos">120</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span>
+</span><span id="CallbackManager-121"><a href="#CallbackManager-121"><span class="linenos">121</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span>
+</span><span id="CallbackManager-122"><a href="#CallbackManager-122"><span class="linenos">122</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">states</span><span class="p">,</span>
+</span><span id="CallbackManager-123"><a href="#CallbackManager-123"><span class="linenos">123</span></a>                <span class="o">**</span><span class="n">callback</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="CallbackManager-124"><a href="#CallbackManager-124"><span class="linenos">124</span></a>            <span class="p">)(</span><span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -493,65 +516,94 @@ is used to register callbacks across multiple files.</p>
 </div>
 
 
+                            <div id="CallbackManager.__init__" class="classattr">
+                                        <input id="CallbackManager.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">CallbackManager</span><span class="signature pdoc-code condensed">()</span>
+
+                <label class="view-source-button" for="CallbackManager.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#CallbackManager.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager.__init__-56"><a href="#CallbackManager.__init__-56"><span class="linenos">56</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="CallbackManager.__init__-57"><a href="#CallbackManager.__init__-57"><span class="linenos">57</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the CallbackManager class.&quot;&quot;&quot;</span>
+</span><span id="CallbackManager.__init__-58"><a href="#CallbackManager.__init__-58"><span class="linenos">58</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callback</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Initializes a new instance of the CallbackManager class.</p>
+</div>
+
+
+                            </div>
                             <div id="CallbackManager.callback" class="classattr">
                                         <input id="CallbackManager.callback-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">callback</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span>, </span><span class="param"><span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span></span><span class="return-annotation">) -> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>:</span></span>
+        <span class="name">callback</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span>,</span><span class="param">	<span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span></span><span class="return-annotation">) -> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="CallbackManager.callback-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#CallbackManager.callback"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager.callback-59"><a href="#CallbackManager.callback-59"><span class="linenos"> 59</span></a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="CallbackManager.callback-60"><a href="#CallbackManager.callback-60"><span class="linenos"> 60</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;A decorator for registering a Dash callback. This decorator is used</span>
-</span><span id="CallbackManager.callback-61"><a href="#CallbackManager.callback-61"><span class="linenos"> 61</span></a><span class="sd">        to log the name of the callback when it is triggered.</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager.callback-60"><a href="#CallbackManager.callback-60"><span class="linenos"> 60</span></a>    <span class="k">def</span> <span class="nf">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>  <span class="c1"># noqa: ANN401</span>
+</span><span id="CallbackManager.callback-61"><a href="#CallbackManager.callback-61"><span class="linenos"> 61</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;A decorator for registering a Dash callback.</span>
 </span><span id="CallbackManager.callback-62"><a href="#CallbackManager.callback-62"><span class="linenos"> 62</span></a>
-</span><span id="CallbackManager.callback-63"><a href="#CallbackManager.callback-63"><span class="linenos"> 63</span></a><span class="sd">        Args:</span>
-</span><span id="CallbackManager.callback-64"><a href="#CallbackManager.callback-64"><span class="linenos"> 64</span></a><span class="sd">            *args: The arguments of the callback.</span>
-</span><span id="CallbackManager.callback-65"><a href="#CallbackManager.callback-65"><span class="linenos"> 65</span></a><span class="sd">            **kwargs: The keyword arguments of the callback.</span>
-</span><span id="CallbackManager.callback-66"><a href="#CallbackManager.callback-66"><span class="linenos"> 66</span></a>
-</span><span id="CallbackManager.callback-67"><a href="#CallbackManager.callback-67"><span class="linenos"> 67</span></a><span class="sd">        Returns:</span>
-</span><span id="CallbackManager.callback-68"><a href="#CallbackManager.callback-68"><span class="linenos"> 68</span></a><span class="sd">            Callable: The decorated function.</span>
-</span><span id="CallbackManager.callback-69"><a href="#CallbackManager.callback-69"><span class="linenos"> 69</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="CallbackManager.callback-70"><a href="#CallbackManager.callback-70"><span class="linenos"> 70</span></a>        <span class="n">output</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">prevent_initial_call</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">handle_callback_args</span><span class="p">(</span>
-</span><span id="CallbackManager.callback-71"><a href="#CallbackManager.callback-71"><span class="linenos"> 71</span></a>            <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
-</span><span id="CallbackManager.callback-72"><a href="#CallbackManager.callback-72"><span class="linenos"> 72</span></a>        <span class="p">)</span>
-</span><span id="CallbackManager.callback-73"><a href="#CallbackManager.callback-73"><span class="linenos"> 73</span></a>
-</span><span id="CallbackManager.callback-74"><a href="#CallbackManager.callback-74"><span class="linenos"> 74</span></a>        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="CallbackManager.callback-75"><a href="#CallbackManager.callback-75"><span class="linenos"> 75</span></a>            <span class="k">def</span> <span class="nf">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
-</span><span id="CallbackManager.callback-76"><a href="#CallbackManager.callback-76"><span class="linenos"> 76</span></a>                <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="CallbackManager.callback-77"><a href="#CallbackManager.callback-77"><span class="linenos"> 77</span></a>                    <span class="n">module</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-</span><span id="CallbackManager.callback-78"><a href="#CallbackManager.callback-78"><span class="linenos"> 78</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
-</span><span id="CallbackManager.callback-79"><a href="#CallbackManager.callback-79"><span class="linenos"> 79</span></a>                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="CallbackManager.callback-80"><a href="#CallbackManager.callback-80"><span class="linenos"> 80</span></a>                            <span class="s2">&quot;The function to be decorated must be defined in a module.&quot;</span>
-</span><span id="CallbackManager.callback-81"><a href="#CallbackManager.callback-81"><span class="linenos"> 81</span></a>                        <span class="p">)</span>
-</span><span id="CallbackManager.callback-82"><a href="#CallbackManager.callback-82"><span class="linenos"> 82</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-</span><span id="CallbackManager.callback-83"><a href="#CallbackManager.callback-83"><span class="linenos"> 83</span></a>                        <span class="s2">&quot;Calling callback: </span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
-</span><span id="CallbackManager.callback-84"><a href="#CallbackManager.callback-84"><span class="linenos"> 84</span></a>                    <span class="p">)</span>
-</span><span id="CallbackManager.callback-85"><a href="#CallbackManager.callback-85"><span class="linenos"> 85</span></a>                    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span><span id="CallbackManager.callback-86"><a href="#CallbackManager.callback-86"><span class="linenos"> 86</span></a>
-</span><span id="CallbackManager.callback-87"><a href="#CallbackManager.callback-87"><span class="linenos"> 87</span></a>                <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
-</span><span id="CallbackManager.callback-88"><a href="#CallbackManager.callback-88"><span class="linenos"> 88</span></a>
-</span><span id="CallbackManager.callback-89"><a href="#CallbackManager.callback-89"><span class="linenos"> 89</span></a>                <span class="k">return</span> <span class="n">wrapper</span>
-</span><span id="CallbackManager.callback-90"><a href="#CallbackManager.callback-90"><span class="linenos"> 90</span></a>
-</span><span id="CallbackManager.callback-91"><a href="#CallbackManager.callback-91"><span class="linenos"> 91</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-</span><span id="CallbackManager.callback-92"><a href="#CallbackManager.callback-92"><span class="linenos"> 92</span></a>                <span class="n">Callback</span><span class="p">(</span>
-</span><span id="CallbackManager.callback-93"><a href="#CallbackManager.callback-93"><span class="linenos"> 93</span></a>                    <span class="n">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">),</span>
-</span><span id="CallbackManager.callback-94"><a href="#CallbackManager.callback-94"><span class="linenos"> 94</span></a>                    <span class="n">output</span><span class="p">,</span>
-</span><span id="CallbackManager.callback-95"><a href="#CallbackManager.callback-95"><span class="linenos"> 95</span></a>                    <span class="n">inputs</span><span class="p">,</span>
-</span><span id="CallbackManager.callback-96"><a href="#CallbackManager.callback-96"><span class="linenos"> 96</span></a>                    <span class="n">state</span><span class="p">,</span>
-</span><span id="CallbackManager.callback-97"><a href="#CallbackManager.callback-97"><span class="linenos"> 97</span></a>                    <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="n">prevent_initial_call</span><span class="p">},</span>
-</span><span id="CallbackManager.callback-98"><a href="#CallbackManager.callback-98"><span class="linenos"> 98</span></a>                <span class="p">)</span>
-</span><span id="CallbackManager.callback-99"><a href="#CallbackManager.callback-99"><span class="linenos"> 99</span></a>            <span class="p">)</span>
-</span><span id="CallbackManager.callback-100"><a href="#CallbackManager.callback-100"><span class="linenos">100</span></a>
-</span><span id="CallbackManager.callback-101"><a href="#CallbackManager.callback-101"><span class="linenos">101</span></a>        <span class="k">return</span> <span class="n">wrapper</span>
+</span><span id="CallbackManager.callback-63"><a href="#CallbackManager.callback-63"><span class="linenos"> 63</span></a><span class="sd">        This decorator is used to log the name of the callback when it is triggered.</span>
+</span><span id="CallbackManager.callback-64"><a href="#CallbackManager.callback-64"><span class="linenos"> 64</span></a>
+</span><span id="CallbackManager.callback-65"><a href="#CallbackManager.callback-65"><span class="linenos"> 65</span></a><span class="sd">        Args:</span>
+</span><span id="CallbackManager.callback-66"><a href="#CallbackManager.callback-66"><span class="linenos"> 66</span></a><span class="sd">            *args: The arguments of the callback.</span>
+</span><span id="CallbackManager.callback-67"><a href="#CallbackManager.callback-67"><span class="linenos"> 67</span></a><span class="sd">            **kwargs: The keyword arguments of the callback.</span>
+</span><span id="CallbackManager.callback-68"><a href="#CallbackManager.callback-68"><span class="linenos"> 68</span></a>
+</span><span id="CallbackManager.callback-69"><a href="#CallbackManager.callback-69"><span class="linenos"> 69</span></a><span class="sd">        Returns:</span>
+</span><span id="CallbackManager.callback-70"><a href="#CallbackManager.callback-70"><span class="linenos"> 70</span></a><span class="sd">            Callable: The decorated function.</span>
+</span><span id="CallbackManager.callback-71"><a href="#CallbackManager.callback-71"><span class="linenos"> 71</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="CallbackManager.callback-72"><a href="#CallbackManager.callback-72"><span class="linenos"> 72</span></a>        <span class="n">output</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">prevent_initial_call</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">handle_callback_args</span><span class="p">(</span>
+</span><span id="CallbackManager.callback-73"><a href="#CallbackManager.callback-73"><span class="linenos"> 73</span></a>            <span class="n">args</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-74"><a href="#CallbackManager.callback-74"><span class="linenos"> 74</span></a>            <span class="n">kwargs</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-75"><a href="#CallbackManager.callback-75"><span class="linenos"> 75</span></a>        <span class="p">)</span>
+</span><span id="CallbackManager.callback-76"><a href="#CallbackManager.callback-76"><span class="linenos"> 76</span></a>
+</span><span id="CallbackManager.callback-77"><a href="#CallbackManager.callback-77"><span class="linenos"> 77</span></a>        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="CallbackManager.callback-78"><a href="#CallbackManager.callback-78"><span class="linenos"> 78</span></a>            <span class="k">def</span> <span class="nf">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
+</span><span id="CallbackManager.callback-79"><a href="#CallbackManager.callback-79"><span class="linenos"> 79</span></a>                <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
+</span><span id="CallbackManager.callback-80"><a href="#CallbackManager.callback-80"><span class="linenos"> 80</span></a>                    <span class="n">module</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmodule</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+</span><span id="CallbackManager.callback-81"><a href="#CallbackManager.callback-81"><span class="linenos"> 81</span></a>                    <span class="k">if</span> <span class="ow">not</span> <span class="n">module</span><span class="p">:</span>
+</span><span id="CallbackManager.callback-82"><a href="#CallbackManager.callback-82"><span class="linenos"> 82</span></a>                        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="CallbackManager.callback-83"><a href="#CallbackManager.callback-83"><span class="linenos"> 83</span></a>                            <span class="s2">&quot;The function to be decorated must be defined in a module.&quot;</span>
+</span><span id="CallbackManager.callback-84"><a href="#CallbackManager.callback-84"><span class="linenos"> 84</span></a>                        <span class="p">)</span>
+</span><span id="CallbackManager.callback-85"><a href="#CallbackManager.callback-85"><span class="linenos"> 85</span></a>                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="CallbackManager.callback-86"><a href="#CallbackManager.callback-86"><span class="linenos"> 86</span></a>                            <span class="n">msg</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-87"><a href="#CallbackManager.callback-87"><span class="linenos"> 87</span></a>                        <span class="p">)</span>
+</span><span id="CallbackManager.callback-88"><a href="#CallbackManager.callback-88"><span class="linenos"> 88</span></a>                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+</span><span id="CallbackManager.callback-89"><a href="#CallbackManager.callback-89"><span class="linenos"> 89</span></a>                        <span class="s2">&quot;Calling callback: </span><span class="si">%s</span><span class="s2">.</span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-90"><a href="#CallbackManager.callback-90"><span class="linenos"> 90</span></a>                        <span class="n">module</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-91"><a href="#CallbackManager.callback-91"><span class="linenos"> 91</span></a>                        <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-92"><a href="#CallbackManager.callback-92"><span class="linenos"> 92</span></a>                    <span class="p">)</span>
+</span><span id="CallbackManager.callback-93"><a href="#CallbackManager.callback-93"><span class="linenos"> 93</span></a>                    <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="CallbackManager.callback-94"><a href="#CallbackManager.callback-94"><span class="linenos"> 94</span></a>
+</span><span id="CallbackManager.callback-95"><a href="#CallbackManager.callback-95"><span class="linenos"> 95</span></a>                <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="CallbackManager.callback-96"><a href="#CallbackManager.callback-96"><span class="linenos"> 96</span></a>
+</span><span id="CallbackManager.callback-97"><a href="#CallbackManager.callback-97"><span class="linenos"> 97</span></a>                <span class="k">return</span> <span class="n">wrapper</span>
+</span><span id="CallbackManager.callback-98"><a href="#CallbackManager.callback-98"><span class="linenos"> 98</span></a>
+</span><span id="CallbackManager.callback-99"><a href="#CallbackManager.callback-99"><span class="linenos"> 99</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+</span><span id="CallbackManager.callback-100"><a href="#CallbackManager.callback-100"><span class="linenos">100</span></a>                <span class="n">Callback</span><span class="p">(</span>
+</span><span id="CallbackManager.callback-101"><a href="#CallbackManager.callback-101"><span class="linenos">101</span></a>                    <span class="n">logging_func</span><span class="p">(</span><span class="n">func</span><span class="p">),</span>
+</span><span id="CallbackManager.callback-102"><a href="#CallbackManager.callback-102"><span class="linenos">102</span></a>                    <span class="n">output</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-103"><a href="#CallbackManager.callback-103"><span class="linenos">103</span></a>                    <span class="n">inputs</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-104"><a href="#CallbackManager.callback-104"><span class="linenos">104</span></a>                    <span class="n">state</span><span class="p">,</span>
+</span><span id="CallbackManager.callback-105"><a href="#CallbackManager.callback-105"><span class="linenos">105</span></a>                    <span class="p">{</span><span class="s2">&quot;prevent_initial_call&quot;</span><span class="p">:</span> <span class="n">prevent_initial_call</span><span class="p">},</span>
+</span><span id="CallbackManager.callback-106"><a href="#CallbackManager.callback-106"><span class="linenos">106</span></a>                <span class="p">),</span>
+</span><span id="CallbackManager.callback-107"><a href="#CallbackManager.callback-107"><span class="linenos">107</span></a>            <span class="p">)</span>
+</span><span id="CallbackManager.callback-108"><a href="#CallbackManager.callback-108"><span class="linenos">108</span></a>
+</span><span id="CallbackManager.callback-109"><a href="#CallbackManager.callback-109"><span class="linenos">109</span></a>        <span class="k">return</span> <span class="n">wrapper</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>A decorator for registering a Dash callback. This decorator is used
-to log the name of the callback when it is triggered.</p>
+            <div class="docstring"><p>A decorator for registering a Dash callback.</p>
+
+<p>This decorator is used to log the name of the callback when it is triggered.</p>
 
 <h6 id="arguments">Arguments:</h6>
 
@@ -580,17 +632,20 @@ to log the name of the callback when it is triggered.</p>
 
     </div>
     <a class="headerlink" href="#CallbackManager.attach_to_app"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager.attach_to_app-103"><a href="#CallbackManager.attach_to_app-103"><span class="linenos">103</span></a>    <span class="k">def</span> <span class="nf">attach_to_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="CallbackManager.attach_to_app-104"><a href="#CallbackManager.attach_to_app-104"><span class="linenos">104</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attaches all registered callbacks to a Dash app.</span>
-</span><span id="CallbackManager.attach_to_app-105"><a href="#CallbackManager.attach_to_app-105"><span class="linenos">105</span></a>
-</span><span id="CallbackManager.attach_to_app-106"><a href="#CallbackManager.attach_to_app-106"><span class="linenos">106</span></a><span class="sd">        Args:</span>
-</span><span id="CallbackManager.attach_to_app-107"><a href="#CallbackManager.attach_to_app-107"><span class="linenos">107</span></a><span class="sd">            app: The Dash app to attach the callbacks to.</span>
-</span><span id="CallbackManager.attach_to_app-108"><a href="#CallbackManager.attach_to_app-108"><span class="linenos">108</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="CallbackManager.attach_to_app-109"><a href="#CallbackManager.attach_to_app-109"><span class="linenos">109</span></a>        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
-</span><span id="CallbackManager.attach_to_app-110"><a href="#CallbackManager.attach_to_app-110"><span class="linenos">110</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attaching callback: </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-</span><span id="CallbackManager.attach_to_app-111"><a href="#CallbackManager.attach_to_app-111"><span class="linenos">111</span></a>            <span class="n">app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
-</span><span id="CallbackManager.attach_to_app-112"><a href="#CallbackManager.attach_to_app-112"><span class="linenos">112</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">states</span><span class="p">,</span> <span class="o">**</span><span class="n">callback</span><span class="o">.</span><span class="n">kwargs</span>
-</span><span id="CallbackManager.attach_to_app-113"><a href="#CallbackManager.attach_to_app-113"><span class="linenos">113</span></a>            <span class="p">)(</span><span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="CallbackManager.attach_to_app-111"><a href="#CallbackManager.attach_to_app-111"><span class="linenos">111</span></a>    <span class="k">def</span> <span class="nf">attach_to_app</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">:</span> <span class="n">dash</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="CallbackManager.attach_to_app-112"><a href="#CallbackManager.attach_to_app-112"><span class="linenos">112</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attaches all registered callbacks to a Dash app.</span>
+</span><span id="CallbackManager.attach_to_app-113"><a href="#CallbackManager.attach_to_app-113"><span class="linenos">113</span></a>
+</span><span id="CallbackManager.attach_to_app-114"><a href="#CallbackManager.attach_to_app-114"><span class="linenos">114</span></a><span class="sd">        Args:</span>
+</span><span id="CallbackManager.attach_to_app-115"><a href="#CallbackManager.attach_to_app-115"><span class="linenos">115</span></a><span class="sd">            app: The Dash app to attach the callbacks to.</span>
+</span><span id="CallbackManager.attach_to_app-116"><a href="#CallbackManager.attach_to_app-116"><span class="linenos">116</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="CallbackManager.attach_to_app-117"><a href="#CallbackManager.attach_to_app-117"><span class="linenos">117</span></a>        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
+</span><span id="CallbackManager.attach_to_app-118"><a href="#CallbackManager.attach_to_app-118"><span class="linenos">118</span></a>            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Attaching callback: </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</span><span id="CallbackManager.attach_to_app-119"><a href="#CallbackManager.attach_to_app-119"><span class="linenos">119</span></a>            <span class="n">app</span><span class="o">.</span><span class="n">callback</span><span class="p">(</span>
+</span><span id="CallbackManager.attach_to_app-120"><a href="#CallbackManager.attach_to_app-120"><span class="linenos">120</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">outputs</span><span class="p">,</span>
+</span><span id="CallbackManager.attach_to_app-121"><a href="#CallbackManager.attach_to_app-121"><span class="linenos">121</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span>
+</span><span id="CallbackManager.attach_to_app-122"><a href="#CallbackManager.attach_to_app-122"><span class="linenos">122</span></a>                <span class="n">callback</span><span class="o">.</span><span class="n">states</span><span class="p">,</span>
+</span><span id="CallbackManager.attach_to_app-123"><a href="#CallbackManager.attach_to_app-123"><span class="linenos">123</span></a>                <span class="o">**</span><span class="n">callback</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="CallbackManager.attach_to_app-124"><a href="#CallbackManager.attach_to_app-124"><span class="linenos">124</span></a>            <span class="p">)(</span><span class="n">callback</span><span class="o">.</span><span class="n">func</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -629,37 +684,32 @@ to log the name of the callback when it is triggered.</p>
 
     </div>
     <a class="headerlink" href="#initialize_components"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="initialize_components-120"><a href="#initialize_components-120"><span class="linenos">120</span></a><span class="k">def</span> <span class="nf">initialize_components</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="initialize_components-121"><a href="#initialize_components-121"><span class="linenos">121</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the components of the Actigraphy app.</span>
-</span><span id="initialize_components-122"><a href="#initialize_components-122"><span class="linenos">122</span></a>
-</span><span id="initialize_components-123"><a href="#initialize_components-123"><span class="linenos">123</span></a><span class="sd">    Notes:</span>
-</span><span id="initialize_components-124"><a href="#initialize_components-124"><span class="linenos">124</span></a><span class="sd">        This is a workaround to allow callbacks to be placed across multiple</span>
-</span><span id="initialize_components-125"><a href="#initialize_components-125"><span class="linenos">125</span></a><span class="sd">        files. All these files use the global_manager object defined in this</span>
-</span><span id="initialize_components-126"><a href="#initialize_components-126"><span class="linenos">126</span></a><span class="sd">        file. As such, a side-effect of importing these files is that all the</span>
-</span><span id="initialize_components-127"><a href="#initialize_components-127"><span class="linenos">127</span></a><span class="sd">        callbacks are registered.</span>
-</span><span id="initialize_components-128"><a href="#initialize_components-128"><span class="linenos">128</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="initialize_components-129"><a href="#initialize_components-129"><span class="linenos">129</span></a>    <span class="c1"># pylint: disable=import-outside-toplevel disable=unused-import</span>
-</span><span id="initialize_components-130"><a href="#initialize_components-130"><span class="linenos">130</span></a>    <span class="kn">from</span> <span class="nn">actigraphy.components</span> <span class="kn">import</span> <span class="p">(</span>
-</span><span id="initialize_components-131"><a href="#initialize_components-131"><span class="linenos">131</span></a>        <span class="n">app_license</span><span class="p">,</span>
-</span><span id="initialize_components-132"><a href="#initialize_components-132"><span class="linenos">132</span></a>        <span class="n">day_slider</span><span class="p">,</span>
-</span><span id="initialize_components-133"><a href="#initialize_components-133"><span class="linenos">133</span></a>        <span class="n">file_selection</span><span class="p">,</span>
-</span><span id="initialize_components-134"><a href="#initialize_components-134"><span class="linenos">134</span></a>        <span class="n">finished_checkbox</span><span class="p">,</span>
-</span><span id="initialize_components-135"><a href="#initialize_components-135"><span class="linenos">135</span></a>        <span class="n">graph</span><span class="p">,</span>
-</span><span id="initialize_components-136"><a href="#initialize_components-136"><span class="linenos">136</span></a>        <span class="n">switches</span><span class="p">,</span>
-</span><span id="initialize_components-137"><a href="#initialize_components-137"><span class="linenos">137</span></a>    <span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="initialize_components-131"><a href="#initialize_components-131"><span class="linenos">131</span></a><span class="k">def</span> <span class="nf">initialize_components</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="initialize_components-132"><a href="#initialize_components-132"><span class="linenos">132</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the components of the Actigraphy app.</span>
+</span><span id="initialize_components-133"><a href="#initialize_components-133"><span class="linenos">133</span></a>
+</span><span id="initialize_components-134"><a href="#initialize_components-134"><span class="linenos">134</span></a><span class="sd">    This is a workaround to allow callbacks to be placed across multiple</span>
+</span><span id="initialize_components-135"><a href="#initialize_components-135"><span class="linenos">135</span></a><span class="sd">    files. All these files use the global_manager object defined in this</span>
+</span><span id="initialize_components-136"><a href="#initialize_components-136"><span class="linenos">136</span></a><span class="sd">    file. As such, a side-effect of importing these files is that all the</span>
+</span><span id="initialize_components-137"><a href="#initialize_components-137"><span class="linenos">137</span></a><span class="sd">    callbacks are registered.</span>
+</span><span id="initialize_components-138"><a href="#initialize_components-138"><span class="linenos">138</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="initialize_components-139"><a href="#initialize_components-139"><span class="linenos">139</span></a>    <span class="c1"># pylint: disable=import-outside-toplevel disable=unused-import</span>
+</span><span id="initialize_components-140"><a href="#initialize_components-140"><span class="linenos">140</span></a>    <span class="kn">from</span> <span class="nn">actigraphy.components</span> <span class="kn">import</span> <span class="p">(</span>
+</span><span id="initialize_components-141"><a href="#initialize_components-141"><span class="linenos">141</span></a>        <span class="n">app_license</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="initialize_components-142"><a href="#initialize_components-142"><span class="linenos">142</span></a>        <span class="n">day_slider</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="initialize_components-143"><a href="#initialize_components-143"><span class="linenos">143</span></a>        <span class="n">file_selection</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="initialize_components-144"><a href="#initialize_components-144"><span class="linenos">144</span></a>        <span class="n">finished_checkbox</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="initialize_components-145"><a href="#initialize_components-145"><span class="linenos">145</span></a>        <span class="n">graph</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="initialize_components-146"><a href="#initialize_components-146"><span class="linenos">146</span></a>        <span class="n">switches</span><span class="p">,</span>  <span class="c1"># noqa: F401</span>
+</span><span id="initialize_components-147"><a href="#initialize_components-147"><span class="linenos">147</span></a>    <span class="p">)</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Initializes the components of the Actigraphy app.</p>
 
-<h6 id="notes">Notes:</h6>
-
-<blockquote>
-  <p>This is a workaround to allow callbacks to be placed across multiple
-  files. All these files use the global_manager object defined in this
-  file. As such, a side-effect of importing these files is that all the
-  callbacks are registered.</p>
-</blockquote>
+<p>This is a workaround to allow callbacks to be placed across multiple
+files. All these files use the global_manager object defined in this
+file. As such, a side-effect of importing these files is that all the
+callbacks are registered.</p>
 </div>
 
 
