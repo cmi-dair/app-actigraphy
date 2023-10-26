@@ -10,6 +10,7 @@ data for a particular night.
 import logging
 
 import dash
+import dash_bootstrap_components as dbc
 import dash_daq
 from dash import html
 
@@ -38,26 +39,30 @@ def switches() -> html.Div:
     # pylint: disable=not-callable because dash_daq.BooleanSwitch is callable
     return html.Div(
         children=[
-            dash_daq.BooleanSwitch(
-                id="multiple_sleep",
-                on=False,
-                label=(
-                    " Does this participant have multiple sleep "
-                    "periods in this 24h period?",
-                ),
-            ),
-            dash_daq.BooleanSwitch(
-                id="exclude_night",
-                on=False,
-                label=(
-                    " Does this participant have more than 2 hours of "
-                    "missing sleep data from 8PM to 8AM?",
-                ),
-            ),
-            dash_daq.BooleanSwitch(
-                id="review_night",
-                on=False,
-                label=" Do you need to review this night?",
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dash_daq.BooleanSwitch(
+                            id="multiple_sleep",
+                            on=False,
+                            label=" Are there multiple sleep periods in these data?",
+                        ),
+                    ),
+                    dbc.Col(
+                        dash_daq.BooleanSwitch(
+                            id="exclude_night",
+                            on=False,
+                            label=" Are >2 hours of data missing between 8PM to 8AM?",
+                        ),
+                    ),
+                    dbc.Col(
+                        dash_daq.BooleanSwitch(
+                            id="review_night",
+                            on=False,
+                            label=" Do you need to review this night?",
+                        ),
+                    ),
+                ],
             ),
             html.Div(id="null-data-sleep"),
             html.Div(id="null-data-night"),
