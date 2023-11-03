@@ -46,13 +46,7 @@ def switches() -> html.Div:
                             id="multiple_sleep",
                             on=False,
                             label=" Are there multiple sleep periods in these data?",
-                        ),
-                    ),
-                    dbc.Col(
-                        dash_daq.BooleanSwitch(
-                            id="exclude_night",
-                            on=False,
-                            label=" Are >2 hours of data missing between 8PM to 8AM?",
+                            className="switches-col",
                         ),
                     ),
                     dbc.Col(
@@ -60,6 +54,15 @@ def switches() -> html.Div:
                             id="review_night",
                             on=False,
                             label=" Do you need to review this night?",
+                            className="switches-col",
+                        ),
+                    ),
+                    dbc.Col(
+                        dash_daq.BooleanSwitch(
+                            id="exclude_night",
+                            on=False,
+                            label=" Are >2 hours of data missing between 8PM to 8AM?",
+                            className="switches-col",
                         ),
                     ),
                 ],

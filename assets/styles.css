@@ -1,0 +1,10 @@
+.switches-col {
+    background-color: rgba(0, 0, 0, 0.02);
+    max-width: 450px;
+    margin: 0 auto;
+    margin-bottom: 10px;
+}
+
+.switches-col:not:last-child {
+  margin-bottom: 10px;
+}
