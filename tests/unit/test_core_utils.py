@@ -21,7 +21,7 @@ def test_point2time() -> None:
     date = datetime.date.fromisoformat("1993-08-26")
     expected = datetime.datetime.fromisoformat("1993-08-26T15:00:00.000000")
 
-    actual = utils.point2time(point, date)
+    actual = utils.point2time(point, date, 0)
 
     assert actual == expected
 

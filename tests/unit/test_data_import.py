@@ -98,55 +98,6 @@ def test_get_midnights(mocker: plugin.MockerFixture) -> None:
     assert actual == [2]
 
 
-def test_get_daycount(mocker: plugin.MockerFixture) -> None:
-    """Test get_daycount with mocked get_midnights data."""
-    mocker.patch("actigraphy.io.data_import.get_midnights", return_value=[1, 2, 3])
-    expected_days = 4
-
-    actual = data_import.get_daycount("base_dir")
-
-    data_import.get_midnights.assert_called_once_with("base_dir")  # type: ignore[attr-defined]
-    assert actual == expected_days
-
-
-def test_get_n_points_per_day(mocker: plugin.MockerFixture) -> None:
-    """Test get_n_points_per_day with mocked metadata."""
-    mock_metadata = mocker.Mock(spec=metadata.MetaData)
-    mock_metadata.m = mocker.Mock()
-    mock_metadata.m.windowsizes = [30]
-    mocker.patch("actigraphy.io.data_import.get_metadata", return_value=mock_metadata)
-    file_manager = {"base_dir": "base_dir"}
-    expected_points = 2880
-
-    actual = data_import.get_n_points_per_day(file_manager)
-
-    data_import.get_metadata.assert_called_once_with("base_dir")  # type: ignore[attr-defined]
-    assert actual == expected_points
-
-
-def test_get_dates(mocker: plugin.MockerFixture) -> None:
-    """Test get_dates with mocked metadata and time data."""
-    mock_metadata = mocker.Mock(spec=metadata.MetaData)
-    mock_metadata.m = mocker.Mock()
-    mock_metadata.m.metashort = mocker.Mock()
-    mock_metadata.m.metashort.timestamp = [
-        "2022-10-15T12:34:56+0000",
-        "2022-10-16T12:34:56+0000",
-    ]
-    mocker.patch("actigraphy.io.data_import.get_metadata", return_value=mock_metadata)
-    mocked_times = [
-        datetime.datetime(2022, 10, 15, 12, 34, 56, tzinfo=datetime.UTC),
-        datetime.datetime(2022, 10, 16, 12, 34, 56, tzinfo=datetime.UTC),
-    ]
-    mocker.patch("actigraphy.io.data_import.get_time", return_value=mocked_times)
-    file_manager = {"base_dir": "base_dir"}
-
-    actual = data_import.get_dates(file_manager)
-
-    data_import.get_metadata.assert_called_once_with("base_dir")  # type: ignore[attr-defined]
-    assert actual == [datetime.date(2022, 10, 15), datetime.date(2022, 10, 16)]
-
-
 def test_extend_data_prepend() -> None:
     """Test _extend_data with action set to 'prepend'."""
     data = [1, 2, 3]

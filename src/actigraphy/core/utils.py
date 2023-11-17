@@ -2,6 +2,7 @@
 import datetime
 import logging
 import os
+import pathlib
 from os import path
 
 from actigraphy.core import config
@@ -16,15 +17,13 @@ class FileManager:
 
     Attributes:
         base_dir (str): The base directory for the file manager.
+        database (str): The path to the database file.
         log_dir (str): The directory for log files.
         identifier (str): The identifier for the file manager.
         log_file (str): The path to the log file.
         sleeplog_file (str): The path to the sleep log file.
-        multiple_sleeplog_file (str): The path to the multiple sleep log file.
         data_cleaning_file (str): The path to the data cleaning file.
-        missing_sleep_file (str): The path to the missing sleep file.
-        review_night_file (str): The path to the review night file.
-        completed_analysis_file (str): The path to the completed analysis file.
+        metadata_file (str): The path to the metadata file.
 
     Notes:
         Files are kept as strings because Dash cannot serialize pathlib.Path.
@@ -33,31 +32,18 @@ class FileManager:
     def __init__(self, base_dir: str) -> None:
         """Initializes the FileManager class."""
         self.base_dir = base_dir
+        self.database = path.join(base_dir, "actigraphy.sqlite")
         self.log_dir = path.join(self.base_dir, "logs")
         self.identifier = self.base_dir.rsplit("_", maxsplit=1)[-1]
 
         self.log_file = path.join(self.log_dir, "log_file.csv")
         self.sleeplog_file = path.join(self.log_dir, f"sleeplog_{self.identifier}.csv")
-        self.multiple_sleeplog_file = path.join(
-            self.log_dir,
-            f"multiple_sleeplog_{self.identifier}.csv",
-        )
         self.data_cleaning_file = path.join(
             self.log_dir,
             f"data_cleaning_{self.identifier}.csv",
         )
-        self.missing_sleep_file = path.join(
-            self.log_dir,
-            f"missing_sleep_{self.identifier}.csv",
-        )
-        self.review_night_file = path.join(
-            self.log_dir,
-            f"review_night_{self.identifier}.csv",
-        )
-        self.completed_analysis_file = path.join(
-            self.log_dir,
-            "participants_with_completed_analysis.csv",
-        )
+        metadata_dir = path.join(self.base_dir, "meta", "basic")
+        self.metadata_file = str(next(pathlib.Path(metadata_dir).glob("meta_*")))
 
         os.makedirs(self.log_dir, exist_ok=True)
 
@@ -81,62 +67,59 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
 def time2point(
     time: datetime.datetime,
     date: datetime.date,
-    *,
-    ignore_timezone: bool = True,
 ) -> int:
     """Converts a datetime to the number of minutes since the given day's midnight.
 
     Args:
         time: The datetime object to convert.
         date: The date preceding midnight as reference.
-        ignore_timezone: Whether to ignore the timezone of the datetime object.
 
     Returns:
         float: The number of minutes since midnight on the given date.
     """
     logger.debug("Converting time to point: %s.", time)
-    reference = datetime.datetime.combine(date, datetime.time(hour=12))
-    if ignore_timezone:
-        delta = time.replace(tzinfo=None) - reference.replace(tzinfo=None)
-    else:
-        delta = time - reference
+    reference = datetime.datetime.combine(
+        date,
+        datetime.time(hour=12),
+        tzinfo=datetime.UTC,
+    )
+
+    delta = time.astimezone(datetime.UTC) - reference
     return int(delta.total_seconds() // 60)
 
 
 def point2time(
-    point: float | None,
+    point: float,
     date: datetime.date,
-    timezone: datetime.tzinfo | None = None,
+    timezone_offset: int,
 ) -> datetime.datetime:
     """Converts a point value to a datetime object.
 
     Args:
         point: The point value to convert.
         date: The date to combine with the converted time.
-        timezone: The timezone to use for the resulting datetime object.
+        timezone_offset: Timezone offset in seconds.
 
     Returns:
         datetime.datetime: The resulting datetime object.
     """
     logger.debug("Converting point to time: %s.", point)
-    if point is None:
-        # Default to 03:00AM the next day
-        default_date = datetime.datetime.combine(
-            date,
-            datetime.time(0),
-        ) + datetime.timedelta(days=1, hours=3, minutes=0)
-        if timezone:
-            return default_date.astimezone(timezone)
-        return default_date
 
     days, remainder_minutes = divmod(point, 1440)
     hours, minutes = divmod(remainder_minutes, 60)
-    offset = datetime.timedelta(hours=12)
-    delta = datetime.timedelta(days=days, hours=hours, minutes=minutes) + offset
+
+    slider_offset = datetime.timedelta(hours=12)
+    timezone_delta = datetime.timedelta(seconds=timezone_offset)
+
+    delta = (
+        datetime.timedelta(days=days, hours=hours, minutes=minutes)
+        + slider_offset
+        + timezone_delta
+    )
     adjusted_time = datetime.datetime.combine(date, datetime.time(0)) + delta
-    if timezone:
-        return adjusted_time.astimezone(timezone)
-    return adjusted_time
+
+    tz_info = datetime.timezone(timezone_delta)
+    return adjusted_time.replace(tzinfo=tz_info)
 
 
 def point2time_timestamp(point: int, npointsperday: int, offset: int = 0) -> str:

@@ -9,7 +9,7 @@ import dash
 from dash import dcc
 
 from actigraphy.core import callback_manager, config
-from actigraphy.io import minor_files
+from actigraphy.database import crud, database
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
@@ -38,16 +38,19 @@ def finished_checkbox() -> dcc.Checklist:
     dash.Input("are-you-done", "value"),
     dash.State("file_manager", "data"),
 )
-def write_log_done(is_user_done: bool, file_manager: dict[str, str]) -> bool:  # noqa: FBT001
+def write_log_done(is_user_done: str, file_manager: dict[str, str]) -> bool:
     """Writes a log message indicating that the analysis has been completed.
 
     Args:
-        is_user_done: Whether the user has completed the analysis.
+        is_user_done: If true, the text of the checkbox, otherwise empty string.
         file_manager: A dictionary containing information about the file being analyzed.
     """
-    minor_files.write_log_analysis_completed(
-        is_user_done,
-        file_manager["identifier"],
-        file_manager["completed_analysis_file"],
-    )
-    return is_user_done
+    logger.debug("Entering write log done callback")
+    session = next(database.session_generator(file_manager["database"]))
+    subject = crud.read_subject(session, file_manager["identifier"])
+
+    is_done = bool(is_user_done)
+    subject.is_finished = is_done
+    session.commit()
+
+    return is_done

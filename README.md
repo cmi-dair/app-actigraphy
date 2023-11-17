@@ -25,7 +25,6 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
    ```
    Apple Silicon users will have to include a `--platform linux/amd64` flag.
 
-
 ### Running the App through Poetry
 
 1. Ensure you have [Poetry](https://python-poetry.org/docs/) installed.
@@ -43,7 +42,6 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
    poetry run actigraphy {DATA_DIR}
    ```
 
-
 ## Developer notes
 
 The Actigraphy app is designed to annotate sleep data. While traditional Dash apps might not scale to complex applications, this repository employs a custom Dash architecture to address this:
@@ -54,3 +52,42 @@ The Actigraphy app is designed to annotate sleep data. While traditional Dash ap
 - `core/callback_manager.py` is responsible for registering callbacks for the app. It is also responsible for registering callbacks for the components. This file allows the callbacks to be placed across multiple files by defining a global manager.
 - `io/` contains the tools for loading and saving data.
 - `plotting` contains the tools for plotting data.
+
+The internal data storage of this tool relies on a sqlite database. This database has the following tables:
+
+```mermaid
+erDiagram
+   SUBJECTS {
+      INTEGER id PK
+      VARCHAR(128) name
+      INTEGER n_points_per_day
+      BOOLEAN is_finished
+      DATETIME time_created
+      DATETIME time_updated
+   }
+
+    DAYS {
+        INTEGER id PK
+        DATE date
+        BOOLEAN is_missing_sleep
+        BOOLEAN is_multiple_sleep
+        BOOLEAN is_reviewed
+        INTEGER subject_id FK
+        DATETIME time_created
+        DATETIME time_updated
+    }
+
+    SLEEP_TIMES {
+        INTEGER id PK
+        DATETIME onset
+        INTEGER onset_utc_offset
+        DATETIME wakeup
+        INTEGER wakeup_utc_offset
+        INTEGER day_id FK
+        DATETIME time_created
+        DATETIME time_updated
+    }
+
+    SUBJECTS ||--o{ DAYS : "subjects.id"
+    DAYS ||--o{ SLEEP_TIMES : "days.id"
+```

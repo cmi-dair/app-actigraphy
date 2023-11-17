@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from actigraphy.core import config
+from actigraphy.database import crud, database
 from actigraphy.io import metadata
 
 settings = config.get_settings()
@@ -36,6 +37,21 @@ def _get_data_file(data_sub_dir: pathlib.Path) -> pathlib.Path:
     raise ValueError(msg)
 
 
+@functools.lru_cache
+def get_time(times: tuple[str]) -> list[datetime.datetime]:
+    """Get the datetime objects from a list of times.
+
+    Args:
+        times: The metadata object.
+
+    Returns:
+        A list of datetime objects that represent the standard time.
+
+    """
+    logger.debug("Getting standard time from metadata.")
+    return [datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z") for time in times]
+
+
 @functools.cache
 def get_metadata(base_dir: str | pathlib.Path) -> metadata.MetaData:
     """Get metadata from the specified base directory.
@@ -50,21 +66,6 @@ def get_metadata(base_dir: str | pathlib.Path) -> metadata.MetaData:
     logger.debug("Getting metadata from %s", "base_dir")
     metadata_file = _get_data_file(pathlib.Path(base_dir) / "meta" / "basic")
     return metadata.MetaData.from_file(metadata_file)
-
-
-@functools.lru_cache
-def get_time(times: tuple[str]) -> list[datetime.datetime]:
-    """Get the datetime objects from a list of times.
-
-    Args:
-        times: The metadata object.
-
-    Returns:
-        A list of datetime objects that represent the standard time.
-
-    """
-    logger.debug("Getting standard time from metadata.")
-    return [datetime.datetime.strptime(time, "%Y-%m-%dT%H:%M:%S%z") for time in times]
 
 
 @functools.lru_cache
@@ -87,52 +88,6 @@ def get_midnights(base_dir: str) -> list[int]:
     ]
     logger.debug("Found %s midnights.", len(midnight_indices))
     return midnight_indices
-
-
-@functools.lru_cache
-def get_daycount(base_dir: str) -> int:
-    """Returns the number of days in the subject's data.
-
-    Args:
-        base_dir: The path to the subject's data.
-
-    Returns:
-        int: The number of days in the subject's data.
-
-    """
-    logger.debug("Getting daycount from %s", base_dir)
-    return len(get_midnights(base_dir)) + 1
-
-
-def get_n_points_per_day(file_manager: dict[str, str]) -> int:
-    """Calculates the number of data points per day based on the metadata file.
-
-    Args:
-        file_manager: A dictionary containing the base directory of the metadata file.
-
-    Returns:
-        int: The number of data points per day.
-    """
-    logger.debug("Getting n points per day from %s", file_manager["base_dir"])
-    metadata_data = get_metadata(file_manager["base_dir"])
-    return 86400 // metadata_data.m.windowsizes[0]
-
-
-def get_dates(file_manager: dict[str, str]) -> list[datetime.date]:
-    """Returns a list of unique dates from the metadata.
-
-    Args:
-        file_manager: A dictionary containing the base directory of the metadata.
-
-    Returns:
-        list[datetime.date]: A sorted list of unique dates extracted from the metadata.
-
-    """
-    logger.debug("Getting dates from %s", file_manager["base_dir"])
-    metadata_data = get_metadata(file_manager["base_dir"])
-    timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
-    dates = {time.date() for time in timestamps}
-    return sorted(dates)
 
 
 def get_timezone(file_manager: dict[str, str]) -> datetime.tzinfo | None:
@@ -169,11 +124,6 @@ def get_graph_data(
     """
     logger.debug("Loading data for day %s.", day)
     metadata_data = get_metadata(file_manager["base_dir"])
-    passed_midnight = get_midnights(file_manager["base_dir"])
-
-    if len(passed_midnight) == 0:
-        msg = "No midnight found in the data."
-        raise ValueError(msg)
 
     # Prepare nonwear information for plotting
     enmo = metadata_data.m.metashort.ENMO.reset_index(drop=True)
@@ -190,8 +140,6 @@ def get_graph_data(
     for index in nonwear_elements:
         nonwear[index : index + window_size_ratio] = 1
 
-    n_points_per_day = get_n_points_per_day(file_manager)
-
     time_day_starts, time_day_ends = _day_start_and_end_time_points(
         file_manager,
         day,
@@ -202,7 +150,9 @@ def get_graph_data(
     ang = anglez[time_day_starts:time_day_ends]
     non_wear = nonwear[time_day_starts:time_day_ends]
 
-    extension = [0] * (n_points_per_day - len(acc))
+    session = next(database.session_generator(file_manager["database"]))
+    subject = crud.read_subject(session, file_manager["identifier"])
+    extension = [0] * (subject.n_points_per_day - len(acc))
     if time_day_starts == 0:
         action = "prepend"
     elif time_day_ends is None:

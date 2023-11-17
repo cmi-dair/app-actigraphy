@@ -14,14 +14,10 @@ class MetaDataM(pydantic.BaseModel):
     Only the required data is retained.
 
     Attributes:
-        model_config (pydantic.ConfigDict): A dictionary containing
-            configuration options for the model.
-        metalong (pd.DataFrame): A pandas DataFrame containing long-format
-            metadata.
-        metashort (pd.DataFrame): A pandas DataFrame containing short-format
-            metadata.
-        windowsizes (list[int]): A list of integers representing window sizes
-            for the data.
+        model_config: A dictionary containing configuration options for the model.
+        metalong: A pandas DataFrame containing long-format metadata.
+        metashort : A pandas DataFrame containing short-format metadata.
+        windowsizes: A list of integers representing window sizes for the data.
     """
 
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
