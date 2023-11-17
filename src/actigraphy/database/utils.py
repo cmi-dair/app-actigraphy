@@ -45,20 +45,17 @@ def initialize_subject(
         day = dates[day_index]
         day_model = models.Day(date=day.date())
         utc_offset = (dates[day_index + 1]).utcoffset() or datetime.timedelta()
-        default_sleep_datetime = (
-            datetime.datetime.combine(
-                day + datetime.timedelta(days=1),
-                DEFAULT_SLEEP_TIME,
-                tzinfo=datetime.UTC,
-            )
-            + utc_offset
+        default_sleep_datetime = datetime.datetime.combine(
+            day + datetime.timedelta(days=1),
+            DEFAULT_SLEEP_TIME,
+            tzinfo=datetime.timezone(utc_offset),
         )
 
         day_model.sleep_times = [
             models.SleepTime(
-                onset=default_sleep_datetime,
+                onset=default_sleep_datetime.astimezone(datetime.UTC),
                 onset_utc_offset=dates[day_index + 1].utcoffset().total_seconds(),  # type: ignore[union-attr]
-                wakeup=default_sleep_datetime,
+                wakeup=default_sleep_datetime.astimezone(datetime.UTC),
                 wakeup_utc_offset=dates[day_index + 1].utcoffset().total_seconds(),  # type: ignore[union-attr]
             ),
         ]

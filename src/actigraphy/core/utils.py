@@ -81,10 +81,10 @@ def time2point(
     reference = datetime.datetime.combine(
         date,
         datetime.time(hour=12),
-        tzinfo=datetime.UTC,
+        tzinfo=time.tzinfo,
     )
 
-    delta = time.astimezone(datetime.UTC) - reference
+    delta = time - reference
     return int(delta.total_seconds() // 60)
 
 
@@ -102,6 +102,7 @@ def point2time(
 
     Returns:
         datetime.datetime: The resulting datetime object.
+
     """
     logger.debug("Converting point to time: %s.", point)
 
@@ -111,11 +112,7 @@ def point2time(
     slider_offset = datetime.timedelta(hours=12)
     timezone_delta = datetime.timedelta(seconds=timezone_offset)
 
-    delta = (
-        datetime.timedelta(days=days, hours=hours, minutes=minutes)
-        + slider_offset
-        + timezone_delta
-    )
+    delta = datetime.timedelta(days=days, hours=hours, minutes=minutes) + slider_offset
     adjusted_time = datetime.datetime.combine(date, datetime.time(0)) + delta
 
     tz_info = datetime.timezone(timezone_delta)

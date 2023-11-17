@@ -13,7 +13,7 @@ from plotly import graph_objects
 
 from actigraphy.core import callback_manager, config, utils
 from actigraphy.database import crud, database
-from actigraphy.io import data_import, minor_files
+from actigraphy.io import data_import, ggir_files
 from actigraphy.plotting import sensor_plots
 
 settings = config.get_settings()
@@ -194,13 +194,14 @@ def adjust_range_slider(
         day.sleep_times[0].wakeup_utc_offset,
     )
 
-    day.sleep_times[0].onset = sleep_time
-    day.sleep_times[0].wakeup = wake_time
-    session.commit()
-    minor_files.write_sleeplog(file_manager)
+    day.sleep_times[0].onset = sleep_time.astimezone(datetime.UTC)
+    day.sleep_times[0].wakeup = wake_time.astimezone(datetime.UTC)
 
-    onset_string = sleep_time.astimezone(datetime.UTC).strftime(TIME_FORMATTING)
-    offset_string = wake_time.astimezone(datetime.UTC).strftime(TIME_FORMATTING)
+    session.commit()
+    ggir_files.write_sleeplog(file_manager)
+
+    onset_string = sleep_time.strftime(TIME_FORMATTING)
+    offset_string = wake_time.strftime(TIME_FORMATTING)
     duration_string = utils.datetime_delta_as_hh_mm(wake_time - sleep_time)
     return (
         f"Sleep onset: {onset_string}\n",

@@ -70,7 +70,8 @@ class SleepTime(BaseTable):
         Returns:
             datetime.datetime: The onset time with timezone information.
         """
-        return self.onset.astimezone(
+        onset_utc = self.onset.replace(tzinfo=datetime.UTC)
+        return onset_utc.astimezone(
             datetime.timezone(datetime.timedelta(seconds=self.onset_utc_offset)),
         )
 
@@ -81,7 +82,8 @@ class SleepTime(BaseTable):
         Returns:
             datetime.datetime: The wakeup time with timezone information.
         """
-        return self.wakeup.astimezone(
+        wakeup_utc = self.wakeup.replace(tzinfo=datetime.UTC)
+        return wakeup_utc.astimezone(
             datetime.timezone(datetime.timedelta(seconds=self.onset_utc_offset)),
         )
 

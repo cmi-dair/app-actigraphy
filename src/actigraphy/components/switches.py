@@ -16,7 +16,7 @@ from dash import html
 
 from actigraphy.core import callback_manager, config
 from actigraphy.database import crud, database
-from actigraphy.io import minor_files
+from actigraphy.io import ggir_files
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
@@ -128,7 +128,7 @@ def toggle_exclude_night(
     session = next(database.session_generator(file_manager["database"]))
     subject = crud.read_subject(session, file_manager["identifier"])
     is_missing_sleep = [int(day.is_missing_sleep) for day in subject.days]
-    minor_files.write_vector(file_manager["data_cleaning_file"], is_missing_sleep)
+    ggir_files.write_vector(file_manager["data_cleaning_file"], is_missing_sleep)
 
 
 @callback_manager.global_manager.callback(
