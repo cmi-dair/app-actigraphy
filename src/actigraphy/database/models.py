@@ -88,6 +88,60 @@ class SleepTime(BaseTable):
         )
 
 
+class DataPoint(BaseTable):
+    """Represents a data point in the database.
+
+    Attributes:
+        id: The unique identifier of the data point.
+        time: The date and time of the data point.
+        time_utc_offset: The UTC offset of the time in seconds.
+        value: The value of the data point.
+        day: The day to which the data point belongs.
+    """
+
+    __tablename__ = "data_points"
+
+    timestamp: orm.Mapped[datetime.datetime] = orm.mapped_column(
+        sqlalchemy.DateTime,
+        nullable=False,
+    )
+    timestamp_utc_offset: orm.Mapped[int] = orm.mapped_column(
+        sqlalchemy.Integer,
+        nullable=False,
+    )
+    sensor_angle: orm.Mapped[float] = orm.mapped_column(
+        sqlalchemy.Float,
+        nullable=False,
+    )
+    sensor_acceleration: orm.Mapped[float] = orm.mapped_column(
+        sqlalchemy.Float,
+        nullable=False,
+    )
+    non_wear: orm.Mapped[bool] = orm.mapped_column(
+        sqlalchemy.Boolean,
+        nullable=False,
+    )
+    subject_id = orm.mapped_column(
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey("subjects.id"),
+        nullable=False,
+    )
+
+    subject = orm.relationship("Subject", back_populates="data_points")
+
+    @hybrid.hybrid_property
+    def timestamp_with_tz(self) -> datetime.datetime:
+        """Returns the time of the event with the timezone information added.
+
+        Returns:
+            datetime.datetime: The time with timezone information.
+        """
+        time_utc = self.timestamp.replace(tzinfo=datetime.UTC)
+        return time_utc.astimezone(
+            datetime.timezone(datetime.timedelta(seconds=self.timestamp_utc_offset)),
+        )
+
+
 class Day(BaseTable):
     """A class representing a day in the database.
 
@@ -166,6 +220,11 @@ class Subject(BaseTable):
 
     days = orm.relationship(
         "Day",
+        back_populates="subject",
+        cascade="all, delete",
+    )
+    data_points = orm.relationship(
+        "DataPoint",
         back_populates="subject",
         cascade="all, delete",
     )

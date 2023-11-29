@@ -47,6 +47,14 @@ class Settings(pydantic_settings.BaseSettings):
         },
     )
 
+    N_SLIDER_STEPS: int = pydantic.Field(
+        36 * 60,
+        description="The number of steps in the slider.",
+        json_schema_extra={
+            "env": "N_SLIDER_STEPS",
+        },
+    )
+
 
 @functools.lru_cache
 def get_settings() -> Settings:

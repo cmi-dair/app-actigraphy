@@ -26,3 +26,7 @@ class _AbstractError(Exception):
 
 class DatabaseError(_AbstractError):
     """Base exception for all database exceptions raised by actigraphy."""
+
+
+class InternalError(_AbstractError):
+    """Base exception for all internal exceptions raised by actigraphy."""

@@ -104,9 +104,8 @@ def parse_files(
         subject = database_utils.initialize_subject(
             file_manager["identifier"],
             file_manager["metadata_file"],
+            session,
         )
-        session.add(subject)
-        session.commit()
 
     ui_components = [
         day_slider.day_slider(file_manager["identifier"], len(subject.days)),

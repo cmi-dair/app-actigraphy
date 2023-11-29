@@ -6,19 +6,21 @@ The range slider is used to select a sleep window for the given day.
 """
 import datetime
 import logging
+from collections.abc import Iterable
 
 import dash
 from dash import dcc, html
 from plotly import graph_objects
 
 from actigraphy.core import callback_manager, config, utils
-from actigraphy.database import crud, database
-from actigraphy.io import data_import, ggir_files
+from actigraphy.database import crud, database, models
+from actigraphy.io import ggir_files
 from actigraphy.plotting import sensor_plots
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
 TIME_FORMATTING = settings.TIME_FORMATTING
+N_SLIDER_STEPS = settings.N_SLIDER_STEPS
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -35,28 +37,25 @@ def graph() -> html.Div:
             dcc.Graph(id="graph"),
             html.Div(
                 children=[
-                    html.B(id="sleep-onset"),
-                    html.B(id="sleep-offset"),
-                    html.B(id="sleep-duration"),
-                ],
-                style={"margin-left": "80px", "margin-right": "55px"},
-            ),
-            html.Div(
-                children=[
                     dcc.RangeSlider(
                         min=0,
-                        max=36 * 60,  # 36 hours in minutes
+                        max=N_SLIDER_STEPS,
                         step=1,
-                        marks={
-                            hour * 60: f"{(hour + 12) % 24:02d}:00"
-                            for hour in range(0, 37, 2)
-                        },
+                        marks=None,
                         id="my-range-slider",
                         updatemode="mouseup",
                     ),
                     html.Pre(id="annotations-slider"),
                 ],
                 style={"margin-left": "55px", "margin-right": "55px"},
+            ),
+            html.Div(
+                children=[
+                    html.B(id="sleep-onset"),
+                    html.B(id="sleep-offset"),
+                    html.B(id="sleep-duration"),
+                ],
+                style={"margin-left": "80px", "margin-right": "55px"},
             ),
         ],
     )
@@ -70,57 +69,49 @@ def graph() -> html.Div:
     prevent_initial_call=True,
 )
 def create_graph(
-    day: int,
+    day_index: int,
     drag_value: list[int],
     file_manager: dict[str, str],
 ) -> graph_objects.Figure:
     """Creates a graph for a given day using data from the file manager."""
+    logger.debug("Creating graph.")
     session = next(database.session_generator(file_manager["database"]))
     subject = crud.read_subject(session, file_manager["identifier"])
     dates = [day.date for day in subject.days]
-    n_points_per_day = subject.n_points_per_day
 
-    day_1_sensor_angles, day_1_arm_movement, day_1_non_wear = _get_day_data(
+    logger.debug("Getting day data.")
+    data_points = _get_day_data(
         file_manager,
-        day,
-        n_points_per_day,
+        day_index,
     )
-    day_2_sensor_angles, day_2_arm_movement, day_2_non_wear = _get_day_data(
-        file_manager,
-        day + 1,
-        n_points_per_day,
-    )
-
-    sensor_angle = day_1_sensor_angles[n_points_per_day // 2 :] + day_2_sensor_angles
-    arm_movement = day_1_arm_movement[n_points_per_day // 2 :] + day_2_arm_movement
-    nonwear = day_1_non_wear[n_points_per_day // 2 :] + day_2_non_wear
-
-    title_day = (
-        f"Day {day+1}: {dates[day].strftime('%A - %d %B %Y')}"
-    )  # Frontend uses 1-indexed days.
-    day_timestamps = [dates[day]] * (n_points_per_day // 2) + (
-        [dates[day] + datetime.timedelta(days=1)]
-    ) * n_points_per_day
-
-    timestamps = [
-        " ".join(
-            [
-                day_timestamps[point].strftime("%d/%b/%Y"),
-                utils.point2time_timestamp(point, n_points_per_day, offset=12),
-            ],
+    included_data_points = [
+        point
+        for point in data_points
+        if (
+            point.timestamp_with_tz.date() == dates[day_index]
+            and point.timestamp_with_tz.hour >= 12
         )
-        for point in range(len(day_timestamps))
+        or point.timestamp_with_tz.date()
+        == dates[day_index] + datetime.timedelta(days=1)
     ]
 
-    nonwear_changes = _get_nonwear_changes(nonwear)
+    logger.debug("Getting non-wear data.")
+    timestamps = [point.timestamp_with_tz for point in included_data_points]
+    sensor_angle = [point.sensor_angle for point in included_data_points]
+    arm_movement = [point.sensor_acceleration for point in included_data_points]
+    non_wear = [point.non_wear for point in included_data_points]
+
+    title_day = (
+        f"Day {day_index+1}: {dates[day_index].strftime('%A, %d %B %Y')}"
+    )  # Frontend uses 1-indexed days.
+
     return _build_figure(
         timestamps,
         sensor_angle,
         arm_movement,
         title_day,
         drag_value,
-        n_points_per_day,
-        nonwear_changes,
+        non_wear,
     )
 
 
@@ -213,62 +204,94 @@ def adjust_range_slider(
 def _get_day_data(
     file_manager: dict[str, str],
     day_index: int,
-    n_points_per_day: int,
-) -> tuple[list[float], list[float], list[int]]:
-    """Get data for a given day."""
+) -> list[models.DataPoint]:
+    """Get data for a given day.
+
+    Args:
+        file_manager: A dictionary containing file paths.
+        day_index: The index of the day for which to retrieve the data.
+
+    Returns:
+        list[models.DataPoint]: A list of data points for the given day.
+
+    """
+    logger.debug("Getting data for day %s", day_index)
     session = next(database.session_generator(file_manager["database"]))
     subject = crud.read_subject(session, file_manager["identifier"])
-    if day_index < len(subject.days):
-        return data_import.get_graph_data(file_manager, day_index)
-    return (
-        [0] * n_points_per_day,
-        [-210] * n_points_per_day,
-        [0] * n_points_per_day,
+    day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
+    return session.query(models.DataPoint).filter(
+        models.DataPoint.subject_id == subject.id,
+        models.DataPoint.timestamp
+        >= datetime.datetime.combine(
+            day.date - datetime.timedelta(days=1),
+            datetime.time(hour=11),
+        ),
+        models.DataPoint.timestamp
+        <= datetime.datetime.combine(
+            day.date + datetime.timedelta(days=3),
+            datetime.time(hour=1),
+        ),
     )
 
 
-def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
-    """Get indices where non-wear data changes."""
-    changes = [
-        index
-        for index in range(1, len(nonwear))
-        if nonwear[index] != nonwear[index - 1]
-    ]
-    if nonwear[0]:
-        changes.insert(0, 0)
-    if len(changes) % 2 != 0:
-        # If the number of changes is odd, then insert the end of the day
-        # as the last change.
-        changes.append(len(nonwear) - 1)
-    return changes
-
-
 def _build_figure(  # noqa: PLR0913
-    timestamps: list[str],
+    timestamps: list[datetime.datetime],
     sensor_angle: list[float],
     arm_movement: list[float],
     title_day: str,
     drag_value: list[int],
-    n_points_per_day: int,
     nonwear_changes: list[int],
 ) -> graph_objects.Figure:
     """Build the graph figure."""
-    figure = sensor_plots.build_sensor_plot(
+    logger.debug("Building figure.")
+    logger.debug("Length of timestamps: %s", len(timestamps))
+    rescale_arm_movement = [value * 50 - 210 for value in arm_movement]
+    figure, max_measurements = sensor_plots.build_sensor_plot(
         timestamps,
         sensor_angle,
-        arm_movement,
+        rescale_arm_movement,
         title_day,
     )
-    sleep_timepoints = utils.slider_values_to_graph_values(drag_value, n_points_per_day)
 
-    if sleep_timepoints[0] != sleep_timepoints[1]:
-        sensor_plots.add_rectangle(figure, sleep_timepoints, "red", "sleep window")
+    drag_fraction = [value / N_SLIDER_STEPS for value in drag_value]
+    sensor_plots.add_rectangle(figure, drag_fraction, "red", "sleep window")
 
-    for index in range(0, len(nonwear_changes), 2):
+    continuous_non_wear_blocks = _find_continuous_blocks(nonwear_changes)
+    non_wear_fractions = [
+        value / max_measurements for value in continuous_non_wear_blocks
+    ]
+
+    for index in range(0, len(non_wear_fractions), 2):
         sensor_plots.add_rectangle(
             figure,
-            [nonwear_changes[index], nonwear_changes[index + 1]],
+            [
+                non_wear_fractions[index],
+                non_wear_fractions[index + 1],
+            ],
             "green",
             "non-wear",
         )
     return figure
+
+
+def _find_continuous_blocks(vector: Iterable[bool]) -> list[int]:
+    """Finds the indices of continuous blocks of True values in a vector.
+
+    Args:
+        vector: The vector to search.
+
+    Returns:
+        list[int]: A list of indices of continuous blocks of True values in the
+            vector.
+    """
+    return [
+        index
+        for index, value in enumerate(vector)
+        if value
+        and (
+            index == 0
+            or index == len(vector)
+            or not vector[index - 1]
+            or not vector[index + 1]
+        )
+    ]
