@@ -3,6 +3,7 @@ import datetime
 import logging
 import pathlib
 from collections.abc import Iterable
+from typing import TypeVar
 
 import numpy as np
 from sqlalchemy import orm
@@ -10,6 +11,8 @@ from sqlalchemy import orm
 from actigraphy.core import config
 from actigraphy.database import models
 from actigraphy.io import metadata
+
+T = TypeVar("T")
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
@@ -25,7 +28,7 @@ def initialize_datapoints(
 
     Args:
         metadata_obj: The path to the metadata file for the subject.
-        subject: The subject object.
+        days: The days for the subject.
 
     Returns:
         list[models.DataPoint]: The initialized data points.
@@ -43,6 +46,7 @@ def initialize_datapoints(
     for index, row in metadata_obj.m.metashort.iterrows():
         is_non_wear = index in non_wear_indices
         date = datetime.datetime.strptime(row["timestamp"], "%Y-%m-%dT%H:%M:%S%z")
+
         data_points.append(
             models.DataPoint(
                 timestamp=date.astimezone(datetime.UTC),
@@ -72,15 +76,15 @@ def initialize_days(
         datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S%z")
         for date in metadata_obj.m.metashort.timestamp
     ]
-    dates = sorted(_keep_first_unique_dates(raw_dates))
+    dates = sorted(_keep_last_unique_date(raw_dates))
 
     day_models = []
-    for day_index in range(len(dates) - 1):
+    for day_index in range(len(dates)):
         day = dates[day_index]
         day_model = models.Day(date=day.date())
-        utc_offset = (dates[day_index + 1]).utcoffset() or datetime.timedelta()
+        utc_offset = day.utcoffset() or datetime.timedelta()
         default_sleep_datetime = datetime.datetime.combine(
-            day + datetime.timedelta(days=1),
+            day,
             DEFAULT_SLEEP_TIME,
             tzinfo=datetime.timezone(utc_offset),
         )
@@ -88,9 +92,9 @@ def initialize_days(
         day_model.sleep_times = [
             models.SleepTime(
                 onset=default_sleep_datetime.astimezone(datetime.UTC),
-                onset_utc_offset=dates[day_index + 1].utcoffset().total_seconds(),  # type: ignore[union-attr]
+                onset_utc_offset=day.utcoffset().total_seconds(),  # type: ignore[union-attr]
                 wakeup=default_sleep_datetime.astimezone(datetime.UTC),
-                wakeup_utc_offset=dates[day_index + 1].utcoffset().total_seconds(),  # type: ignore[union-attr]
+                wakeup_utc_offset=day.utcoffset().total_seconds(),  # type: ignore[union-attr]
             ),
         ]
         day_models.append(day_model)
@@ -124,16 +128,16 @@ def initialize_subject(
     n_points_per_day = 86400 // metadata_obj.m.windowsizes[0]
     subject = models.Subject(
         name=identifier,
-        days=day_models[:-1],
-        data_points=data_points,
+        days=day_models,
         n_points_per_day=n_points_per_day,
+        data_points=data_points,
     )
     session.add_all([subject, *data_points])
     session.commit()
     return subject
 
 
-def _keep_first_unique_dates(
+def _keep_last_unique_date(
     datetimes: Iterable[datetime.datetime],
 ) -> list[datetime.datetime]:
     """Fetch unique dates.
@@ -143,12 +147,13 @@ def _keep_first_unique_dates(
 
     Returns:
         list[datetime.datetime]: A list of datetime objects with unique dates
-            The first occurence of the date is retained.
+            The last occurence of the sorted dates is retained.
     """
     unique_dates = set()
     result = []
 
-    for dt in datetimes:
+    sorted_dates = sorted(datetimes)
+    for dt in sorted_dates[::-1]:
         dt_date = dt.date()
         if dt_date not in unique_dates:
             unique_dates.add(dt_date)

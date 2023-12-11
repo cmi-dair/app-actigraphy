@@ -39,6 +39,11 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
         dropdown_choices[0],
         id="my-dropdown",
     )
+    loading_text = html.Div(
+        [
+            html.P("Note: The first time loading a subject may take a minute."),
+        ],
+    )
     spinner = html.Div(
         [
             dash_bootstrap_components.Spinner(html.Div(id="loading")),
@@ -56,6 +61,7 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
     return html.Div(
         [
             drop_down,
+            loading_text,
             confirmation_button,
             spinner,
         ],
@@ -74,7 +80,7 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
     prevent_initial_call=True,
 )
 def parse_files(
-    n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionallty unused.  # noqa: ARG001
+    n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionally unused.  # noqa: ARG001
     filepath: str,
 ) -> tuple[list[html.Div], str, dict[str, str]]:
     """Parses the contents of the selected files and returns the UI components.
@@ -83,12 +89,15 @@ def parse_files(
         n_clicks: The number of times the parse button has been clicked. Used to trigger
             the callback.
         filepath: The path to the selected file.
-        evaluator_name: The name of the evaluator.
 
     Returns:
         tuple: A tuple containing the UI components to be displayed, an empty
         string, a boolean indicating whether parsing was successful, and the
         file manager object.
+
+    Notes:
+        The last day is not shown in the UI, as all 36 hour windows are
+        referenced by their first day.
     """
     logger.debug("Parsing files...")
     file_manager = core_utils.FileManager(base_dir=filepath).__dict__
@@ -108,7 +117,7 @@ def parse_files(
         )
 
     ui_components = [
-        day_slider.day_slider(file_manager["identifier"], len(subject.days)),
+        day_slider.day_slider(file_manager["identifier"], len(subject.days) - 1),
         finished_checkbox.finished_checkbox(),
         switches.switches(),
         graph.graph(),

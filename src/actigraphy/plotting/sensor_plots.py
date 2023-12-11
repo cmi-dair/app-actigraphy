@@ -1,4 +1,5 @@
 """Module for all plotting functions."""
+import bisect
 import datetime
 import logging
 from collections.abc import Sequence
@@ -154,13 +155,29 @@ def _get_x_axis(timestamps, n_hours, delta_time, max_measurements, x_min, x_max)
         + datetime.timedelta(seconds=delta_time.total_seconds() * tick)
         for tick in range(int(max_measurements))
     ]
-    timestamps_missing_with_tz = [
-        timestamps_including_missing[index].astimezone(timestamps[index].tzinfo)
-        for index in range(len(timestamps))
+    first_timestamp_index = bisect.bisect_left(
+        timestamps_including_missing,
+        timestamps[0],
+    )
+
+    timestamps_timezone_update = [
+        timestamps_including_missing[first_timestamp_index + index].astimezone(
+            timestamps[index].tzinfo,
+        )
+        for index in range(
+            len(timestamps),
+        )
     ]
-    timestamps_missing_with_tz.append(
-        timestamps_missing_with_tz[-1].replace(
-            day=timestamps_missing_with_tz[-1].day + 1,
+    timestamps_including_missing[
+        first_timestamp_index : first_timestamp_index
+        + len(
+            timestamps,
+        )
+    ] = timestamps_timezone_update
+
+    timestamps_including_missing.append(
+        timestamps_including_missing[-1].replace(
+            day=timestamps_including_missing[-1].day + 1,
             hour=0,
             minute=0,
             second=0,
@@ -169,7 +186,8 @@ def _get_x_axis(timestamps, n_hours, delta_time, max_measurements, x_min, x_max)
     )
 
     x_tick_values = np.linspace(x_min, x_max, int(n_hours) + 1, dtype=int)
-    x_tick_times = [timestamps_missing_with_tz[tick] for tick in x_tick_values]
+
+    x_tick_times = [timestamps_including_missing[tick] for tick in x_tick_values]
     x_tick_names = [
         datetime.datetime.strftime(
             time,

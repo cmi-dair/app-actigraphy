@@ -9,6 +9,8 @@ from actigraphy.core import config
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
+N_SLIDER_STEPS = settings.N_SLIDER_STEPS
+
 logger = logging.getLogger(LOGGER_NAME)
 
 
@@ -67,12 +69,15 @@ def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
 def time2point(
     time: datetime.datetime,
     date: datetime.date,
+    daylight_savings_shift: int | None,
 ) -> int:
     """Converts a datetime to the number of minutes since the given day's midnight.
 
     Args:
         time: The datetime object to convert.
         date: The date preceding midnight as reference.
+        daylight_savings_shift: The difference in seconds caused by daylight
+            savings time.
 
     Returns:
         float: The number of minutes since midnight on the given date.
@@ -85,38 +90,66 @@ def time2point(
     )
 
     delta = time - reference
-    return int(delta.total_seconds() // 60)
+    if daylight_savings_shift is None:
+        return int(delta.total_seconds() // 60)
+    return int(delta.total_seconds() // 60) + daylight_savings_shift // 60
 
 
 def point2time(
     point: float,
     date: datetime.date,
     timezone_offset: int,
+    daylight_savings_timepoint: str | None,
+    daylight_savings_shift: int | None,
 ) -> datetime.datetime:
-    """Converts a point value to a datetime object.
+    """Converts a slider point value to a datetime object.
+
+    This function accounts for daylight savings time in its output.
 
     Args:
         point: The point value to convert.
         date: The date to combine with the converted time.
         timezone_offset: Timezone offset in seconds.
+        daylight_savings_timepoint: The timepoint at which daylight savings time
+            starts.
+        daylight_savings_shift: The seconds offset due to daylight savings.
 
     Returns:
         datetime.datetime: The resulting datetime object.
 
     """
     logger.debug("Converting point to time: %s.", point)
+    if daylight_savings_shift is None:
+        daylight_savings_shift = 0
 
-    days, remainder_minutes = divmod(point, 1440)
+    minutes_in_36_hours = 36 * 60
+    total_minutes = minutes_in_36_hours + daylight_savings_shift // 60
+    n_minutes = point / N_SLIDER_STEPS * total_minutes
+
+    days, remainder_minutes = divmod(n_minutes, 1440)
     hours, minutes = divmod(remainder_minutes, 60)
 
     slider_offset = datetime.timedelta(hours=12)
-    timezone_delta = datetime.timedelta(seconds=timezone_offset)
 
     delta = datetime.timedelta(days=days, hours=hours, minutes=minutes) + slider_offset
     adjusted_time = datetime.datetime.combine(date, datetime.time(0)) + delta
 
+    timezone_delta = datetime.timedelta(seconds=timezone_offset)
     tz_info = datetime.timezone(timezone_delta)
-    return adjusted_time.replace(tzinfo=tz_info)
+    time_with_tz = adjusted_time.replace(tzinfo=tz_info)
+    if daylight_savings_timepoint is not None:
+        daylight_savings_time = datetime.datetime.strptime(
+            daylight_savings_timepoint,
+            "%Y-%m-%d %H:%M:%S%z",
+        )
+
+        if time_with_tz >= daylight_savings_time:
+            time_with_tz = time_with_tz.astimezone(
+                datetime.timezone(
+                    timezone_delta + datetime.timedelta(seconds=daylight_savings_shift),
+                ),
+            ) - 2 * datetime.timedelta(seconds=daylight_savings_shift)
+    return time_with_tz
 
 
 def point2time_timestamp(point: int, npointsperday: int, offset: int = 0) -> str:
