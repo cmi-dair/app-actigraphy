@@ -1,22 +1,58 @@
 """Contains the app settings."""
+import datetime
 import functools
 import logging
 
 import pydantic
+import pydantic_settings
 
 
-class Settings(pydantic.BaseModel):
+class Settings(pydantic_settings.BaseSettings):
     """Represents the app settings."""
+
+    model_config = pydantic_settings.SettingsConfigDict(
+        env_prefix="ACTIGRAPHY_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
     APP_NAME: str = pydantic.Field(
         "Actigraphy",
         description="The name of the app.",
-        env="ACTIGRAPHY_APP_NAME",
+        json_schema_extra={
+            "env": "APP_NAME",
+        },
     )
     LOGGER_NAME: str = pydantic.Field(
         "Actigraphy",
         description="The name of the logger.",
-        env="ACTIGRAPHY_LOGGER_NAME",
+        json_schema_extra={
+            "env": "LOGGER_NAME",
+        },
+    )
+
+    DEFAULT_SLEEP_TIME: datetime.time = pydantic.Field(
+        datetime.time(23, 59, 0),
+        description="The default sleep time.",
+        json_schema_extra={
+            "env": "DEFAULT_SLEEP_TIME",
+        },
+    )
+
+    TIME_FORMATTING: str = pydantic.Field(
+        "%A - %d %B %Y %H:%M %Z",
+        description="The default time formatting string.",
+        json_schema_extra={
+            "env": "TIME_FORMATTING",
+        },
+    )
+
+    N_SLIDER_STEPS: int = pydantic.Field(
+        36 * 60,
+        description="The number of steps in the slider.",
+        json_schema_extra={
+            "env": "N_SLIDER_STEPS",
+        },
     )
 
 

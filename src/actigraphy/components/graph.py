@@ -6,18 +6,23 @@ The range slider is used to select a sleep window for the given day.
 """
 import datetime
 import logging
+from collections.abc import Sequence
 
 import dash
 from dash import dcc, html
 from plotly import graph_objects
 
-from actigraphy.core import callback_manager, config, utils
-from actigraphy.io import data_import, minor_files
+from actigraphy.components import utils as components_utils
+from actigraphy.core import callback_manager, config
+from actigraphy.core import utils as core_utils
+from actigraphy.database import crud, database
+from actigraphy.io import ggir_files
 from actigraphy.plotting import sensor_plots
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
-TIME_FORMATTING = "%A - %d %B %Y %H:%M"
+TIME_FORMATTING = settings.TIME_FORMATTING
+N_SLIDER_STEPS = settings.N_SLIDER_STEPS
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -34,28 +39,25 @@ def graph() -> html.Div:
             dcc.Graph(id="graph"),
             html.Div(
                 children=[
-                    html.B(id="sleep-onset"),
-                    html.B(id="sleep-offset"),
-                    html.B(id="sleep-duration"),
-                ],
-                style={"margin-left": "80px", "margin-right": "55px"},
-            ),
-            html.Div(
-                children=[
                     dcc.RangeSlider(
                         min=0,
-                        max=36 * 60,  # 36 hours in minutes
+                        max=N_SLIDER_STEPS,
                         step=1,
-                        marks={
-                            hour * 60: f"{(hour + 12) % 24:02d}:00"
-                            for hour in range(0, 37, 2)
-                        },
-                        id="my-range-slider",
+                        marks=None,
+                        id="time_slider",
                         updatemode="mouseup",
                     ),
                     html.Pre(id="annotations-slider"),
                 ],
                 style={"margin-left": "55px", "margin-right": "55px"},
+            ),
+            html.Div(
+                children=[
+                    html.B(id="sleep-onset"),
+                    html.B(id="sleep-offset"),
+                    html.B(id="sleep-duration"),
+                ],
+                style={"margin-left": "80px", "margin-right": "55px"},
             ),
         ],
     )
@@ -63,201 +65,240 @@ def graph() -> html.Div:
 
 @callback_manager.global_manager.callback(
     dash.Output("graph", "figure"),
-    dash.Input("day_slider", "value"),
-    dash.Input("my-range-slider", "value"),
+    dash.Input("trigger_day_load", "value"),
+    dash.Input("time_slider", "value"),
+    dash.State("day_slider", "value"),
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
 def create_graph(
-    day: int,
+    _trigger_load: str,
     drag_value: list[int],
+    day_index: int,
     file_manager: dict[str, str],
 ) -> graph_objects.Figure:
     """Creates a graph for a given day using data from the file manager."""
-    dates = data_import.get_dates(file_manager)
-    n_points_per_day = data_import.get_n_points_per_day(file_manager)
+    logger.debug("Creating graph.")
+    session = next(database.session_generator(file_manager["database"]))
+    subject = crud.read_subject(session, file_manager["identifier"])
+    dates = [day.date for day in subject.days]
 
-    day_1_sensor_angles, day_1_arm_movement, day_1_non_wear = _get_day_data(
-        file_manager,
-        day,
-        n_points_per_day,
+    logger.debug("Getting day data.")
+    data_points = components_utils.get_day_data(
+        day_index,
+        file_manager["database"],
+        file_manager["identifier"],
     )
-    day_2_sensor_angles, day_2_arm_movement, day_2_non_wear = _get_day_data(
-        file_manager,
-        day + 1,
-        n_points_per_day,
-    )
-
-    sensor_angle = day_1_sensor_angles[n_points_per_day // 2 :] + day_2_sensor_angles
-    arm_movement = day_1_arm_movement[n_points_per_day // 2 :] + day_2_arm_movement
-    nonwear = day_1_non_wear[n_points_per_day // 2 :] + day_2_non_wear
-
-    title_day = (
-        f"Day {day+1}: {dates[day].strftime('%A - %d %B %Y')}"
-    )  # Frontend uses 1-indexed days.
-    day_timestamps = [dates[day]] * (n_points_per_day // 2) + (
-        [dates[day] + datetime.timedelta(days=1)]
-    ) * n_points_per_day
-
-    timestamps = [
-        " ".join(
-            [
-                day_timestamps[point].strftime("%d/%b/%Y"),
-                utils.point2time_timestamp(point, n_points_per_day, offset=12),
-            ],
+    included_data_points = [
+        point
+        for point in data_points
+        if (
+            point.timestamp_with_tz.date() == dates[day_index]
+            and point.timestamp_with_tz.hour >= 12  # noqa: PLR2004
         )
-        for point in range(len(day_timestamps))
+        or point.timestamp_with_tz.date()
+        == dates[day_index] + datetime.timedelta(days=1)
     ]
 
-    nonwear_changes = _get_nonwear_changes(nonwear)
+    logger.debug("Getting non-wear data.")
+    timestamps = [point.timestamp_with_tz for point in included_data_points]
+    sensor_angle = [point.sensor_angle for point in included_data_points]
+    arm_movement = [point.sensor_acceleration for point in included_data_points]
+    non_wear = [point.non_wear for point in included_data_points]
+
+    title_day = (
+        f"Day {day_index+1}:"
+        f"{included_data_points[0].timestamp.strftime('%A, %d %B %Y')}"
+    )  # Frontend uses 1-indexed days.
+
     return _build_figure(
         timestamps,
         sensor_angle,
         arm_movement,
         title_day,
         drag_value,
-        n_points_per_day,
-        nonwear_changes,
+        non_wear,
     )
 
 
 @callback_manager.global_manager.callback(
-    dash.Output("sleep-onset", "children", allow_duplicate=True),
-    dash.Output("sleep-offset", "children", allow_duplicate=True),
-    dash.Output("sleep-duration", "children", allow_duplicate=True),
-    dash.Output("my-range-slider", "value"),
-    dash.Input("day_slider", "value"),
-    dash.Input("file_manager", "data"),
+    dash.Output("time_slider", "value"),
+    dash.Input("trigger_day_load", "value"),
+    dash.State("day_slider", "value"),
+    dash.State("file_manager", "data"),
+    dash.State("daylight_savings_shift", "value"),
     prevent_initial_call=True,
 )
 def refresh_range_slider(
-    day: int,
+    _trigger_load: str,
+    day_index: int,
     file_manager: dict[str, str],
-) -> tuple[str, str, str, list[int]]:
+    daylight_savings_shift: int | None,
+) -> list[int]:
     """Reads the sleep logs for the given day.
 
     Args:
-        day: The day for which to retrieve the sleep logs.
+        _trigger_load: A trigger for the callback.
+        day_index: The day for which to retrieve the sleep logs.
         file_manager: A dictionary containing file paths for various sleep log
             files.
+        daylight_savings_shift: The seconds offset due to daylight savings.
 
     Returns:
-        tuple[str, str, str]: A tuple of strings containing the sleep onset,
-            sleep offset, and sleep duration.
+        list[int]: A list containing the sleep onset and sleep offset points.
     """
-    dates = data_import.get_dates(file_manager)
+    session = next(database.session_generator(file_manager["database"]))
+    day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
+    sleep_time = day.sleep_times[0].onset_with_tz
+    wake_time = day.sleep_times[0].wakeup_with_tz
 
-    sleep_onset, wake_up = minor_files.read_sleeplog(file_manager["sleeplog_file"])
-    sleep_time = datetime.datetime.fromisoformat(sleep_onset[day])
-    wake_time = datetime.datetime.fromisoformat(wake_up[day])
-
-    sleep_point = utils.time2point(sleep_time, dates[day])
-    wake_point = utils.time2point(wake_time, dates[day])
-
-    return (
-        f"Sleep onset: {sleep_time.strftime(TIME_FORMATTING)}\n",
-        f"Sleep offset: {wake_time.strftime(TIME_FORMATTING)}\n",
-        f"Sleep duration: {utils.datetime_delta_as_hh_mm(wake_time - sleep_time)}\n",
-        [sleep_point, wake_point],
+    sleep_point = core_utils.time2point(
+        sleep_time,
+        day.date,
+        daylight_savings_shift,
     )
+    wake_point = core_utils.time2point(
+        wake_time,
+        day.date,
+        daylight_savings_shift,
+    )
+
+    return [sleep_point, wake_point]
 
 
 @callback_manager.global_manager.callback(
     dash.Output("sleep-onset", "children", allow_duplicate=True),
     dash.Output("sleep-offset", "children", allow_duplicate=True),
     dash.Output("sleep-duration", "children", allow_duplicate=True),
-    dash.Input("my-range-slider", "value"),
+    dash.Input("time_slider", "value"),
     dash.State("file_manager", "data"),
     dash.State("day_slider", "value"),
+    dash.State("daylight_savings_timepoint", "value"),
+    dash.State("daylight_savings_shift", "value"),
     prevent_initial_call=True,
 )
 def adjust_range_slider(
     drag_value: list[int],
     file_manager: dict[str, str],
-    day: int,
+    day_index: int,
+    daylight_savings_timepoint: str | None,
+    daylight_savings_shift: int | None,
 ) -> tuple[str, str, str]:
-    """Adjusts the text labels fora  given day and writes the sleep log to a file.
+    """Adjusts the text labels for a given day and writes the sleep log to a file.
 
     Args:
         drag_value: The drag values of the range slider.
         file_manager: The file manager containing the sleep log.
-        day: The day for which to adjust the range slider.
+        day_index: The day for which to adjust the range slider.
+        daylight_savings_timepoint: The index of the first data point that is
+            affected by daylight savings time.
+        daylight_savings_shift: The seconds offset due to daylight savings.
 
     Returns:
         Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep
             offset, and sleep duration.
     """
-    dates = data_import.get_dates(file_manager)
-    minor_files.modify_sleeplog(file_manager, day, drag_value[0], drag_value[1])
+    logger.debug("Adjusting range slider.")
 
-    sleep_time = utils.point2time(drag_value[0], dates[day])
-    wake_time = utils.point2time(drag_value[1], dates[day])
+    session = next(database.session_generator(file_manager["database"]))
+    day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
+    first_data_point = components_utils.get_day_data(
+        day_index,
+        file_manager["database"],
+        file_manager["identifier"],
+    )[0]
+    base_timezone = first_data_point.timestamp_utc_offset
 
-    return (
-        f"Sleep onset: {sleep_time.strftime(TIME_FORMATTING)}\n",
-        f"Sleep offset: {wake_time.strftime(TIME_FORMATTING)}\n",
-        f"Sleep duration: {utils.datetime_delta_as_hh_mm(wake_time - sleep_time)}\n",
+    sleep_time = core_utils.point2time(
+        drag_value[0],
+        day.date,
+        base_timezone,
+        daylight_savings_timepoint,
+        daylight_savings_shift,
+    )
+    wake_time = core_utils.point2time(
+        drag_value[1],
+        day.date,
+        base_timezone,
+        daylight_savings_timepoint,
+        daylight_savings_shift,
     )
 
+    day.sleep_times[0].onset = sleep_time.astimezone(datetime.UTC)
+    day.sleep_times[0].onset_utc_offset = sleep_time.utcoffset().total_seconds()  # type: ignore [union-attr]
+    day.sleep_times[0].wakeup = wake_time.astimezone(datetime.UTC)
+    day.sleep_times[0].wakeup_utc_offset = wake_time.utcoffset().total_seconds()  # type: ignore [union-attr]
 
-def _get_day_data(
-    file_manager: dict[str, str],
-    day: int,
-    n_points_per_day: int,
-) -> tuple[list[float], list[float], list[int]]:
-    """Get data for a given day."""
-    dates = data_import.get_dates(file_manager)
-    if day < len(dates):
-        return data_import.get_graph_data(file_manager, day)
+    session.commit()
+    ggir_files.write_sleeplog(file_manager)
+
+    onset_string = sleep_time.strftime(TIME_FORMATTING)
+    offset_string = wake_time.strftime(TIME_FORMATTING)
+    duration_string = core_utils.datetime_delta_as_hh_mm(wake_time - sleep_time)
     return (
-        [0] * n_points_per_day,
-        [-210] * n_points_per_day,
-        [0] * n_points_per_day,
+        f"Sleep onset: {onset_string}\n",
+        f"Sleep offset: {offset_string}\n",
+        f"Sleep duration: {duration_string}\n",
     )
-
-
-def _get_nonwear_changes(nonwear: list[int]) -> list[int]:
-    """Get indices where non-wear data changes."""
-    changes = [
-        index
-        for index in range(1, len(nonwear))
-        if nonwear[index] != nonwear[index - 1]
-    ]
-    if nonwear[0]:
-        changes.insert(0, 0)
-    if len(changes) % 2 != 0:
-        # If the number of changes is odd, then insert the end of the day
-        # as the last change.
-        changes.append(len(nonwear) - 1)
-    return changes
 
 
 def _build_figure(  # noqa: PLR0913
-    timestamps: list[str],
+    timestamps: list[datetime.datetime],
     sensor_angle: list[float],
     arm_movement: list[float],
     title_day: str,
     drag_value: list[int],
-    n_points_per_day: int,
-    nonwear_changes: list[int],
+    nonwear_changes: list[bool],
 ) -> graph_objects.Figure:
     """Build the graph figure."""
-    figure = sensor_plots.build_sensor_plot(
+    logger.debug("Building figure.")
+    rescale_arm_movement = [value * 50 - 210 for value in arm_movement]
+    figure, max_measurements = sensor_plots.build_sensor_plot(
         timestamps,
         sensor_angle,
-        arm_movement,
+        rescale_arm_movement,
         title_day,
     )
-    sleep_timepoints = utils.slider_values_to_graph_values(drag_value, n_points_per_day)
 
-    if sleep_timepoints[0] != sleep_timepoints[1]:
-        sensor_plots.add_rectangle(figure, sleep_timepoints, "red", "sleep window")
+    drag_fraction = [value / N_SLIDER_STEPS for value in drag_value]
+    sensor_plots.add_rectangle(figure, drag_fraction, "red", "sleep window")
 
-    for index in range(0, len(nonwear_changes), 2):
+    continuous_non_wear_blocks = _find_continuous_blocks(nonwear_changes)
+    non_wear_fractions = [
+        value / max_measurements for value in continuous_non_wear_blocks
+    ]
+
+    for index in range(0, len(non_wear_fractions), 2):
         sensor_plots.add_rectangle(
             figure,
-            [nonwear_changes[index], nonwear_changes[index + 1]],
+            [
+                non_wear_fractions[index],
+                non_wear_fractions[index + 1],
+            ],
             "green",
             "non-wear",
         )
     return figure
+
+
+def _find_continuous_blocks(vector: Sequence[bool]) -> list[int]:
+    """Finds the indices of continuous blocks of True values in a vector.
+
+    Args:
+        vector: The vector to search.
+
+    Returns:
+        list[int]: A list of indices of continuous blocks of True values in the
+            vector.
+    """
+    return [
+        index
+        for index, value in enumerate(vector)
+        if value
+        and (
+            index == 0
+            or index == len(vector)
+            or not vector[index - 1]
+            or not vector[index + 1]
+        )
+    ]

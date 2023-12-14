@@ -39,6 +39,7 @@ def create_app() -> dash.Dash:
         src="/assets/CMI_Logo_title.png",
         style={"height": "60%", "width": "60%"},
     )
+
     subject_directories = cli.get_subject_folders(args)
     app.layout = html.Div(
         (

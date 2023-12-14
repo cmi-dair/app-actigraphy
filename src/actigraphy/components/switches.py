@@ -15,7 +15,8 @@ import dash_daq
 from dash import html
 
 from actigraphy.core import callback_manager, config
-from actigraphy.io import minor_files
+from actigraphy.database import crud, database
+from actigraphy.io import ggir_files
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
@@ -95,10 +96,13 @@ def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool,
             day.
     """
     logger.debug("Entering update switches callback")
-    naps = minor_files.read_vector(file_manager["multiple_sleeplog_file"])
-    missing = minor_files.read_vector(file_manager["missing_sleep_file"])
-    nights = minor_files.read_vector(file_manager["review_night_file"])
-    return naps[day] == "1", missing[day] == "1", nights[day] == "1"
+    session = next(database.session_generator(file_manager["database"]))
+    day_model = crud.read_day_by_subject(session, day, file_manager["identifier"])
+    return (
+        day_model.is_multiple_sleep,
+        day_model.is_missing_sleep,
+        day_model.is_reviewed,
+    )
 
 
 @callback_manager.global_manager.callback(
@@ -110,17 +114,21 @@ def update_switches(day: int, file_manager: dict[str, str]) -> tuple[bool, bool,
 )
 def toggle_exclude_night(
     exclude_button: bool,  # noqa: FBT001
-    day: int,
+    day_index: int,
     file_manager: dict[str, str],
 ) -> None:
     """Toggles the exclusion of a night in the missing sleep file.
 
     Args:
         exclude_button: Whether to exclude the night or not.
-        day : The day to toggle the exclusion for.
+        day_index : The day to toggle the exclusion for.
         file_manager: A dictionary containing file paths for the missing sleep file.
     """
-    _toggle_vector_value(exclude_button, day, file_manager["missing_sleep_file"])
+    _toggle_bool_field(day_index, "is_missing_sleep", exclude_button, file_manager)
+    session = next(database.session_generator(file_manager["database"]))
+    subject = crud.read_subject(session, file_manager["identifier"])
+    is_missing_sleep = [int(day.is_missing_sleep) for day in subject.days]
+    ggir_files.write_vector(file_manager["data_cleaning_file"], is_missing_sleep)
 
 
 @callback_manager.global_manager.callback(
@@ -132,17 +140,17 @@ def toggle_exclude_night(
 )
 def toggle_review_night(
     review_night: bool,  # noqa: FBT001
-    day: int,
+    day_index: int,
     file_manager: dict[str, str],
 ) -> None:
     """Toggles the review night flag for a given day in the review night file.
 
     Args:
         review_night: The new review night flag value (0 or 1).
-        day: The day index to toggle the flag for.
+        day_index: The day index to toggle the flag for.
         file_manager: A dictionary containing file paths for the review night file.
     """
-    _toggle_vector_value(review_night, day, file_manager["review_night_file"])
+    _toggle_bool_field(day_index, "is_reviewed", review_night, file_manager)
 
 
 @callback_manager.global_manager.callback(
@@ -152,32 +160,36 @@ def toggle_review_night(
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
-def toggle_nap(multiple_sleep: bool, day: int, file_manager: dict[str, str]) -> None:  # noqa: FBT001
+def toggle_nap(
+    multiple_sleep: bool,  # noqa: FBT001
+    day_index: int,
+    file_manager: dict[str, str],
+) -> None:
     """Toggles the nap status for a given day in the multiple sleep log file.
 
     Args:
-        multiple_sleep:: The new nap status for the given day.
-        day: The day to toggle the nap status for.
+        multiple_sleep: The new nap status for the given day.
+        day_index: The day to toggle the nap status for.
         file_manager: A dictionary containing file paths for various files.
     """
-    _toggle_vector_value(multiple_sleep, day, file_manager["multiple_sleeplog_file"])
+    _toggle_bool_field(day_index, "is_multiple_sleep", multiple_sleep, file_manager)
 
 
-def _toggle_vector_value(new_value: int | bool, index: int, file_path: str) -> None:
-    """Toggles the value of a vector at a given index in a file.
+def _toggle_bool_field(
+    day_index: int,
+    fieldname: str,
+    value: bool,  # noqa: FBT001
+    file_manager: dict[str, str],
+) -> None:
+    """Toggles a boolean field for a given day.
 
     Args:
-        new_value: The new value to set at the given index.
-        index: The index of the vector to toggle.
-        file_path: The path to the file containing the vector.
-
+        day_index: The day to toggle the field for.
+        fieldname: The name of the field to toggle.
+        value: The new value of the field.
+        file_manager: A dictionary containing file paths for various files.
     """
-    logger.debug(
-        "Setting index %s to value %s for file %s",
-        index,
-        int(new_value),
-        file_path,
-    )
-    vector = minor_files.read_vector(file_path)
-    vector[index] = int(new_value)
-    minor_files.write_vector(file_path, vector)
+    session = next(database.session_generator(file_manager["database"]))
+    day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
+    setattr(day, fieldname, value)
+    session.commit()

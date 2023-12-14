@@ -10,8 +10,10 @@ import dash_bootstrap_components
 from dash import dcc, html
 
 from actigraphy.components import day_slider, finished_checkbox, graph, switches
-from actigraphy.core import callback_manager, config, utils
-from actigraphy.io import data_import, minor_files
+from actigraphy.core import callback_manager, config, exceptions
+from actigraphy.core import utils as core_utils
+from actigraphy.database import crud, database
+from actigraphy.database import utils as database_utils
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
@@ -32,16 +34,21 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
         html.Div: A Dash HTML div containing the input box, dropdown menu, and
             spinner.
     """
-    input_box_evaluator = dcc.Input(
-        id="evaluator_name",
-        type="text",
-        placeholder="Insert evaluator's name",
-        size="40",
-    )
     drop_down = dcc.Dropdown(
         dropdown_choices,
         dropdown_choices[0],
         id="my-dropdown",
+    )
+    loading_text = html.Div(
+        [
+            html.P(
+                """Please be aware that the initial loading of a subject might
+                require some time as we convert the data into a SQLite database
+                format. Once this process is complete, future accesses will
+                directly utilize this database, ensuring quicker data
+                retrieval.""",
+            ),
+        ],
     )
     spinner = html.Div(
         [
@@ -57,18 +64,12 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
         style={"margin": 10},
     )
 
-    no_evaluator_error = dcc.ConfirmDialog(
-        id="insert-user",
-        message="Insert the evaluator's name before continuing.",
-    )
-
     return html.Div(
         [
-            input_box_evaluator,
             drop_down,
+            loading_text,
             confirmation_button,
             spinner,
-            no_evaluator_error,
         ],
         style={"padding": 10},
     )
@@ -78,42 +79,51 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
     [
         dash.Output("annotations-data", "children"),
         dash.Output("loading", "children"),
-        dash.Output("insert-user", "displayed"),
         dash.Output("file_manager", "data"),
     ],
     dash.Input("load_file_button", "n_clicks"),
     dash.State("my-dropdown", "value"),
-    dash.State("evaluator_name", "value"),
     prevent_initial_call=True,
 )
 def parse_files(
-    n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionallty unused.  # noqa: ARG001
+    n_clicks: int,  # pylint: disable=unused-argument n_clicks intentionally unused.  # noqa: ARG001
     filepath: str,
-    evaluator_name: str,
-) -> tuple[list[html.Div], str, bool, dict[str, str]]:
+) -> tuple[list[html.Div], str, dict[str, str]]:
     """Parses the contents of the selected files and returns the UI components.
 
     Args:
         n_clicks: The number of times the parse button has been clicked. Used to trigger
             the callback.
         filepath: The path to the selected file.
-        evaluator_name: The name of the evaluator.
 
     Returns:
         tuple: A tuple containing the UI components to be displayed, an empty
         string, a boolean indicating whether parsing was successful, and the
         file manager object.
+
+    Notes:
+        The last day is not shown in the UI, as all 36 hour windows are
+        referenced by their first day.
     """
     logger.debug("Parsing files...")
-    if not evaluator_name:
-        return [], "", True, {}
+    file_manager = core_utils.FileManager(base_dir=filepath).__dict__
 
-    file_manager = utils.FileManager(base_dir=filepath).__dict__
-    n_midnights = len(data_import.get_midnights(file_manager["base_dir"]))
-    minor_files.initialize_files(file_manager, evaluator_name)
+    logger.info("Creating/loading database")
+    database.Database(file_manager["database"]).create_database()
+
+    session = next(database.session_generator(file_manager["database"]))
+    try:
+        subject = crud.read_subject(session, file_manager["identifier"])
+    except exceptions.DatabaseError:
+        logger.info("Subject not found in database. Creating new subject.")
+        subject = database_utils.initialize_subject(
+            file_manager["identifier"],
+            file_manager["metadata_file"],
+            session,
+        )
 
     ui_components = [
-        day_slider.day_slider(file_manager["identifier"], n_midnights),
+        day_slider.day_slider(file_manager["identifier"], len(subject.days) - 1),
         finished_checkbox.finished_checkbox(),
         switches.switches(),
         graph.graph(),
@@ -121,6 +131,5 @@ def parse_files(
     return (
         ui_components,
         "",
-        False,
         file_manager,
     )
