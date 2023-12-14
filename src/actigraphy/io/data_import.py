@@ -4,7 +4,6 @@ import functools
 import itertools
 import logging
 import pathlib
-from typing import Any
 
 from actigraphy.core import config
 from actigraphy.io import metadata
@@ -85,86 +84,3 @@ def get_midnights(base_dir: str) -> list[int]:
     ]
     logger.debug("Found %s midnights.", len(midnight_indices))
     return midnight_indices
-
-
-def _day_start_and_end_time_points(
-    file_manager: dict[str, str],
-    day: int,
-    window_size: int,
-) -> tuple[int, int | None]:
-    """Returns the start and end time points for the given day.
-
-    Args:
-        file_manager: A dictionary containing file paths.
-        day : The index of the day for which to retrieve the start and end time points.
-        window_size: The size of the window in minutes.
-
-    Returns:
-        tuple[int, int | None]: A tuple containing the start and end time points
-            for the given day.
-    """
-    target_timepoints = [0, *get_midnights(file_manager["base_dir"]), None]
-
-    start, end = list(itertools.pairwise(target_timepoints))[day]
-    if start is None:
-        msg = f"No start time found for day {day}."
-        raise ValueError(msg)
-
-    if end:
-        time_day_ends: int | None = _adjust_timepoint_for_daylight_savings(
-            start,
-            end,
-            window_size,
-        )
-    else:
-        time_day_ends = end
-    return start, time_day_ends
-
-
-def _adjust_timepoint_for_daylight_savings(
-    start: int,
-    end: int,
-    window_size: int,
-) -> int:
-    """Adjusts the end timepoint for daylight savings time.
-
-    Args:
-        start: The start timepoint.
-        end: The end timepoint.
-        window_size: The size of the time window.
-
-    Returns:
-        int: The adjusted end timepoint.
-    """
-    day_length = end - start
-    if (day_length + 1) // (3600 / window_size) == 25:  # noqa: PLR2004
-        end = end - int(60 * 60 / window_size)
-    if (day_length + 1) // (3600 / window_size) == 23:  # noqa: PLR2004
-        end = end + int(60 * 60 / window_size)
-    return end
-
-
-def _extend_data(
-    data: Any,  # noqa: ANN401
-    extension: list[Any],
-    action: str | None = None,
-) -> list[Any]:
-    """Extends the given data with the given extension using the specified action.
-
-    Args:
-        data: The data to be extended.
-        extension: The extension to be added to the data.
-        action: The action to be performed. Can be "prepend" or "append".
-            Defaults to None.
-
-    Returns:
-        list: The extended data.
-    """
-    if action == "prepend":
-        return extension + list(data)
-    if action == "append":
-        return list(data) + extension
-    if action is not None:
-        msg = f"Invalid action: {action}"
-        raise ValueError(msg)
-    return list(data)
