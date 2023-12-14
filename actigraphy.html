@@ -125,43 +125,7 @@ actigraphy    </h1>
 <li><code>plotting</code> contains the tools for plotting data.</li>
 </ul>
 
-<p>The internal data storage of this tool relies on a sqlite database. This database has the following tables:</p>
-
-<pre class="mermaid-pre"><div class="mermaid">erDiagram
-   SUBJECTS {
-      INTEGER id PK
-      VARCHAR(128) name
-      INTEGER n_points_per_day
-      BOOLEAN is_finished
-      DATETIME time_created
-      DATETIME time_updated
-   }
-
-    DAYS {
-        INTEGER id PK
-        DATE date
-        BOOLEAN is_missing_sleep
-        BOOLEAN is_multiple_sleep
-        BOOLEAN is_reviewed
-        INTEGER subject_id FK
-        DATETIME time_created
-        DATETIME time_updated
-    }
-
-    SLEEP_TIMES {
-        INTEGER id PK
-        DATETIME onset
-        INTEGER onset_utc_offset
-        DATETIME wakeup
-        INTEGER wakeup_utc_offset
-        INTEGER day_id FK
-        DATETIME time_created
-        DATETIME time_updated
-    }
-
-    SUBJECTS ||--o{ DAYS : "subjects.id"
-    DAYS ||--o{ SLEEP_TIMES : "days.id"
-</div></pre>
+<p>The internal data storage of this tool relies on a sqlite database. The tables of this database can be found in <code>database/models.py</code>.</p>
 </div>
 
                         <input id="mod-actigraphy-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
