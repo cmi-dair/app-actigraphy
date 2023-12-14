@@ -1,8 +1,5 @@
 """Test the ggir_files module."""
-import datetime
 import pathlib
-
-import pytest
 
 from actigraphy.io import ggir_files
 
@@ -33,33 +30,6 @@ def test_write_vector(tmp_path: pathlib.Path) -> None:
         actual = file_buffer.read()
 
     assert actual == expected
-
-
-@pytest.fixture()
-def patch_datetime_now(monkeypatch: pytest.MonkeyPatch) -> datetime.datetime:
-    """Patch `datetime.now()` return a fixed datetime object.
-
-    Args:
-        monkeypatch: A pytest monkeypatch fixture object.
-
-    Returns:
-        datetime.datetime: A datetime object representing the fixed datetime
-            value that `datetime.now()` will return after patching.
-
-    Example usage:
-        def test_something(monkeypatch):
-            fixed_datetime = patch_datetime_now(monkeypatch)
-            # ... test code that uses datetime.now() ...
-    """
-
-    class MyDateTime(datetime.datetime):
-        @classmethod
-        # type: ignore[override] # Intentional override without args
-        def now(cls) -> datetime.datetime:  # pylint: disable=arguments-differ
-            return datetime.datetime(2021, 1, 1)
-
-    monkeypatch.setattr(datetime, "datetime", MyDateTime)
-    return datetime.datetime(2021, 1, 1)
 
 
 def test_flatten() -> None:
