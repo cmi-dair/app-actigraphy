@@ -3,6 +3,7 @@ import datetime
 import logging
 import pathlib
 from collections.abc import Iterable
+from typing import TypedDict
 
 import numpy as np
 from sqlalchemy import orm
@@ -32,28 +33,17 @@ def initialize_datapoints(
 
     """
     logger.debug("Initializing data points.")
-    data_points = []
     window_size_ratio = (
         metadata_obj.m.windowsizes[1] // metadata_obj.m.windowsizes[0] - 1
     )
-    non_wear_elements = np.where(metadata_obj.m.metalong.nonwearscore > 1)[0]
+    non_wear_elements = np.where(metadata_obj.m.metalong["nonwearscore"] > 1)[0]
     non_wear_indices = np.concatenate(
         [np.arange(index, index + window_size_ratio) for index in non_wear_elements],
     )
-    for index, row in metadata_obj.m.metashort.iterrows():
-        is_non_wear = index in non_wear_indices
-        date = datetime.datetime.strptime(row["timestamp"], "%Y-%m-%dT%H:%M:%S%z")
-
-        data_points.append(
-            models.DataPoint(
-                timestamp=date.astimezone(datetime.UTC),
-                timestamp_utc_offset=date.utcoffset().total_seconds(),
-                sensor_angle=row["anglez"],
-                sensor_acceleration=row["ENMO"],
-                non_wear=is_non_wear,
-            ),
-        )
-    return data_points
+    return [
+        _metashort_row_to_sql_datapoint(row, non_wear=index in non_wear_indices)  # type: ignore[arg-type]
+        for index, row in enumerate(metadata_obj.m.metashort.iter_rows(named=True))
+    ]
 
 
 def initialize_days(
@@ -69,9 +59,10 @@ def initialize_days(
 
     """
     logger.debug("Initializing days.")
+
     raw_dates = [
         datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S%z")
-        for date in metadata_obj.m.metashort.timestamp
+        for date in metadata_obj.m.metashort["timestamp"]
     ]
     dates = sorted(_keep_last_unique_date(raw_dates))
 
@@ -132,6 +123,51 @@ def initialize_subject(
     session.add_all([subject, *data_points])
     session.commit()
     return subject
+
+
+class MetaShortRow(TypedDict):
+    """Represents a row in the metashort table.
+
+    Attributes:
+        timestamp: The timestamp of the data point.
+        anglez: The angle of the data point.
+        ENMO: The ENMO of the data point.
+    """
+
+    timestamp: str
+    anglez: float
+    ENMO: float
+
+
+def _metashort_row_to_sql_datapoint(
+    row: MetaShortRow,
+    *,
+    non_wear: bool,
+) -> models.DataPoint:
+    """Convert a metadata row to a SQL datapoint object.
+
+    Args:
+        row: The metadata row containing the datapoint information.
+        non_wear: Indicates whether the datapoint represents non-wear.
+
+    Returns:
+        models.DataPoint: The converted SQL datapoint object.
+    """
+    return models.DataPoint(
+        timestamp=datetime.datetime.strptime(
+            row["timestamp"],
+            "%Y-%m-%dT%H:%M:%S%z",
+        ).astimezone(datetime.UTC),
+        timestamp_utc_offset=datetime.datetime.strptime(
+            row["timestamp"],
+            "%Y-%m-%dT%H:%M:%S%z",
+        )
+        .utcoffset()
+        .total_seconds(),  # type: ignore[union-attr]
+        sensor_angle=row["anglez"],
+        sensor_acceleration=row["ENMO"],
+        non_wear=non_wear,
+    )
 
 
 def _keep_last_unique_date(

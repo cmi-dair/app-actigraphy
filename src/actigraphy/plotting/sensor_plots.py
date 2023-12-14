@@ -17,7 +17,7 @@ logger = logging.getLogger(LOGGER_NAME)
 
 
 def build_sensor_plot(
-    timestamps: list[datetime.datetime],
+    timestamps: Sequence[datetime.datetime],
     sensor_angle: Sequence[float | int],
     sensor_acceleration: Sequence[float | int],
     title_day: str,
@@ -44,15 +44,14 @@ def build_sensor_plot(
     max_measurements = int(n_hours * 60 * 60 / delta_time.total_seconds())
 
     timestamp_values = _get_timestamp_x_values(timestamps, delta_time, max_measurements)
-    x_min = 0
+    x_min = 0.0
     x_max = n_hours * 60 * 60 / delta_time.total_seconds()
     x_tick_values, x_tick_names = _get_x_axis(
         timestamps,
         n_hours,
         delta_time,
         max_measurements,
-        x_min,
-        x_max,
+        (x_min, x_max),
     )
 
     figure = _build_figure(
@@ -71,7 +70,7 @@ def build_sensor_plot(
 
 def add_rectangle(
     figure: graph_objects.Figure,
-    limits: list[float],
+    limits: Sequence[float],
     color: str,
     label: str,
 ) -> graph_objects.Figure:
@@ -94,16 +93,16 @@ def add_rectangle(
     return figure
 
 
-def _validate_timezones(timestamps: list[datetime.datetime]) -> None:
+def _validate_timezones(timestamps: Sequence[datetime.datetime]) -> None:
     """Validates that the timestamps contain no more than two different timezones."""
     logger.debug("Validating timezones.")
     timezones = {ts.tzinfo for ts in timestamps}
-    if len(timezones) > 2:
+    if len(timezones) > 2:  # noqa: PLR2004
         msg = "More than two timezones in timestamps."
         raise exceptions.InternalError(msg)
 
 
-def _calculate_number_of_hours(timestamps: list[datetime.datetime]) -> float:
+def _calculate_number_of_hours(timestamps: Sequence[datetime.datetime]) -> float:
     """Calculates the number of hours in the graph."""
     logger.debug("Calculating number of hours.")
     timezones = list(dict.fromkeys(ts.tzinfo for ts in timestamps))
@@ -126,7 +125,11 @@ def _calculate_number_of_hours(timestamps: list[datetime.datetime]) -> float:
     return 36 + (hour_difference.total_seconds() / 60 / 60)
 
 
-def _get_timestamp_x_values(timestamps, delta_time, n_ticks) -> list[int]:
+def _get_timestamp_x_values(
+    timestamps: Sequence[datetime.datetime],
+    delta_time: datetime.timedelta,
+    n_ticks: int,
+) -> Sequence[int]:
     """Calculates the x values for the timestamps."""
     x_times = [
         datetime.datetime.combine(
@@ -149,8 +152,26 @@ def _get_timestamp_x_values(timestamps, delta_time, n_ticks) -> list[int]:
     )
 
 
-def _get_x_axis(timestamps, n_hours, delta_time, max_measurements, x_min, x_max):
-    timestamps_including_missing = [
+def _get_x_axis(
+    timestamps: Sequence[datetime.datetime],
+    n_hours: float,
+    delta_time: datetime.timedelta,
+    max_measurements: int,
+    x_lim: tuple[float, float],
+) -> tuple[list[float], list[str]]:
+    """Calculate the x-axis tick values for a plot.
+
+    Args:
+        timestamps: List of x-axis timestamps.
+        n_hours: Number of hours to plot.
+        delta_time: Time interval between measurements.
+        max_measurements: Maximum number of measurements.
+        x_lim: Tuple representing the lower and upper limits of the x-axis.
+
+    Returns:
+        tuple: Tuple containing the x-axis tick values and names.
+    """
+    timestamps_including_missing: list[datetime.datetime] = [
         timestamps[0].replace(hour=12, minute=0, second=0, microsecond=0)
         + datetime.timedelta(seconds=delta_time.total_seconds() * tick)
         for tick in range(int(max_measurements))
@@ -185,7 +206,7 @@ def _get_x_axis(timestamps, n_hours, delta_time, max_measurements, x_min, x_max)
         ),
     )
 
-    x_tick_values = np.linspace(x_min, x_max, int(n_hours) + 1, dtype=int)
+    x_tick_values = np.linspace(x_lim[0], x_lim[1], int(n_hours) + 1, dtype=int)
 
     x_tick_times = [timestamps_including_missing[tick] for tick in x_tick_values]
     x_tick_names = [
@@ -206,19 +227,34 @@ def _get_x_axis(timestamps, n_hours, delta_time, max_measurements, x_min, x_max)
         x_tick_names[0] = datetime.datetime.strftime(x_tick_times[0], timezone_format)
         x_tick_names[-1] = datetime.datetime.strftime(x_tick_times[-1], timezone_format)
 
-    return x_tick_values, x_tick_names
+    return x_tick_values.tolist(), x_tick_names
 
 
-def _build_figure(
-    sensor_angle,
-    sensor_acceleration,
-    title_day,
-    timestamp_values,
-    x_min,
-    x_max,
-    x_tick_values,
-    x_tick_names,
-):
+def _build_figure(  # noqa: PLR0913
+    sensor_angle: Sequence[float | int],
+    sensor_acceleration: Sequence[float | int],
+    title_day: str,
+    timestamp_values: Sequence[int],
+    x_min: float,
+    x_max: float,
+    x_tick_values: Sequence[float],
+    x_tick_names: Sequence[str],
+) -> graph_objects.Figure:
+    """Build a figure for sensor plots.
+
+    Args:
+        sensor_angle: List of sensor angles.
+        sensor_acceleration: List of sensor accelerations.
+        title_day: Title for the figure.
+        timestamp_values: List of timestamp values on the x-axis.
+        x_min: Minimum x-axis value.
+        x_max: Maximum x-axis value.
+        x_tick_values: List of x-axis tick values.
+        x_tick_names: List of x-axis tick names.
+
+    Returns:
+        graph_objects.Figure: The built figure.
+    """
     figure = graph_objects.Figure()
     figure.add_trace(
         graph_objects.Scatter(

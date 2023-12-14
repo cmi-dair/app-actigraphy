@@ -6,7 +6,7 @@ The range slider is used to select a sleep window for the given day.
 """
 import datetime
 import logging
-from collections.abc import Iterable
+from collections.abc import Sequence
 
 import dash
 from dash import dcc, html
@@ -94,7 +94,7 @@ def create_graph(
         for point in data_points
         if (
             point.timestamp_with_tz.date() == dates[day_index]
-            and point.timestamp_with_tz.hour >= 12
+            and point.timestamp_with_tz.hour >= 12  # noqa: PLR2004
         )
         or point.timestamp_with_tz.date()
         == dates[day_index] + datetime.timedelta(days=1)
@@ -106,7 +106,10 @@ def create_graph(
     arm_movement = [point.sensor_acceleration for point in included_data_points]
     non_wear = [point.non_wear for point in included_data_points]
 
-    title_day = f"Day {day_index+1}: {included_data_points[0].timestamp.strftime('%A, %d %B %Y')}"  # Frontend uses 1-indexed days.
+    title_day = (
+        f"Day {day_index+1}:"
+        f"{included_data_points[0].timestamp.strftime('%A, %d %B %Y')}"
+    )  # Frontend uses 1-indexed days.
 
     return _build_figure(
         timestamps,
@@ -222,9 +225,9 @@ def adjust_range_slider(
     )
 
     day.sleep_times[0].onset = sleep_time.astimezone(datetime.UTC)
-    day.sleep_times[0].onset_utc_offset = sleep_time.utcoffset().total_seconds()
+    day.sleep_times[0].onset_utc_offset = sleep_time.utcoffset().total_seconds()  # type: ignore [union-attr]
     day.sleep_times[0].wakeup = wake_time.astimezone(datetime.UTC)
-    day.sleep_times[0].wakeup_utc_offset = wake_time.utcoffset().total_seconds()
+    day.sleep_times[0].wakeup_utc_offset = wake_time.utcoffset().total_seconds()  # type: ignore [union-attr]
 
     session.commit()
     ggir_files.write_sleeplog(file_manager)
@@ -245,7 +248,7 @@ def _build_figure(  # noqa: PLR0913
     arm_movement: list[float],
     title_day: str,
     drag_value: list[int],
-    nonwear_changes: list[int],
+    nonwear_changes: list[bool],
 ) -> graph_objects.Figure:
     """Build the graph figure."""
     logger.debug("Building figure.")
@@ -278,7 +281,7 @@ def _build_figure(  # noqa: PLR0913
     return figure
 
 
-def _find_continuous_blocks(vector: Iterable[bool]) -> list[int]:
+def _find_continuous_blocks(vector: Sequence[bool]) -> list[int]:
     """Finds the indices of continuous blocks of True values in a vector.
 
     Args:

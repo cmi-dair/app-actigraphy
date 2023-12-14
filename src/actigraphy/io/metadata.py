@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 import pandas as pd
+import polars as pl
 import pydantic
 import rdata
 
@@ -21,8 +22,8 @@ class MetaDataM(pydantic.BaseModel):
     """
 
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-    metalong: pd.DataFrame
-    metashort: pd.DataFrame
+    metalong: pl.DataFrame
+    metashort: pl.DataFrame
     windowsizes: list[int]
 
 
@@ -76,7 +77,10 @@ def _clean_value(value: Any) -> Any:  # noqa: ANN401
 
 
 def _recursive_clean_rdata(r_data: dict[str, Any]) -> dict[str, Any]:
-    """Replaces dictionary keys with snakecase characters and legal attribute names.
+    """Cleans the .rdata input file.
+
+    Replaces dictionary keys with snakecase characters and legal attribute names and
+    replaces pandas dataframes with polars dataframes.
 
     Args:
         r_data: The dictionary to clean.
@@ -97,6 +101,8 @@ def _recursive_clean_rdata(r_data: dict[str, Any]) -> dict[str, Any]:
         clean_value = _clean_value(value)
         if isinstance(value, dict):
             clean_value = _recursive_clean_rdata(clean_value)
+        elif isinstance(value, pd.DataFrame):
+            clean_value = pl.from_pandas(clean_value)
         cleaned_rdata[clean_key] = clean_value
     return cleaned_rdata
 

@@ -25,6 +25,6 @@ def test_point2time() -> None:
         tzinfo=datetime.UTC,
     )
 
-    actual = utils.point2time(point, date, 0, None)
+    actual = utils.point2time(point, date, 0, None, None)
 
     assert actual == expected

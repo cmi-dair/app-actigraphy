@@ -91,7 +91,7 @@ def update_daylight_savings(
     day_model = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
     n_timezones = len({data_point.timestamp_utc_offset for data_point in day_data})
     if n_timezones == 1:
-        return [None, None, uuid.uuid4().hex]
+        return None, None, uuid.uuid4().hex
 
     times_of_interest = [
         data_point
@@ -109,7 +109,6 @@ def update_daylight_savings(
     ]
     daylight_saving_shift = next(
         (diff for diff in daylight_saving_differences if diff != 0),
-        None,
     )
     daylight_saving_index = daylight_saving_differences.index(daylight_saving_shift)
     daylight_saving_timestamp = times_of_interest[

@@ -1,4 +1,6 @@
 """Unit tests for the plotting module."""
+import datetime
+
 import pytest
 from plotly import graph_objects
 
@@ -8,18 +10,19 @@ from actigraphy.plotting import sensor_plots
 def test_build_sensor_plot() -> None:
     """Test the build_sensor_plot function."""
     timestamps = ["2022-01-01 00:00", "2022-01-01 00:01", "2022-01-01 00:02"]
+    timestamps_datetime = [
+        datetime.datetime.fromisoformat(timestamp) for timestamp in timestamps
+    ]
     sensor_angle = [30, 45, 60]
     arm_movement = [5, 10, 15]
     title_day = "Day 1"
-    n_ticks = 1
     expected_num_data = 2
 
     figure = sensor_plots.build_sensor_plot(
-        timestamps,
+        timestamps_datetime,
         sensor_angle,
         arm_movement,
         title_day,
-        n_ticks,
     )
 
     assert isinstance(figure, graph_objects.Figure)
@@ -51,6 +54,9 @@ def test_add_rectangle() -> None:
 def test_build_sensor_plot_unequal_lengths() -> None:
     """Test if a ValueError is raised for sequences with unequal length."""
     timestamps = ["2022-01-01 00:00", "2022-01-01 00:01", "2022-01-01 00:02"]
+    timestamps_datetime = [
+        datetime.datetime.fromisoformat(timestamp) for timestamp in timestamps
+    ]
     sensor_angle = [30, 45]
     arm_movement = [5, 10, 15]
 
@@ -61,4 +67,9 @@ def test_build_sensor_plot_unequal_lengths() -> None:
             "and arm movement must be equal."
         ),
     ):
-        sensor_plots.build_sensor_plot(timestamps, sensor_angle, arm_movement, "Day 1")
+        sensor_plots.build_sensor_plot(
+            timestamps_datetime,
+            sensor_angle,
+            arm_movement,
+            "Day 1",
+        )

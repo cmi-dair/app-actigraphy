@@ -19,6 +19,8 @@ pydantic = "^2.2.0"
 dash = "^2.13.0"
 sqlalchemy = "^2.0.23"
 pydantic-settings = "^2.1.0"
+polars = "^0.19.19"
+pyarrow = "^14.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.2"
