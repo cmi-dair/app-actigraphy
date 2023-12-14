@@ -146,9 +146,9 @@ def point2time(
         if time_with_tz >= daylight_savings_time:
             time_with_tz = time_with_tz.astimezone(
                 datetime.timezone(
-                    timezone_delta + datetime.timedelta(seconds=daylight_savings_shift),
+                    timezone_delta - datetime.timedelta(seconds=daylight_savings_shift),
                 ),
-            ) - 2 * datetime.timedelta(seconds=daylight_savings_shift)
+            )
     return time_with_tz
 
 

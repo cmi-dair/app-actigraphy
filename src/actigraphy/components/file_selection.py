@@ -41,7 +41,13 @@ def file_selection(dropdown_choices: list[str]) -> html.Div:
     )
     loading_text = html.Div(
         [
-            html.P("Note: The first time loading a subject may take a minute."),
+            html.P(
+                """Please be aware that the initial loading of a subject might
+                require some time as we convert the data into a SQLite database
+                format. Once this process is complete, future accesses will
+                directly utilize this database, ensuring quicker data
+                retrieval.""",
+            ),
         ],
     )
     spinner = html.Div(

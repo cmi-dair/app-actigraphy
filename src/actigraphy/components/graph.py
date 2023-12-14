@@ -187,7 +187,7 @@ def adjust_range_slider(
         drag_value: The drag values of the range slider.
         file_manager: The file manager containing the sleep log.
         day_index: The day for which to adjust the range slider.
-        daylight_savings_index: The index of the first data point that is
+        daylight_savings_timepoint: The index of the first data point that is
             affected by daylight savings time.
         daylight_savings_shift: The seconds offset due to daylight savings.
 

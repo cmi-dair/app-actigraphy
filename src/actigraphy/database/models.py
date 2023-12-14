@@ -84,7 +84,7 @@ class SleepTime(BaseTable):
         """
         wakeup_utc = self.wakeup.replace(tzinfo=datetime.UTC)
         return wakeup_utc.astimezone(
-            datetime.timezone(datetime.timedelta(seconds=self.onset_utc_offset)),
+            datetime.timezone(datetime.timedelta(seconds=self.wakeup_utc_offset)),
         )
 
 
