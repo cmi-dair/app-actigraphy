@@ -6,10 +6,7 @@ import logging
 import pathlib
 from typing import Any
 
-import numpy as np
-
 from actigraphy.core import config
-from actigraphy.database import crud, database
 from actigraphy.io import metadata
 
 settings = config.get_settings()
@@ -88,86 +85,6 @@ def get_midnights(base_dir: str) -> list[int]:
     ]
     logger.debug("Found %s midnights.", len(midnight_indices))
     return midnight_indices
-
-
-def get_timezone(file_manager: dict[str, str]) -> datetime.tzinfo | None:
-    """Returns the timezone from the metadata.
-
-    Args:
-        file_manager: A dictionary containing the base directory of the metadata.
-
-    Returns:
-        str: The timezone extracted from the metadata.
-
-    """
-    logger.debug("Getting timezone from %s", file_manager["base_dir"])
-    metadata_data = get_metadata(file_manager["base_dir"])
-    timestamps = get_time(tuple(metadata_data.m.metashort.timestamp))
-    return timestamps[0].tzinfo
-
-
-def get_graph_data(
-    file_manager: dict[str, str],
-    day: int,
-) -> tuple[list[float], list[float], list[int]]:
-    """Loads data for a given day and prepares it for plotting.
-
-    Args:
-        file_manager: A dictionary containing file paths.
-        day: The day for which to load data.
-
-    Returns:
-        tuple[list[float], list[float], list[int]]: A tuple containing three lists:
-            - A list of acceleration values.
-            - A list of angle values.
-            - A list of non-wear values.
-    """
-    logger.debug("Loading data for day %s.", day)
-    metadata_data = get_metadata(file_manager["base_dir"])
-
-    # Prepare nonwear information for plotting
-    enmo = metadata_data.m.metashort.ENMO.reset_index(drop=True)
-    anglez = metadata_data.m.metashort.anglez.reset_index(drop=True)
-    nonwear = np.zeros(len(enmo), dtype=int)
-
-    # take instances where nonwear was detected (on ws2 time vector) and map
-    # results onto a ws3 lenght vector for plotting purposes
-    nonwear_elements = np.where(metadata_data.m.metalong.nonwearscore > 1)[0]
-
-    window_size_ratio = (
-        metadata_data.m.windowsizes[1] // metadata_data.m.windowsizes[0] - 1
-    )
-    for index in nonwear_elements:
-        nonwear[index : index + window_size_ratio] = 1
-
-    time_day_starts, time_day_ends = _day_start_and_end_time_points(
-        file_manager,
-        day,
-        metadata_data.m.windowsizes[0],
-    )
-
-    acc = abs(enmo[time_day_starts:time_day_ends] * 1000)
-    ang = anglez[time_day_starts:time_day_ends]
-    non_wear = nonwear[time_day_starts:time_day_ends]
-
-    session = next(database.session_generator(file_manager["database"]))
-    subject = crud.read_subject(session, file_manager["identifier"])
-    extension = [0] * (subject.n_points_per_day - len(acc))
-    if time_day_starts == 0:
-        action = "prepend"
-    elif time_day_ends is None:
-        action = "append"
-    else:
-        action = None
-
-    acc = _extend_data(acc, extension, action)
-    ang = _extend_data(ang, extension, action)
-    non_wear_list = _extend_data(non_wear, extension, action)
-
-    # Rescale for plotting.
-    acc = [value / 14 - 210 for value in acc]
-
-    return acc, ang, non_wear_list
 
 
 def _day_start_and_end_time_points(

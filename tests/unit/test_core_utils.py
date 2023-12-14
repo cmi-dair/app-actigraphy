@@ -12,7 +12,7 @@ def test_time2point() -> None:
     date = datetime.date.fromisoformat("1993-08-26")
     expected = 180
 
-    actual = utils.time2point(time, date)
+    actual = utils.time2point(time, date, None)
 
     assert actual == expected
 
@@ -25,29 +25,6 @@ def test_point2time() -> None:
         tzinfo=datetime.UTC,
     )
 
-    actual = utils.point2time(point, date, 0)
-
-    assert actual == expected
-
-
-def test_point2time_timestamp() -> None:
-    """Test that a correct HH:MM string is returned."""
-    point = 180
-    n_points_per_day = 1440
-    offset = 12
-    expected = "15:00"
-
-    actual = utils.point2time_timestamp(point, n_points_per_day, offset)
-
-    assert actual == expected
-
-
-def test_slider_values_to_graph_values() -> None:
-    """Tests the conversion from slider values to graph values."""
-    n_points_per_day = 2880
-    values = [0, 60]
-    expected = [0, 120]
-
-    actual = utils.slider_values_to_graph_values(values, n_points_per_day)
+    actual = utils.point2time(point, date, 0, None)
 
     assert actual == expected

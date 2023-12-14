@@ -3,7 +3,6 @@ import datetime
 import logging
 import pathlib
 from collections.abc import Iterable
-from typing import TypeVar
 
 import numpy as np
 from sqlalchemy import orm
@@ -11,8 +10,6 @@ from sqlalchemy import orm
 from actigraphy.core import config
 from actigraphy.database import models
 from actigraphy.io import metadata
-
-T = TypeVar("T")
 
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
