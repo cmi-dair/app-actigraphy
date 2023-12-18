@@ -23,7 +23,6 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
       --volume `pwd`/assets:/app/assets \
       ghcr.io/cmi-dair/app-actigraphy:main
    ```
-   Apple Silicon users will have to include a `--platform linux/amd64` flag.
 
 ### Running the App through Poetry
 
