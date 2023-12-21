@@ -12,6 +12,12 @@ repos:
   hooks:
   - id: mypy
     args: [--ignore-missing-imports]
+    additional_dependencies:
+    - pydantic
+    - pydantic_settings
+    - pytest
+    - sqlalchemy
+
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
   rev: v2.11.0
   hooks:
