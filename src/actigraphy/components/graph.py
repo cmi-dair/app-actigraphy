@@ -1,11 +1,12 @@
 """Defines the graph component of the Actigraphy app.
 
-The graph component contains a graph and range slider for use in the Actigraphy
+The graph component contains a graph range sliders for use in the Actigraphy
 app. The graph displays the sensor angle and arm movement data for a given day.
 The range slider is used to select a sleep window for the given day.
 """
 import datetime
 import logging
+import statistics
 from collections.abc import Sequence
 
 import dash
@@ -39,25 +40,25 @@ def graph() -> html.Div:
             dcc.Graph(id="graph"),
             html.Div(
                 children=[
-                    dcc.RangeSlider(
-                        min=0,
-                        max=N_SLIDER_STEPS,
-                        step=1,
-                        marks=None,
-                        id="time_slider",
-                        updatemode="mouseup",
+                    html.Button(
+                        "+",
+                        id="add_slider",
                     ),
-                    html.Pre(id="annotations-slider"),
+                    html.Button(
+                        "-",
+                        id="remove_slider",
+                    ),
                 ],
-                style={"margin-left": "55px", "margin-right": "55px"},
+                style={
+                    "marginLeft": "55px",
+                    "marginRight": "55px",
+                    "display": "flex",
+                },
             ),
             html.Div(
-                children=[
-                    html.B(id="sleep-onset"),
-                    html.B(id="sleep-offset"),
-                    html.B(id="sleep-duration"),
-                ],
-                style={"margin-left": "80px", "margin-right": "55px"},
+                children=[],
+                id="slider_div",
+                style={"marginLeft": "55px", "marginRight": "55px"},
             ),
         ],
     )
@@ -66,14 +67,14 @@ def graph() -> html.Div:
 @callback_manager.global_manager.callback(
     dash.Output("graph", "figure"),
     dash.Input("trigger_day_load", "value"),
-    dash.Input("time_slider", "value"),
+    dash.Input({"type": "range_slider", "index": dash.ALL}, "value"),
     dash.State("day_slider", "value"),
     dash.State("file_manager", "data"),
     prevent_initial_call=True,
 )
 def create_graph(
     _trigger_load: str,
-    drag_value: list[int],
+    drag_values: tuple[list[int]],
     day_index: int,
     file_manager: dict[str, str],
 ) -> graph_objects.Figure:
@@ -116,13 +117,13 @@ def create_graph(
         sensor_angle,
         arm_movement,
         title_day,
-        drag_value,
+        drag_values,
         non_wear,
     )
 
 
 @callback_manager.global_manager.callback(
-    dash.Output("time_slider", "value"),
+    dash.Output("slider_div", "children", allow_duplicate=True),
     dash.Input("trigger_day_load", "value"),
     dash.State("day_slider", "value"),
     dash.State("file_manager", "data"),
@@ -134,6 +135,7 @@ def refresh_range_slider(
     day_index: int,
     file_manager: dict[str, str],
     daylight_savings_shift: int | None,
+    slider_index: int = 0,
 ) -> list[int]:
     """Reads the sleep logs for the given day.
 
@@ -143,14 +145,17 @@ def refresh_range_slider(
         file_manager: A dictionary containing file paths for various sleep log
             files.
         daylight_savings_shift: The seconds offset due to daylight savings.
+        slider_index: The index of the slider to refresh.
 
     Returns:
         list[int]: A list containing the sleep onset and sleep offset points.
     """
     session = next(database.session_generator(file_manager["database"]))
     day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
-    sleep_time = day.sleep_times[0].onset_with_tz
-    wake_time = day.sleep_times[0].wakeup_with_tz
+    if len(day.sleep_times) < slider_index:
+        return [0, 0]
+    sleep_time = day.sleep_times[slider_index].onset_with_tz
+    wake_time = day.sleep_times[slider_index].wakeup_with_tz
 
     sleep_point = core_utils.time2point(
         sleep_time,
@@ -167,38 +172,56 @@ def refresh_range_slider(
 
 
 @callback_manager.global_manager.callback(
-    dash.Output("sleep-onset", "children", allow_duplicate=True),
-    dash.Output("sleep-offset", "children", allow_duplicate=True),
-    dash.Output("sleep-duration", "children", allow_duplicate=True),
-    dash.Input("time_slider", "value"),
+    dash.Output(
+        {"type": "range_slider", "index": dash.MATCH},
+        "value",
+        allow_duplicate=True,
+    ),
+    dash.Input({"type": "range_slider", "index": dash.MATCH}, "value"),
     dash.State("file_manager", "data"),
     dash.State("day_slider", "value"),
     dash.State("daylight_savings_timepoint", "value"),
     dash.State("daylight_savings_shift", "value"),
+    dash.State(
+        {
+            "type": "range_slider",
+            "index": dash.ALL,
+        },
+        "value",
+    ),
     prevent_initial_call=True,
 )
 def adjust_range_slider(
-    drag_value: list[int],
+    drag_values: list[int],
     file_manager: dict[str, str],
     day_index: int,
     daylight_savings_timepoint: str | None,
     daylight_savings_shift: int | None,
+    all_drag_values: list[list[int]],
 ) -> tuple[str, str, str]:
-    """Adjusts the text labels for a given day and writes the sleep log to a file.
+    """Checks if the new position is valid and writes the sleep log to a file.
+
+    If the new position is not valid, the callback will return the state to
+    the previous position.
 
     Args:
-        drag_value: The drag values of the range slider.
+        drag_values: The drag values of the range slider.
         file_manager: The file manager containing the sleep log.
         day_index: The day for which to adjust the range slider.
         daylight_savings_timepoint: The index of the first data point that is
             affected by daylight savings time.
         daylight_savings_shift: The seconds offset due to daylight savings.
+        other_drag_values: The drag values of the other range sliders.
 
-    Returns:
-        Tuple[str, str, str, str]: A tuple containing the sleep onset, sleep
-            offset, and sleep duration.
+    Notes:
+        This assumes only one side of the slider is being dragged at a time.
+        It could break if the second side is dragged before the first side is
+        processed.
     """
     logger.debug("Adjusting range slider.")
+
+    other_drag_values = [values for values in all_drag_values if values != drag_values]
+    new_values = _adjust_range_slider_values(drag_values, other_drag_values)
 
     session = next(database.session_generator(file_manager["database"]))
     day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
@@ -210,14 +233,14 @@ def adjust_range_slider(
     base_timezone = first_data_point.timestamp_utc_offset
 
     sleep_time = core_utils.point2time(
-        drag_value[0],
+        new_values[0],
         day.date,
         base_timezone,
         daylight_savings_timepoint,
         daylight_savings_shift,
     )
     wake_time = core_utils.point2time(
-        drag_value[1],
+        new_values[1],
         day.date,
         base_timezone,
         daylight_savings_timepoint,
@@ -232,14 +255,54 @@ def adjust_range_slider(
     session.commit()
     ggir_files.write_sleeplog(file_manager)
 
-    onset_string = sleep_time.strftime(TIME_FORMATTING)
-    offset_string = wake_time.strftime(TIME_FORMATTING)
-    duration_string = core_utils.datetime_delta_as_hh_mm(wake_time - sleep_time)
-    return (
-        f"Sleep onset: {onset_string}\n",
-        f"Sleep offset: {offset_string}\n",
-        f"Sleep duration: {duration_string}\n",
-    )
+    return new_values
+
+
+@callback_manager.global_manager.callback(
+    dash.Output("slider_div", "children", allow_duplicate=True),
+    dash.Input("add_slider", "n_clicks"),
+    prevent_initial_call=True,
+)
+def add_sliders(
+    n_clicks: int,
+) -> dash.Patch:
+    """Adds sliders from the graph.
+
+    Args:
+        n_clicks: The number of times the add button has been clicked.
+
+    Returns:
+        dash.Patch: A patch to add a slider.
+    """
+    logger.debug("Adding slider %s.", n_clicks)
+    patch = dash.Patch()
+    slider = _create_slider(index=n_clicks)
+    patch.append(slider)
+    return patch
+
+
+@callback_manager.global_manager.callback(
+    dash.Output("slider_div", "children", allow_duplicate=True),
+    dash.Input("remove_slider", "n_clicks"),
+    prevent_initial_call=True,
+)
+def remove_sliders(
+    remove_clicks: int,  # noqa: ARG001
+) -> dash.Patch:
+    """Removes sliders from the graph.
+
+    Args:
+        remove_clicks: The number of times the remove button has been clicked.
+        sliders: The sliders.
+
+    Returns:
+        dash.Patch: A patch to remove the last slider.
+
+    """
+    logger.debug("Removing slider.")
+    patch = dash.Patch()
+    del patch[-1]
+    return patch
 
 
 def _build_figure(  # noqa: PLR0913
@@ -247,7 +310,7 @@ def _build_figure(  # noqa: PLR0913
     sensor_angle: list[float],
     arm_movement: list[float],
     title_day: str,
-    drag_value: list[int],
+    drag_values: tuple[list[int]],
     nonwear_changes: list[bool],
 ) -> graph_objects.Figure:
     """Build the graph figure."""
@@ -260,8 +323,11 @@ def _build_figure(  # noqa: PLR0913
         title_day,
     )
 
-    drag_fraction = [value / N_SLIDER_STEPS for value in drag_value]
-    sensor_plots.add_rectangle(figure, drag_fraction, "red", "sleep window")
+    for values in drag_values:
+        if not values:
+            continue
+        drag_fraction = [value / N_SLIDER_STEPS for value in values]
+        sensor_plots.add_rectangle(figure, drag_fraction, "red", "sleep window")
 
     continuous_non_wear_blocks = _find_continuous_blocks(nonwear_changes)
     non_wear_fractions = [
@@ -302,3 +368,78 @@ def _find_continuous_blocks(vector: Sequence[bool]) -> list[int]:
             or not vector[index + 1]
         )
     ]
+
+
+def _create_slider(index: int) -> dcc.RangeSlider:
+    """Creates slider components for selecting sleep windows.
+
+    Args:
+        index: The index of the slider.
+
+    Returns:
+        A list of slider components.
+    """
+    return dcc.RangeSlider(
+        min=0,
+        max=N_SLIDER_STEPS,
+        step=1,
+        marks=None,
+        id={"type": "range_slider", "index": index},
+        updatemode="mouseup",
+    )
+
+
+def _adjust_range_slider_values(
+    drag_values: list[int],
+    other_drag_values: list[list[int]],
+) -> list[int]:
+    """Adjusts the range slider values to ensure validity.
+
+    Slider ranges are not allowed to intersect with each other.
+
+    Args:
+        drag_values: The drag values of the range slider.
+        other_drag_values: The drag values of the other range sliders.
+
+    Returns:
+        list[int]: The adjusted range slider values.
+    """
+    if not drag_values:
+        return drag_values
+
+    new_values = [drag_values[0], drag_values[1]]
+    n_loops = 0
+    max_loops = 10
+    start_values = [None, None]
+
+    while new_values != start_values:
+        n_loops += 1
+        start_values = [new_values[0], new_values[1]]
+        for other in other_drag_values:
+            if not other:
+                continue
+            this_on_right_of_other = statistics.mean(drag_values) > statistics.mean(
+                other,
+            )
+            if other[0] <= new_values[0] <= other[1]:
+                if this_on_right_of_other:
+                    new_values[0] = other[1] + 1
+                else:
+                    new_values[0] = other[0] - 1
+
+            if other[0] <= new_values[1] <= other[1]:
+                if this_on_right_of_other:
+                    new_values[1] = other[1] + 1
+                else:
+                    new_values[1] = other[0] - 1
+
+            if new_values[0] <= other[0] and new_values[1] >= other[1]:
+                if this_on_right_of_other:
+                    new_values[0] = other[1] + 1
+                else:
+                    new_values[1] = other[0] - 1
+
+        if n_loops > max_loops:
+            msg = "Infinite loop detected in range slider callback."
+            raise RuntimeError(msg)
+    return new_values

@@ -52,3 +52,8 @@ def create_app() -> dash.Dash:
         ),
     )
     return app
+
+
+if __name__ == "__main__":
+    app = create_app()
+    app.run_server(debug=True)
