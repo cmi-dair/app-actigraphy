@@ -41,7 +41,7 @@ def initialize_datapoints(
         [np.arange(index, index + window_size_ratio) for index in non_wear_elements],
     )
     return [
-        _metashort_row_to_sql_datapoint(row, non_wear=index in non_wear_indices)  # type: ignore[arg-type]
+        _metashort_row_to_sql_datapoint(row, non_wear=index in non_wear_indices)  # type: ignore[arg-type, unused-ignore] # pre-commit mypy flags this, local mypy does not.
         for index, row in enumerate(metadata_obj.m.metashort.iter_rows(named=True))
     ]
 
