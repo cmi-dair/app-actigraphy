@@ -125,6 +125,49 @@ def initialize_subject(
     return subject
 
 
+def find_closest_datapoint(
+    date_time: datetime.datetime,
+    session: orm.Session,
+    window_size: int = 3,
+) -> models.DataPoint:
+    """Find the closest datapoint to the given timezone unaware date time.
+
+    Args:
+        date_time: The date time to find the closest datapoint for.
+        session: The database session.
+        window_size: The window size in minutes in which to look
+            for the closest datapoint.
+
+    Returns:
+        models.DataPoint: The closest datapoint.
+
+    Notes:
+        This function cannot accurately determine the closest datapoint if
+        there are multiple datapoints with the same timestamp (i.e. in a
+        timezone switch). However, in the current implementation, this should
+        not be an issue.
+    """
+    date_time_no_tz = date_time.replace(tzinfo=None)
+    data_points = (
+        session.query(models.DataPoint)
+        .filter(
+            models.DataPoint.timestamp
+            >= date_time_no_tz - datetime.timedelta(minutes=window_size / 2),
+            models.DataPoint.timestamp
+            <= date_time_no_tz + datetime.timedelta(minutes=window_size / 2),
+        )
+        .order_by(
+            models.DataPoint.timestamp,
+            models.DataPoint.timestamp_utc_offset,
+        )
+    )
+    time_deltas = [
+        abs((data_point.timestamp - date_time_no_tz).total_seconds())
+        for data_point in data_points
+    ]
+    return data_points[np.argmin(time_deltas)]  # type: ignore[no-any-return]
+
+
 class MetaShortRow(TypedDict):
     """Represents a row in the metashort table.
 
