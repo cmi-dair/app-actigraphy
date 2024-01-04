@@ -15,7 +15,6 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
 ### Running the App through Docker
 
 1. Ensure you have Docker installed.
-2. 1. Ensure you have Docker installed.
 2. Run the Docker image:
    ```bash
    docker run \
