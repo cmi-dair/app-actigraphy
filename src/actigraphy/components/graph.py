@@ -345,12 +345,14 @@ def adjust_range_slider(  # noqa: PLR0913
     dash.Input("add_slider", "n_clicks"),
     dash.State("file_manager", "data"),
     dash.State("day_slider", "value"),
+    dash.State("slider_div", "children"),
     prevent_initial_call=True,
 )
 def add_sliders(
-    n_clicks: int,
+    n_clicks: int,  # noqa: ARG001
     file_manager: dict[str, str],
     day_index: int,
+    sliders: list[html.Div],
 ) -> dash.Patch:
     """Adds sliders from the graph.
 
@@ -358,11 +360,12 @@ def add_sliders(
         n_clicks: The number of times the add button has been clicked.
         file_manager: The file manager containing the file locations.
         day_index: The index of the day for which to add a slider.
+        sliders: The slider div containing the sliders.
 
     Returns:
         dash.Patch: A patch to add a slider.
     """
-    logger.debug("Adding slider %s.", n_clicks)
+    logger.debug("Adding slider %s.", len(sliders))
     session = next(database.session_generator(file_manager["database"]))
     day = crud.read_day_by_subject(session, day_index, file_manager["identifier"])
     default_sleep = datetime.datetime.combine(day.date, DEFAULT_SLEEP_TIME)
@@ -386,7 +389,7 @@ def add_sliders(
     )
     patch_slider = dash.Patch()
     slider = _create_slider(
-        index=n_clicks,
+        index=len(sliders),
         primary_key=new_sleep_time.id,
         values=(slider_points, slider_points),
     )
