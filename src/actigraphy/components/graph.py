@@ -596,4 +596,5 @@ def _adjust_range_slider_values(
         if n_loops > max_loops:
             msg = "Infinite loop detected."
             raise RuntimeError(msg)
+
     return new_values

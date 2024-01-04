@@ -1,5 +1,4 @@
 """Standard CRUD operations for the database."""
-
 from sqlalchemy import orm
 
 from actigraphy.core import exceptions

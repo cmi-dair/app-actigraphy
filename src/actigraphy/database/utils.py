@@ -128,7 +128,7 @@ def initialize_subject(
 def find_closest_datapoint(
     date_time: datetime.datetime,
     session: orm.Session,
-    window_size: int = 3,
+    window_size: int = 1440,
 ) -> models.DataPoint:
     """Find the closest datapoint to the given timezone unaware date time.
 
@@ -136,7 +136,7 @@ def find_closest_datapoint(
         date_time: The date time to find the closest datapoint for.
         session: The database session.
         window_size: The window size in minutes in which to look
-            for the closest datapoint.
+            for the closest datapoint. Defaults to 1440 (a full day).
 
     Returns:
         models.DataPoint: The closest datapoint.

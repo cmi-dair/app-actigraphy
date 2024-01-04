@@ -32,7 +32,7 @@ class Settings(pydantic_settings.BaseSettings):
     )
 
     DEFAULT_SLEEP_TIME: datetime.time = pydantic.Field(
-        datetime.time(23, 59, 0),
+        datetime.time(12, 0, 0),
         description="The default sleep time.",
         json_schema_extra={
             "env": "DEFAULT_SLEEP_TIME",
