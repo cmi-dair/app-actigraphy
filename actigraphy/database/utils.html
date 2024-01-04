@@ -52,6 +52,9 @@
                     <a class="function" href="#initialize_subject">initialize_subject</a>
             </li>
             <li>
+                    <a class="function" href="#find_closest_datapoint">find_closest_datapoint</a>
+            </li>
+            <li>
                     <a class="class" href="#MetaShortRow">MetaShortRow</a>
                             <ul class="memberlist">
                         <li>
@@ -132,7 +135,7 @@
 </span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">index</span> <span class="o">+</span> <span class="n">window_size_ratio</span><span class="p">)</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">non_wear_elements</span><span class="p">],</span>
 </span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>    <span class="p">)</span>
 </span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>    <span class="k">return</span> <span class="p">[</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>        <span class="n">_metashort_row_to_sql_datapoint</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">non_wear</span><span class="o">=</span><span class="n">index</span> <span class="ow">in</span> <span class="n">non_wear_indices</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>        <span class="n">_metashort_row_to_sql_datapoint</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">non_wear</span><span class="o">=</span><span class="n">index</span> <span class="ow">in</span> <span class="n">non_wear_indices</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type, unused-ignore] # pre-commit mypy flags this, local mypy does not.</span>
 </span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">metadata_obj</span><span class="o">.</span><span class="n">m</span><span class="o">.</span><span class="n">metashort</span><span class="o">.</span><span class="n">iter_rows</span><span class="p">(</span><span class="n">named</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 </span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>    <span class="p">]</span>
 </span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>
@@ -216,74 +219,117 @@
 </span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>    <span class="k">return</span> <span class="n">subject</span>
 </span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>
 </span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>
-</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="k">class</span> <span class="nc">MetaShortRow</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a row in the metashort table.</span>
-</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">    Attributes:</span>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">        timestamp: The timestamp of the data point.</span>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">        anglez: The angle of the data point.</span>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a><span class="sd">        ENMO: The ENMO of the data point.</span>
-</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>
-</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>    <span class="n">anglez</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>    <span class="n">ENMO</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="k">def</span> <span class="nf">find_closest_datapoint</span><span class="p">(</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>    <span class="n">date_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>    <span class="n">session</span><span class="p">:</span> <span class="n">orm</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>    <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1440</span><span class="p">,</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">:</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the closest datapoint to the given timezone unaware date time.</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a><span class="sd">    Args:</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="sd">        date_time: The date time to find the closest datapoint for.</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="sd">        session: The database session.</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">        window_size: The window size in minutes in which to look</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="sd">            for the closest datapoint. Defaults to 1440 (a full day).</span>
 </span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>
-</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="k">def</span> <span class="nf">_metashort_row_to_sql_datapoint</span><span class="p">(</span>
-</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>    <span class="n">row</span><span class="p">:</span> <span class="n">MetaShortRow</span><span class="p">,</span>
-</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>    <span class="n">non_wear</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">:</span>
-</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a metadata row to a SQL datapoint object.</span>
-</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>
-</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">    Args:</span>
-</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="sd">        row: The metadata row containing the datapoint information.</span>
-</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a><span class="sd">        non_wear: Indicates whether the datapoint represents non-wear.</span>
-</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>
-</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="sd">    Returns:</span>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a><span class="sd">        models.DataPoint: The converted SQL datapoint object.</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>    <span class="k">return</span> <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">(</span>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>        <span class="n">timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">],</span>
-</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>            <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S%z&quot;</span><span class="p">,</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">UTC</span><span class="p">),</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="n">timestamp_utc_offset</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">],</span>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>            <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S%z&quot;</span><span class="p">,</span>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="p">)</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="o">.</span><span class="n">utcoffset</span><span class="p">()</span>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span>  <span class="c1"># type: ignore[union-attr]</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="n">sensor_angle</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;anglez&quot;</span><span class="p">],</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>        <span class="n">sensor_acceleration</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;ENMO&quot;</span><span class="p">],</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>        <span class="n">non_wear</span><span class="o">=</span><span class="n">non_wear</span><span class="p">,</span>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>    <span class="p">)</span>
-</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>
-</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>
-</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a><span class="k">def</span> <span class="nf">_keep_last_unique_date</span><span class="p">(</span>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>    <span class="n">datetimes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">],</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch unique dates.</span>
-</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="sd">    Args:</span>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a><span class="sd">        datetimes: A list of datetime objects.</span>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>
-</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a><span class="sd">    Returns:</span>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a><span class="sd">        list[datetime.datetime]: A list of datetime objects with unique dates</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a><span class="sd">            The last occurence of the sorted dates is retained.</span>
-</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>    <span class="n">unique_dates</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>
-</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>    <span class="n">sorted_dates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">datetimes</span><span class="p">)</span>
-</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>    <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">sorted_dates</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>        <span class="n">dt_date</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
-</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>        <span class="k">if</span> <span class="n">dt_date</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_dates</span><span class="p">:</span>
-</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>            <span class="n">unique_dates</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dt_date</span><span class="p">)</span>
-</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
-</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>
-</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>    <span class="k">return</span> <span class="n">result</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">    Returns:</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">        models.DataPoint: The closest datapoint.</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a><span class="sd">    Notes:</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a><span class="sd">        This function cannot accurately determine the closest datapoint if</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a><span class="sd">        there are multiple datapoints with the same timestamp (i.e. in a</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a><span class="sd">        timezone switch). However, in the current implementation, this should</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a><span class="sd">        not be an issue.</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>    <span class="n">date_time_no_tz</span> <span class="o">=</span> <span class="n">date_time</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>    <span class="n">data_points</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">)</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>        <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>            <span class="o">&gt;=</span> <span class="n">date_time_no_tz</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">window_size</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>            <span class="o">&lt;=</span> <span class="n">date_time_no_tz</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">window_size</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="p">)</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp_utc_offset</span><span class="p">,</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>        <span class="p">)</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>    <span class="p">)</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>    <span class="n">time_deltas</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="nb">abs</span><span class="p">((</span><span class="n">data_point</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">-</span> <span class="n">date_time_no_tz</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="k">for</span> <span class="n">data_point</span> <span class="ow">in</span> <span class="n">data_points</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>    <span class="p">]</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>    <span class="k">return</span> <span class="n">data_points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">time_deltas</span><span class="p">)]</span>  <span class="c1"># type: ignore[no-any-return]</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a><span class="k">class</span> <span class="nc">MetaShortRow</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a row in the metashort table.</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a><span class="sd">    Attributes:</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a><span class="sd">        timestamp: The timestamp of the data point.</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a><span class="sd">        anglez: The angle of the data point.</span>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a><span class="sd">        ENMO: The ENMO of the data point.</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>    <span class="n">anglez</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>    <span class="n">ENMO</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a><span class="k">def</span> <span class="nf">_metashort_row_to_sql_datapoint</span><span class="p">(</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>    <span class="n">row</span><span class="p">:</span> <span class="n">MetaShortRow</span><span class="p">,</span>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>    <span class="n">non_wear</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">:</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a metadata row to a SQL datapoint object.</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a><span class="sd">    Args:</span>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a><span class="sd">        row: The metadata row containing the datapoint information.</span>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a><span class="sd">        non_wear: Indicates whether the datapoint represents non-wear.</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a><span class="sd">    Returns:</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a><span class="sd">        models.DataPoint: The converted SQL datapoint object.</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>    <span class="k">return</span> <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">(</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>        <span class="n">timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">],</span>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>            <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S%z&quot;</span><span class="p">,</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>        <span class="p">)</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">UTC</span><span class="p">),</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>        <span class="n">timestamp_utc_offset</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>            <span class="n">row</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">],</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>            <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S%z&quot;</span><span class="p">,</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>        <span class="p">)</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>        <span class="o">.</span><span class="n">utcoffset</span><span class="p">()</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>        <span class="o">.</span><span class="n">total_seconds</span><span class="p">(),</span>  <span class="c1"># type: ignore[union-attr]</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>        <span class="n">sensor_angle</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;anglez&quot;</span><span class="p">],</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="n">sensor_acceleration</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;ENMO&quot;</span><span class="p">],</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="n">non_wear</span><span class="o">=</span><span class="n">non_wear</span><span class="p">,</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>    <span class="p">)</span>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a><span class="k">def</span> <span class="nf">_keep_last_unique_date</span><span class="p">(</span>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>    <span class="n">datetimes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">],</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]:</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch unique dates.</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a><span class="sd">    Args:</span>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a><span class="sd">        datetimes: A list of datetime objects.</span>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a><span class="sd">    Returns:</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">        list[datetime.datetime]: A list of datetime objects with unique dates</span>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a><span class="sd">            The last occurence of the sorted dates is retained.</span>
+</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>    <span class="n">unique_dates</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>    <span class="n">sorted_dates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">datetimes</span><span class="p">)</span>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>    <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">sorted_dates</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>        <span class="n">dt_date</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>        <span class="k">if</span> <span class="n">dt_date</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_dates</span><span class="p">:</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>            <span class="n">unique_dates</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dt_date</span><span class="p">)</span>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a>            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>
+</span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>    <span class="k">return</span> <span class="n">result</span>
 </span></pre></div>
 
 
@@ -292,7 +338,7 @@
                     <div class="attr variable">
             <span class="name">settings</span>        =
 <input id="settings-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="settings-view-value"></label><span class="default_value">Settings(APP_NAME=&#39;Actigraphy&#39;, LOGGER_NAME=&#39;Actigraphy&#39;, DEFAULT_SLEEP_TIME=datetime.time(23, 59), TIME_FORMATTING=&#39;%A - %d %B %Y %H:%M %Z&#39;, N_SLIDER_STEPS=2160)</span>
+            <label class="view-value-button pdoc-button" for="settings-view-value"></label><span class="default_value">Settings(APP_NAME=&#39;Actigraphy&#39;, LOGGER_NAME=&#39;Actigraphy&#39;, DEFAULT_SLEEP_TIME=datetime.time(12, 0), TIME_FORMATTING=&#39;%A - %d %B %Y %H:%M %Z&#39;, N_SLIDER_STEPS=2160)</span>
 
         
     </div>
@@ -316,7 +362,7 @@
                 <section id="DEFAULT_SLEEP_TIME">
                     <div class="attr variable">
             <span class="name">DEFAULT_SLEEP_TIME</span>        =
-<span class="default_value">datetime.time(23, 59)</span>
+<span class="default_value">datetime.time(12, 0)</span>
 
         
     </div>
@@ -370,7 +416,7 @@
 </span><span id="initialize_datapoints-42"><a href="#initialize_datapoints-42"><span class="linenos">42</span></a>        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">index</span> <span class="o">+</span> <span class="n">window_size_ratio</span><span class="p">)</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">non_wear_elements</span><span class="p">],</span>
 </span><span id="initialize_datapoints-43"><a href="#initialize_datapoints-43"><span class="linenos">43</span></a>    <span class="p">)</span>
 </span><span id="initialize_datapoints-44"><a href="#initialize_datapoints-44"><span class="linenos">44</span></a>    <span class="k">return</span> <span class="p">[</span>
-</span><span id="initialize_datapoints-45"><a href="#initialize_datapoints-45"><span class="linenos">45</span></a>        <span class="n">_metashort_row_to_sql_datapoint</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">non_wear</span><span class="o">=</span><span class="n">index</span> <span class="ow">in</span> <span class="n">non_wear_indices</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+</span><span id="initialize_datapoints-45"><a href="#initialize_datapoints-45"><span class="linenos">45</span></a>        <span class="n">_metashort_row_to_sql_datapoint</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">non_wear</span><span class="o">=</span><span class="n">index</span> <span class="ow">in</span> <span class="n">non_wear_indices</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type, unused-ignore] # pre-commit mypy flags this, local mypy does not.</span>
 </span><span id="initialize_datapoints-46"><a href="#initialize_datapoints-46"><span class="linenos">46</span></a>        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">metadata_obj</span><span class="o">.</span><span class="n">m</span><span class="o">.</span><span class="n">metashort</span><span class="o">.</span><span class="n">iter_rows</span><span class="p">(</span><span class="n">named</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 </span><span id="initialize_datapoints-47"><a href="#initialize_datapoints-47"><span class="linenos">47</span></a>    <span class="p">]</span>
 </span></pre></div>
@@ -540,6 +586,90 @@
 
 
                 </section>
+                <section id="find_closest_datapoint">
+                            <input id="find_closest_datapoint-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">find_closest_datapoint</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">date_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span>,</span><span class="param">	<span class="n">session</span><span class="p">:</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">orm</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">Session</span>,</span><span class="param">	<span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1440</span></span><span class="return-annotation">) -> <span class="n"><a href="models.html#DataPoint">actigraphy.database.models.DataPoint</a></span>:</span></span>
+
+                <label class="view-source-button" for="find_closest_datapoint-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#find_closest_datapoint"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="find_closest_datapoint-129"><a href="#find_closest_datapoint-129"><span class="linenos">129</span></a><span class="k">def</span> <span class="nf">find_closest_datapoint</span><span class="p">(</span>
+</span><span id="find_closest_datapoint-130"><a href="#find_closest_datapoint-130"><span class="linenos">130</span></a>    <span class="n">date_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span>
+</span><span id="find_closest_datapoint-131"><a href="#find_closest_datapoint-131"><span class="linenos">131</span></a>    <span class="n">session</span><span class="p">:</span> <span class="n">orm</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span>
+</span><span id="find_closest_datapoint-132"><a href="#find_closest_datapoint-132"><span class="linenos">132</span></a>    <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1440</span><span class="p">,</span>
+</span><span id="find_closest_datapoint-133"><a href="#find_closest_datapoint-133"><span class="linenos">133</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">:</span>
+</span><span id="find_closest_datapoint-134"><a href="#find_closest_datapoint-134"><span class="linenos">134</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Find the closest datapoint to the given timezone unaware date time.</span>
+</span><span id="find_closest_datapoint-135"><a href="#find_closest_datapoint-135"><span class="linenos">135</span></a>
+</span><span id="find_closest_datapoint-136"><a href="#find_closest_datapoint-136"><span class="linenos">136</span></a><span class="sd">    Args:</span>
+</span><span id="find_closest_datapoint-137"><a href="#find_closest_datapoint-137"><span class="linenos">137</span></a><span class="sd">        date_time: The date time to find the closest datapoint for.</span>
+</span><span id="find_closest_datapoint-138"><a href="#find_closest_datapoint-138"><span class="linenos">138</span></a><span class="sd">        session: The database session.</span>
+</span><span id="find_closest_datapoint-139"><a href="#find_closest_datapoint-139"><span class="linenos">139</span></a><span class="sd">        window_size: The window size in minutes in which to look</span>
+</span><span id="find_closest_datapoint-140"><a href="#find_closest_datapoint-140"><span class="linenos">140</span></a><span class="sd">            for the closest datapoint. Defaults to 1440 (a full day).</span>
+</span><span id="find_closest_datapoint-141"><a href="#find_closest_datapoint-141"><span class="linenos">141</span></a>
+</span><span id="find_closest_datapoint-142"><a href="#find_closest_datapoint-142"><span class="linenos">142</span></a><span class="sd">    Returns:</span>
+</span><span id="find_closest_datapoint-143"><a href="#find_closest_datapoint-143"><span class="linenos">143</span></a><span class="sd">        models.DataPoint: The closest datapoint.</span>
+</span><span id="find_closest_datapoint-144"><a href="#find_closest_datapoint-144"><span class="linenos">144</span></a>
+</span><span id="find_closest_datapoint-145"><a href="#find_closest_datapoint-145"><span class="linenos">145</span></a><span class="sd">    Notes:</span>
+</span><span id="find_closest_datapoint-146"><a href="#find_closest_datapoint-146"><span class="linenos">146</span></a><span class="sd">        This function cannot accurately determine the closest datapoint if</span>
+</span><span id="find_closest_datapoint-147"><a href="#find_closest_datapoint-147"><span class="linenos">147</span></a><span class="sd">        there are multiple datapoints with the same timestamp (i.e. in a</span>
+</span><span id="find_closest_datapoint-148"><a href="#find_closest_datapoint-148"><span class="linenos">148</span></a><span class="sd">        timezone switch). However, in the current implementation, this should</span>
+</span><span id="find_closest_datapoint-149"><a href="#find_closest_datapoint-149"><span class="linenos">149</span></a><span class="sd">        not be an issue.</span>
+</span><span id="find_closest_datapoint-150"><a href="#find_closest_datapoint-150"><span class="linenos">150</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="find_closest_datapoint-151"><a href="#find_closest_datapoint-151"><span class="linenos">151</span></a>    <span class="n">date_time_no_tz</span> <span class="o">=</span> <span class="n">date_time</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</span><span id="find_closest_datapoint-152"><a href="#find_closest_datapoint-152"><span class="linenos">152</span></a>    <span class="n">data_points</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="find_closest_datapoint-153"><a href="#find_closest_datapoint-153"><span class="linenos">153</span></a>        <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="p">)</span>
+</span><span id="find_closest_datapoint-154"><a href="#find_closest_datapoint-154"><span class="linenos">154</span></a>        <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+</span><span id="find_closest_datapoint-155"><a href="#find_closest_datapoint-155"><span class="linenos">155</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp</span>
+</span><span id="find_closest_datapoint-156"><a href="#find_closest_datapoint-156"><span class="linenos">156</span></a>            <span class="o">&gt;=</span> <span class="n">date_time_no_tz</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">window_size</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+</span><span id="find_closest_datapoint-157"><a href="#find_closest_datapoint-157"><span class="linenos">157</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp</span>
+</span><span id="find_closest_datapoint-158"><a href="#find_closest_datapoint-158"><span class="linenos">158</span></a>            <span class="o">&lt;=</span> <span class="n">date_time_no_tz</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">window_size</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+</span><span id="find_closest_datapoint-159"><a href="#find_closest_datapoint-159"><span class="linenos">159</span></a>        <span class="p">)</span>
+</span><span id="find_closest_datapoint-160"><a href="#find_closest_datapoint-160"><span class="linenos">160</span></a>        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span>
+</span><span id="find_closest_datapoint-161"><a href="#find_closest_datapoint-161"><span class="linenos">161</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+</span><span id="find_closest_datapoint-162"><a href="#find_closest_datapoint-162"><span class="linenos">162</span></a>            <span class="n">models</span><span class="o">.</span><span class="n">DataPoint</span><span class="o">.</span><span class="n">timestamp_utc_offset</span><span class="p">,</span>
+</span><span id="find_closest_datapoint-163"><a href="#find_closest_datapoint-163"><span class="linenos">163</span></a>        <span class="p">)</span>
+</span><span id="find_closest_datapoint-164"><a href="#find_closest_datapoint-164"><span class="linenos">164</span></a>    <span class="p">)</span>
+</span><span id="find_closest_datapoint-165"><a href="#find_closest_datapoint-165"><span class="linenos">165</span></a>    <span class="n">time_deltas</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="find_closest_datapoint-166"><a href="#find_closest_datapoint-166"><span class="linenos">166</span></a>        <span class="nb">abs</span><span class="p">((</span><span class="n">data_point</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">-</span> <span class="n">date_time_no_tz</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+</span><span id="find_closest_datapoint-167"><a href="#find_closest_datapoint-167"><span class="linenos">167</span></a>        <span class="k">for</span> <span class="n">data_point</span> <span class="ow">in</span> <span class="n">data_points</span>
+</span><span id="find_closest_datapoint-168"><a href="#find_closest_datapoint-168"><span class="linenos">168</span></a>    <span class="p">]</span>
+</span><span id="find_closest_datapoint-169"><a href="#find_closest_datapoint-169"><span class="linenos">169</span></a>    <span class="k">return</span> <span class="n">data_points</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">time_deltas</span><span class="p">)]</span>  <span class="c1"># type: ignore[no-any-return]</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Find the closest datapoint to the given timezone unaware date time.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>date_time:</strong>  The date time to find the closest datapoint for.</li>
+<li><strong>session:</strong>  The database session.</li>
+<li><strong>window_size:</strong>  The window size in minutes in which to look
+for the closest datapoint. Defaults to 1440 (a full day).</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>models.DataPoint: The closest datapoint.</p>
+</blockquote>
+
+<h6 id="notes">Notes:</h6>
+
+<blockquote>
+  <p>This function cannot accurately determine the closest datapoint if
+  there are multiple datapoints with the same timestamp (i.e. in a
+  timezone switch). However, in the current implementation, this should
+  not be an issue.</p>
+</blockquote>
+</div>
+
+
+                </section>
                 <section id="MetaShortRow">
                             <input id="MetaShortRow-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr class">
@@ -551,18 +681,18 @@
 
     </div>
     <a class="headerlink" href="#MetaShortRow"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="MetaShortRow-129"><a href="#MetaShortRow-129"><span class="linenos">129</span></a><span class="k">class</span> <span class="nc">MetaShortRow</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
-</span><span id="MetaShortRow-130"><a href="#MetaShortRow-130"><span class="linenos">130</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a row in the metashort table.</span>
-</span><span id="MetaShortRow-131"><a href="#MetaShortRow-131"><span class="linenos">131</span></a>
-</span><span id="MetaShortRow-132"><a href="#MetaShortRow-132"><span class="linenos">132</span></a><span class="sd">    Attributes:</span>
-</span><span id="MetaShortRow-133"><a href="#MetaShortRow-133"><span class="linenos">133</span></a><span class="sd">        timestamp: The timestamp of the data point.</span>
-</span><span id="MetaShortRow-134"><a href="#MetaShortRow-134"><span class="linenos">134</span></a><span class="sd">        anglez: The angle of the data point.</span>
-</span><span id="MetaShortRow-135"><a href="#MetaShortRow-135"><span class="linenos">135</span></a><span class="sd">        ENMO: The ENMO of the data point.</span>
-</span><span id="MetaShortRow-136"><a href="#MetaShortRow-136"><span class="linenos">136</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="MetaShortRow-137"><a href="#MetaShortRow-137"><span class="linenos">137</span></a>
-</span><span id="MetaShortRow-138"><a href="#MetaShortRow-138"><span class="linenos">138</span></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="MetaShortRow-139"><a href="#MetaShortRow-139"><span class="linenos">139</span></a>    <span class="n">anglez</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="MetaShortRow-140"><a href="#MetaShortRow-140"><span class="linenos">140</span></a>    <span class="n">ENMO</span><span class="p">:</span> <span class="nb">float</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="MetaShortRow-172"><a href="#MetaShortRow-172"><span class="linenos">172</span></a><span class="k">class</span> <span class="nc">MetaShortRow</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+</span><span id="MetaShortRow-173"><a href="#MetaShortRow-173"><span class="linenos">173</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a row in the metashort table.</span>
+</span><span id="MetaShortRow-174"><a href="#MetaShortRow-174"><span class="linenos">174</span></a>
+</span><span id="MetaShortRow-175"><a href="#MetaShortRow-175"><span class="linenos">175</span></a><span class="sd">    Attributes:</span>
+</span><span id="MetaShortRow-176"><a href="#MetaShortRow-176"><span class="linenos">176</span></a><span class="sd">        timestamp: The timestamp of the data point.</span>
+</span><span id="MetaShortRow-177"><a href="#MetaShortRow-177"><span class="linenos">177</span></a><span class="sd">        anglez: The angle of the data point.</span>
+</span><span id="MetaShortRow-178"><a href="#MetaShortRow-178"><span class="linenos">178</span></a><span class="sd">        ENMO: The ENMO of the data point.</span>
+</span><span id="MetaShortRow-179"><a href="#MetaShortRow-179"><span class="linenos">179</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="MetaShortRow-180"><a href="#MetaShortRow-180"><span class="linenos">180</span></a>
+</span><span id="MetaShortRow-181"><a href="#MetaShortRow-181"><span class="linenos">181</span></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="MetaShortRow-182"><a href="#MetaShortRow-182"><span class="linenos">182</span></a>    <span class="n">anglez</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="MetaShortRow-183"><a href="#MetaShortRow-183"><span class="linenos">183</span></a>    <span class="n">ENMO</span><span class="p">:</span> <span class="nb">float</span>
 </span></pre></div>
 
 
