@@ -83,9 +83,16 @@ def add_rectangle(
         label: The label of the rectangle.
     """
     logger.debug("Adding rectangle to figure.")
+    x_min = (figure.layout.xaxis.range[1] - figure.layout.xaxis.range[0]) * limits[
+        0
+    ] + figure.layout.xaxis.range[0]
+    x_max = (figure.layout.xaxis.range[1] - figure.layout.xaxis.range[0]) * limits[
+        1
+    ] + figure.layout.xaxis.range[0]
+
     figure.add_vrect(
-        x0=figure.layout.xaxis.range[1] * limits[0],
-        x1=figure.layout.xaxis.range[1] * limits[1],
+        x0=x_min,
+        x1=x_max,
         fillcolor=color,
         opacity=0.2,
         annotation={"text": label},

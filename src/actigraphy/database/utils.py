@@ -41,7 +41,7 @@ def initialize_datapoints(
         [np.arange(index, index + window_size_ratio) for index in non_wear_elements],
     )
     return [
-        _metashort_row_to_sql_datapoint(row, non_wear=index in non_wear_indices)  # type: ignore[arg-type]
+        _metashort_row_to_sql_datapoint(row, non_wear=index in non_wear_indices)  # type: ignore[arg-type, unused-ignore] # pre-commit mypy flags this, local mypy does not.
         for index, row in enumerate(metadata_obj.m.metashort.iter_rows(named=True))
     ]
 
@@ -123,6 +123,49 @@ def initialize_subject(
     session.add_all([subject, *data_points])
     session.commit()
     return subject
+
+
+def find_closest_datapoint(
+    date_time: datetime.datetime,
+    session: orm.Session,
+    window_size: int = 1440,
+) -> models.DataPoint:
+    """Find the closest datapoint to the given timezone unaware date time.
+
+    Args:
+        date_time: The date time to find the closest datapoint for.
+        session: The database session.
+        window_size: The window size in minutes in which to look
+            for the closest datapoint. Defaults to 1440 (a full day).
+
+    Returns:
+        models.DataPoint: The closest datapoint.
+
+    Notes:
+        This function cannot accurately determine the closest datapoint if
+        there are multiple datapoints with the same timestamp (i.e. in a
+        timezone switch). However, in the current implementation, this should
+        not be an issue.
+    """
+    date_time_no_tz = date_time.replace(tzinfo=None)
+    data_points = (
+        session.query(models.DataPoint)
+        .filter(
+            models.DataPoint.timestamp
+            >= date_time_no_tz - datetime.timedelta(minutes=window_size / 2),
+            models.DataPoint.timestamp
+            <= date_time_no_tz + datetime.timedelta(minutes=window_size / 2),
+        )
+        .order_by(
+            models.DataPoint.timestamp,
+            models.DataPoint.timestamp_utc_offset,
+        )
+    )
+    time_deltas = [
+        abs((data_point.timestamp - date_time_no_tz).total_seconds())
+        for data_point in data_points
+    ]
+    return data_points[np.argmin(time_deltas)]  # type: ignore[no-any-return]
 
 
 class MetaShortRow(TypedDict):
