@@ -1,12 +1,9 @@
 name: Publish Docker image
 
 on:
-  workflow_run:
-    workflows: ["Python Tests"]
-    types:
-      - completed
-    branches:
-      - main
+  push:
+    tags:
+      - v*
 
 jobs:
   push_to_registry:
