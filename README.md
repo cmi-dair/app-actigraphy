@@ -15,14 +15,16 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
 ### Running the App through Docker
 
 1. Ensure you have Docker installed.
-2. Run the Docker image from our GitHub Container Registry. Note that you may have to login to GHCR first with `docker login`.
+2. 1. Ensure you have Docker installed.
+2. Run the Docker image:
    ```bash
    docker run \
-      -p 8051:8051 \
+      -p 127.0.0.1:8051:8051 \
       --volume ${LOCAL_DATA_DIR}:/data \
       --volume `pwd`/assets:/app/assets \
-      ghcr.io/cmi-dair/app-actigraphy:main
+      cmidair/actigraphy:main
    ```
+
 
 ### Running the App through Poetry
 
