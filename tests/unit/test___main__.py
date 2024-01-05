@@ -12,7 +12,7 @@ def test___main__(mocker: plugin.MockerFixture) -> None:
         return_value=mock_dash_app,
     )
 
-    __main__.main()
+    __main__.main_entrypoint()
 
     mock_create_app.assert_called_once()
     mock_dash_app.run_server.assert_called_once_with(port=8051, host="0.0.0.0")  # noqa: S104

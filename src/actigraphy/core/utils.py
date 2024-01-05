@@ -31,10 +31,10 @@ class FileManager:
         Files are kept as strings because Dash cannot serialize pathlib.Path.
     """
 
-    def __init__(self, base_dir: str) -> None:
+    def __init__(self, base_dir: str | pathlib.Path) -> None:
         """Initializes the FileManager class."""
-        self.base_dir = base_dir
-        self.database = path.join(base_dir, "actigraphy.sqlite")
+        self.base_dir = str(base_dir)
+        self.database = path.join(self.base_dir, "actigraphy.sqlite")
         self.log_dir = path.join(self.base_dir, "logs")
         self.identifier = self.base_dir.rsplit("_", maxsplit=1)[-1]
 
@@ -48,22 +48,6 @@ class FileManager:
         self.metadata_file = str(next(pathlib.Path(metadata_dir).glob("meta_*")))
 
         os.makedirs(self.log_dir, exist_ok=True)
-
-
-def datetime_delta_as_hh_mm(delta: datetime.timedelta) -> str:
-    """Calculates the difference between two datetime objects.
-
-    Args:
-        delta: The difference between two datetime objects.
-
-    Returns:
-        str: The difference between the two datetime objects as a string in the
-        format "HH:MM".
-    """
-    logger.debug("Calculating datetime delta as HH:MM: %s", delta)
-    hours, remainder = divmod(delta.total_seconds(), 3600)
-    minutes = remainder // 60
-    return f"{int(hours):02}:{int(minutes):02}"
 
 
 def time2point(
