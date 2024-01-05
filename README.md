@@ -43,7 +43,7 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
 
 ## Preprocessing the data
 
-To batch preprocess GGIR data for the app, use the `actigraphy_preprocess`` entrypoint as follows:
+To batch preprocess GGIR data for the app, use the `actigraphy_preprocess` entrypoint as follows:
 
 ```bash
    docker run \
