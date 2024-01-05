@@ -127,7 +127,7 @@ actigraphy    </h1>
 <p>The Actigraphy app is designed to annotate sleep data. While traditional Dash apps might not scale to complex applications, this repository employs a custom Dash architecture to address this:</p>
 
 <ul>
-<li><code>app.py</code> contains the main Dash app, which is responsible for the layout of the app and the navigation between pages.</li>
+<li><code>app.py</code> contains the main Dash app, which is responsible for the layout of the app.</li>
 <li><code>components/</code> directory houses the components utilized by the app. Each component is tasked with its specific layout and logic. Some of the components include file selection, day slider, and graph visualization.</li>
 <li><code>core/</code> contains the core tools of the app, including configurations, utilities, command line interface and the callback manager.</li>
 <li><code>core/callback_manager.py</code> is responsible for registering callbacks for the app. It is also responsible for registering callbacks for the components. This file allows the callbacks to be placed across multiple files by defining a global manager.</li>
