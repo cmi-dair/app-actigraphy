@@ -38,7 +38,8 @@ pdoc = "^14.3.0"
 docs = ["pdoc"]
 
 [tool.poetry.scripts]
-actigraphy = "actigraphy.__main__:main"
+actigraphy = "actigraphy.__main__:main_entrypoint"
+actigraphy_preprocess = 'actigraphy.__main__:preprocess_entrypoint'
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
@@ -55,8 +56,6 @@ strict = true
 plugins =[
   "pydantic.mypy"
 ]
-
-
 
 [tool.ruff]
 exclude = [

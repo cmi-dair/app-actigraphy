@@ -21,9 +21,8 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
       -p 127.0.0.1:8051:8051 \
       --volume ${LOCAL_DATA_DIR}:/data \
       --volume `pwd`/assets:/app/assets \
-      cmidair/actigraphy:main
+      cmidair/actigraphy:latest
    ```
-
 
 ### Running the App through Poetry
 
@@ -41,6 +40,17 @@ The app may be installed either through Docker (recommended) or Poetry, see the 
    ```bash
    poetry run actigraphy {DATA_DIR}
    ```
+
+## Preprocessing the data
+
+To batch preprocess GGIR data for the app, use the `actigraphy_preprocess`` entrypoint as follows:
+
+```bash
+   docker run \
+      --volume ${LOCAL_DATA_DIR}:/data \
+      cmidair/actigraphy:latest \
+      actigraphy_preprocess \
+```
 
 ## Developer notes
 
