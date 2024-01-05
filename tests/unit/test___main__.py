@@ -1,7 +1,7 @@
 """Unit tests for the __main__ module."""
 from pytest_mock import plugin
 
-from actigraphy import __main__  # assuming this is the module name
+from actigraphy import __main__
 
 
 def test___main__(mocker: plugin.MockerFixture) -> None:

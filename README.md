@@ -56,7 +56,7 @@ To batch preprocess GGIR data for the app, use the `actigraphy_preprocess` entry
 
 The Actigraphy app is designed to annotate sleep data. While traditional Dash apps might not scale to complex applications, this repository employs a custom Dash architecture to address this:
 
-- `app.py` contains the main Dash app, which is responsible for the layout of the app and the navigation between pages.
+- `app.py` contains the main Dash app, which is responsible for the layout of the app.
 - `components/` directory houses the components utilized by the app. Each component is tasked with its specific layout and logic. Some of the components include file selection, day slider, and graph visualization.
 - `core/` contains the core tools of the app, including configurations, utilities, command line interface and the callback manager.
 - `core/callback_manager.py` is responsible for registering callbacks for the app. It is also responsible for registering callbacks for the components. This file allows the callbacks to be placed across multiple files by defining a global manager.
