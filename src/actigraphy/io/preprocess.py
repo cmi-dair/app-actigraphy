@@ -43,6 +43,9 @@ def run() -> None:
     if not args.identifier:
         logger.info("Processing all participants")
         subject_dirs = tuple(args.data_dir.glob("output_*"))
+        if len(subject_dirs) == 0:
+            logger.warning("No participants found, exiting.")
+            return
     else:
         subject_dirs = (args.data_dir / args.identifier,)
 
@@ -75,5 +78,6 @@ def create_subject_database(file_manager: core_utils.FileManager) -> None:
     database_utils.initialize_subject(
         file_manager.identifier,
         file_manager.metadata_file,
+        file_manager.ms4_file,
         session,
     )
