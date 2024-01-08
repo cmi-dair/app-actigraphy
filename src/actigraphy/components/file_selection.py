@@ -119,6 +119,7 @@ def parse_files(
         subject = database_utils.initialize_subject(
             file_manager["identifier"],
             file_manager["metadata_file"],
+            file_manager["ms4_file"],
             session,
         )
 

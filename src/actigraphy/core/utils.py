@@ -44,6 +44,12 @@ class FileManager:
             self.log_dir,
             f"data_cleaning_{self.identifier}.csv",
         )
+        self.ms4_file = path.join(
+            self.base_dir,
+            "meta",
+            "ms4.out",
+            self.identifier + ".gt3x.RData",
+        )
         metadata_dir = path.join(self.base_dir, "meta", "basic")
         self.metadata_file = str(next(pathlib.Path(metadata_dir).glob("meta_*")))
 
