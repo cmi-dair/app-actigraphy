@@ -68,7 +68,7 @@ actigraphy    </h1>
 
 <h2 id="getting-started">Getting Started</h2>
 
-<p>The app may be installed either through Docker (recommended) or Poetry, see the instructions for each below. Whichever method you use to launch the app, the app will be available at <a href="http://localhost:8051">http://localhost:8051</a>.</p>
+<p>The app may be installed either through Docker (recommended for users) or Poetry (recommended for developers), see the instructions for each below. Whichever method you use to launch the app, the app will be available at <a href="http://localhost:8051">http://localhost:8051</a>.</p>
 
 <h3 id="running-the-app-through-docker">Running the App through Docker</h3>
 
@@ -122,20 +122,28 @@ actigraphy    </h1>
 </code></pre>
 </div>
 
+<p>This may also be done with Poetry through:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="w">   </span>poetry<span class="w"> </span>run<span class="w"> </span>actigraphy_preprocess<span class="w"> </span><span class="o">{</span>DATA_DIR<span class="o">}</span>
+</code></pre>
+</div>
+
 <h2 id="developer-notes">Developer notes</h2>
 
-<p>The Actigraphy app is designed to annotate sleep data. While traditional Dash apps might not scale to complex applications, this repository employs a custom Dash architecture to address this:</p>
+<p>The Actigraphy app is developed to annotate sleep data, and for this project, we've utilized the Dash framework. It's important to note that Dash apps usually aren't geared towards full-stack applications, but given the project requirements, adopting it was a pragmatic necessity. In this repository, we've implemented a custom Dash architecture to address some typical challenges associated with a full-stack Dash app, particularly through the introduction of a custom callback manager. The organization of the project is structured as follows:</p>
 
 <ul>
 <li><code>app.py</code> contains the main Dash app, which is responsible for the layout of the app.</li>
-<li><code>components/</code> directory houses the components utilized by the app. Each component is tasked with its specific layout and logic. Some of the components include file selection, day slider, and graph visualization.</li>
+<li><code>components/</code> houses the components utilized by the app. Each component is tasked with its specific layout and logic. Some of the components include file selection, day slider, and graph visualization.</li>
 <li><code>core/</code> contains the core tools of the app, including configurations, utilities, command line interface and the callback manager.</li>
 <li><code>core/callback_manager.py</code> is responsible for registering callbacks for the app. It is also responsible for registering callbacks for the components. This file allows the callbacks to be placed across multiple files by defining a global manager.</li>
+<li><code>database/</code> contains the tools for interacting with the database.</li>
 <li><code>io/</code> contains the tools for loading and saving data.</li>
 <li><code>plotting</code> contains the tools for plotting data.</li>
 </ul>
 
-<p>The internal data storage of this tool relies on a sqlite database. The tables of this database can be found in <code>database/models.py</code>.</p>
+<p>That being said, the callback architecture has grown complex, especially in the graph component where chains of callbacks can cause the app to slow down.</p>
 </div>
 
                         <input id="mod-actigraphy-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
