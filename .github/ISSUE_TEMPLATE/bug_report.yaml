@@ -1,6 +1,6 @@
 name: Bug Report
 description: This is a template for reporting a bug.
-projects: ["cmi-dair/1"]
+projects: ["childmindresearch/1"]
 title: 'Bug: '
 labels: [bug]
 body:
