@@ -13,7 +13,7 @@ class BaseTable(database.Base):  # type: ignore[misc]
 
     __abstract__ = True
 
-    id: orm.Mapped[int] = orm.mapped_column(primary_key=True, autoincrement=True)  # noqa: A003
+    id: orm.Mapped[int] = orm.mapped_column(primary_key=True, autoincrement=True)
     time_created: orm.Mapped[datetime.datetime] = orm.mapped_column(
         sqlalchemy.DateTime(timezone=True),
         server_default=sqlalchemy.func.now(),
