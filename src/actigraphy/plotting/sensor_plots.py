@@ -204,13 +204,7 @@ def _get_x_axis(
     ] = timestamps_timezone_update
 
     timestamps_including_missing.append(
-        timestamps_including_missing[-1].replace(
-            day=timestamps_including_missing[-1].day + 1,
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0,
-        ),
+        timestamps_including_missing[-1] + datetime.timedelta(days=1),
     )
 
     x_tick_values = np.linspace(x_lim[0], x_lim[1], int(n_hours) + 1, dtype=int)
