@@ -1,10 +1,10 @@
 # App Actigraphy
 
-[![Build](https://github.com/cmi-dair/app-actigraphy/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/cmi-dair/app-actigraphy/actions/workflows/test.yaml?query=branch%3Amain)
+[![Build](https://github.com/childmindresearch/app-actigraphy/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/childmindresearch/app-actigraphy/actions/workflows/test.yaml?query=branch%3Amain)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
-[![L-GPL License](https://img.shields.io/badge/license-L--GPL-blue.svg)](https://github.com/cmi-dair/app-actigraphy/blob/main/LICENSE)
-[![pages](https://img.shields.io/badge/api-docs-blue)](https://cmi-dair.github.io/app-actigraphy)
+[![L-GPL License](https://img.shields.io/badge/license-L--GPL-blue.svg)](https://github.com/childmindresearch/app-actigraphy/blob/main/LICENSE)
+[![pages](https://img.shields.io/badge/api-docs-blue)](https://childmindresearch.github.io/app-actigraphy)
 
 This webapp is an application designed for annotating sleep data. This repository contains the source code and related files for the application.
 
@@ -29,7 +29,7 @@ The app may be installed either through Docker (recommended for users) or Poetry
 1. Ensure you have [Poetry](https://python-poetry.org/docs/) installed.
 2. Clone the repository:
    ```bash
-   git clone https://github.com/cmi-dair/app-actigraphy.git
+   git clone https://github.com/childmindresearch/app-actigraphy.git
    cd app-actigraphy
    ```
 3. Install dependencies:
