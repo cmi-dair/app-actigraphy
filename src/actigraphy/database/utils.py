@@ -78,6 +78,9 @@ def initialize_ms4_sleep_times(
     )
     onset_time = timestamp2datetime(onset, day, utc_offset)
     wakeup_time = timestamp2datetime(wakeup, day, utc_offset)
+
+    if onset_time.hour < 12:  # noqa: PLR2004
+        onset_time += datetime.timedelta(days=1)
     if onset_time > wakeup_time:
         wakeup_time += datetime.timedelta(days=1)
 
