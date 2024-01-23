@@ -32,12 +32,16 @@ def initialize_datapoints(
 
     """
     logger.debug("Initializing data points.")
-    window_size_ratio = (
-        ggir_metadata.m.windowsizes[1] // ggir_metadata.m.windowsizes[0] - 1
-    )
+    window_size_ratio = ggir_metadata.m.windowsizes[1] // ggir_metadata.m.windowsizes[0]
     non_wear_elements = np.where(ggir_metadata.m.metalong["nonwearscore"] > 1)[0]
+    non_wear_indices_in_data = [
+        element * window_size_ratio for element in non_wear_elements
+    ]
     non_wear_indices = np.concatenate(
-        [np.arange(index, index + window_size_ratio) for index in non_wear_elements],
+        [
+            np.arange(index, index + window_size_ratio)
+            for index in non_wear_indices_in_data
+        ],
     )
     return [
         _metashort_row_to_sql_datapoint(row, non_wear=index in non_wear_indices)  # type: ignore[arg-type, unused-ignore] # pre-commit mypy flags this, local mypy does not.
@@ -79,7 +83,7 @@ def initialize_ms4_sleep_times(
     onset_time = timestamp2datetime(onset, day, utc_offset)
     wakeup_time = timestamp2datetime(wakeup, day, utc_offset)
 
-    if onset_time.hour < 12:  # noqa: PLR2004
+    if datetime.time.fromisoformat(onset).hour < 12:  # noqa: PLR2004
         onset_time += datetime.timedelta(days=1)
     if onset_time > wakeup_time:
         wakeup_time += datetime.timedelta(days=1)
