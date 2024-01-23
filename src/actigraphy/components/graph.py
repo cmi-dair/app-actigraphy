@@ -509,7 +509,7 @@ def _find_continuous_blocks(vector: Sequence[bool]) -> list[int]:
         if value
         and (
             index == 0
-            or index == len(vector)
+            or index == len(vector) - 1
             or not vector[index - 1]
             or not vector[index + 1]
         )
