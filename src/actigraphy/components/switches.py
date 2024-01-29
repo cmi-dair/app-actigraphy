@@ -128,7 +128,11 @@ def toggle_exclude_night(
     session = next(database.session_generator(file_manager["database"]))
     subject = crud.read_subject(session, file_manager["identifier"])
     is_missing_sleep = [int(day.is_missing_sleep) for day in subject.days]
-    ggir_files.write_vector(file_manager["data_cleaning_file"], is_missing_sleep)
+    ggir_files.write_data_cleaning(
+        file_manager["data_cleaning_file"],
+        is_missing_sleep,
+        file_manager["identifier"],
+    )
 
 
 @callback_manager.global_manager.callback(
