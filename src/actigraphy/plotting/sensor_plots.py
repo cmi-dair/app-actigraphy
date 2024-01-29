@@ -12,7 +12,6 @@ from actigraphy.core import config, exceptions
 settings = config.get_settings()
 LOGGER_NAME = settings.LOGGER_NAME
 
-
 logger = logging.getLogger(LOGGER_NAME)
 
 
@@ -46,13 +45,14 @@ def build_sensor_plot(
     timestamp_values = _get_timestamp_x_values(timestamps, delta_time, max_measurements)
     x_min = 0.0
     x_max = n_hours * 60 * 60 / delta_time.total_seconds()
-    x_tick_values, x_tick_names = _get_x_axis(
+    x_tick_values, x_tick_names, x_hover_names = _get_x_axis(
         timestamps,
         n_hours,
         delta_time,
         max_measurements,
         (x_min, x_max),
     )
+    x_hover_names = [x_hover_names[index] for index in timestamp_values]
 
     figure = _build_figure(
         sensor_angle,
@@ -63,6 +63,7 @@ def build_sensor_plot(
         x_max,
         x_tick_values,
         x_tick_names,
+        x_hover_names,
     )
 
     return figure, max_measurements
@@ -165,7 +166,7 @@ def _get_x_axis(
     delta_time: datetime.timedelta,
     max_measurements: int,
     x_lim: tuple[float, float],
-) -> tuple[list[float], list[str]]:
+) -> tuple[list[float], list[str], list[str]]:
     """Calculate the x-axis tick values for a plot.
 
     Args:
@@ -220,15 +221,23 @@ def _get_x_axis(
         for time in x_tick_times
     ]
     n_timezones = len(list(dict.fromkeys(ts.tzinfo for ts in timestamps)))
+    timezone_format = "%H:%M<br><b>%Z</b>"
     if n_timezones > 2:  # noqa: PLR2004
         msg = "More than two timezones in timestamps."
         raise exceptions.InternalError(msg)
     if n_timezones == 2:  # noqa: PLR2004
-        timezone_format = "%H:%M<br><b>%Z</b>"
         x_tick_names[0] = datetime.datetime.strftime(x_tick_times[0], timezone_format)
         x_tick_names[-1] = datetime.datetime.strftime(x_tick_times[-1], timezone_format)
 
-    return x_tick_values.tolist(), x_tick_names
+    x_hover_names = [
+        datetime.datetime.strftime(
+            time.astimezone(timestamps[0].tzinfo),
+            timezone_format,
+        )
+        for time in timestamps_including_missing
+    ]
+
+    return x_tick_values.tolist(), x_tick_names, x_hover_names
 
 
 def _build_figure(  # noqa: PLR0913
@@ -240,6 +249,7 @@ def _build_figure(  # noqa: PLR0913
     x_max: float,
     x_tick_values: Sequence[float],
     x_tick_names: Sequence[str],
+    x_hover_names: Sequence[str],
 ) -> graph_objects.Figure:
     """Build a figure for sensor plots.
 
@@ -252,6 +262,7 @@ def _build_figure(  # noqa: PLR0913
         x_max: Maximum x-axis value.
         x_tick_values: List of x-axis tick values.
         x_tick_names: List of x-axis tick names.
+        x_hover_names: List of x-axis hover names.
 
     Returns:
         graph_objects.Figure: The built figure.
@@ -261,6 +272,8 @@ def _build_figure(  # noqa: PLR0913
         graph_objects.Scatter(
             x=timestamp_values,
             y=sensor_angle,
+            hovertemplate="<b>%{text}</b>",
+            text=x_hover_names,
             mode="lines",
             name="Angle of sensor's z-axis",
             line_color="blue",
@@ -270,6 +283,8 @@ def _build_figure(  # noqa: PLR0913
         graph_objects.Scatter(
             x=timestamp_values,
             y=sensor_acceleration,
+            hovertemplate="<b>%{text}</b>",
+            text=x_hover_names,
             mode="lines",
             name="Arm movement",
             line_color="black",
