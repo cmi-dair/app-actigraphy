@@ -25,19 +25,10 @@ class BaseTable(database.Base):  # type: ignore[misc]
     )
 
 
-class SleepTime(BaseTable):
-    """Represents a sleep time record in the database.
+class BaseSleepTime(BaseTable):
+    """Represents the basic sleep time record in the database."""
 
-    Attributes:
-        id: The unique identifier of the sleep time record.
-        onset: The date and time when the sleep started.
-        onset_utc_offset: The UTC offset of the onset in seconds.
-        wakeup: The date and time when the sleep ended.
-        wakeup_utc_offset: The UTC offset of the wakeup in seconds.
-        day: The day when the sleep occurred.
-    """
-
-    __tablename__ = "sleep_times"
+    __abstract__ = True
 
     onset: orm.Mapped[datetime.datetime] = orm.mapped_column(
         sqlalchemy.DateTime,
@@ -55,13 +46,6 @@ class SleepTime(BaseTable):
         sqlalchemy.Integer,
         nullable=False,
     )
-    day_id: orm.Mapped[int] = orm.mapped_column(
-        sqlalchemy.Integer,
-        sqlalchemy.ForeignKey("days.id"),
-        nullable=False,
-    )
-
-    day = orm.relationship("Day", back_populates="sleep_times")
 
     @hybrid.hybrid_property
     def onset_with_tz(self) -> datetime.datetime:
@@ -86,6 +70,43 @@ class SleepTime(BaseTable):
         return wakeup_utc.astimezone(
             datetime.timezone(datetime.timedelta(seconds=self.wakeup_utc_offset)),
         )
+
+
+class SleepTime(BaseSleepTime):
+    """Represents a sleep time record in the database.
+
+    Attributes:
+        id: The unique identifier of the sleep time record.
+        onset: The date and time when the sleep started.
+        onset_utc_offset: The UTC offset of the onset in seconds.
+        wakeup: The date and time when the sleep ended.
+        wakeup_utc_offset: The UTC offset of the wakeup in seconds.
+        day: The day when the sleep occurred.
+    """
+
+    __tablename__ = "sleep_times"
+
+    day_id: orm.Mapped[int] = orm.mapped_column(
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey("days.id"),
+        nullable=False,
+    )
+
+    day = orm.relationship("Day", back_populates="sleep_times")
+
+
+class GGIRSleepTime(BaseSleepTime):
+    """Represents the original GGIR sleep times."""
+
+    __tablename__ = "ggir_sleep_times"
+
+    day_id: orm.Mapped[int] = orm.mapped_column(
+        sqlalchemy.Integer,
+        sqlalchemy.ForeignKey("days.id"),
+        nullable=False,
+    )
+
+    day = orm.relationship("Day", back_populates="ggir_sleep_times")
 
 
 class DataPoint(BaseTable):
@@ -189,6 +210,11 @@ class Day(BaseTable):
     )
     sleep_times = orm.relationship(
         "SleepTime",
+        back_populates="day",
+        cascade="all, delete",
+    )
+    ggir_sleep_times = orm.relationship(
+        "GGIRSleepTime",
         back_populates="day",
         cascade="all, delete",
     )

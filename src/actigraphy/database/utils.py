@@ -53,7 +53,7 @@ def initialize_ms4_sleep_times(
     ggir_ms4: ggir_files.MS4,
     day: datetime.datetime,
     index: int,
-) -> list[models.SleepTime]:
+) -> tuple[list[models.SleepTime], list[models.GGIRSleepTime]]:
     """Initializes a list of SleepTime objects.
 
     Args:
@@ -90,6 +90,13 @@ def initialize_ms4_sleep_times(
 
     return [
         models.SleepTime(
+            onset=onset_time,
+            onset_utc_offset=utc_offset,
+            wakeup=wakeup_time,
+            wakeup_utc_offset=utc_offset,
+        ),
+    ], [
+        models.GGIRSleepTime(
             onset=onset_time,
             onset_utc_offset=utc_offset,
             wakeup=wakeup_time,
@@ -161,7 +168,10 @@ def initialize_days(
         if ms4_index is None:
             day_model.sleep_times = initialize_default_sleep_times(day)
         else:
-            day_model.sleep_times = initialize_ms4_sleep_times(
+            (
+                day_model.sleep_times,
+                day_model.ggir_sleep_times,
+            ) = initialize_ms4_sleep_times(
                 ggir_ms4,
                 day,
                 ms4_index,
