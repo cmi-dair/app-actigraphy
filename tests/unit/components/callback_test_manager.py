@@ -19,6 +19,6 @@ def get_callback(name: str) -> Callable[..., Any]:
     """
     for callback in manager._callbacks:  # pylint: disable=protected-access
         if callback.func.__name__ == name:
-            return callback.func  # type: ignore[no-any-return]
+            return callback.func
     msg = f"Callback {name} not found."
     raise ValueError(msg)
