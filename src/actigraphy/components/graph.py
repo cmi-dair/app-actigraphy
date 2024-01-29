@@ -522,6 +522,12 @@ def _build_figure(  # noqa: PLR0913
     non_wear_fractions = [
         value / max_measurements for value in continuous_non_wear_blocks
     ]
+    all_timepoints_included = len(timestamps) == max_measurements
+    if not all_timepoints_included:
+        includes_start = timestamps[0].hour == 12 and timestamps[0].minute == 0  # noqa: PLR2004
+        if not includes_start:
+            offset = 1 - len(timestamps) / max_measurements
+            non_wear_fractions = [fraction + offset for fraction in non_wear_fractions]
 
     for index in range(0, len(non_wear_fractions), 2):
         sensor_plots.add_rectangle(
