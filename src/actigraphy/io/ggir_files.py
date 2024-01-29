@@ -110,7 +110,7 @@ def write_sleeplog(file_manager: dict[str, str]) -> None:
     wakeup_times = [day.sleep_times[0].wakeup_with_tz for day in subject.days]
     dates = _flatten(zip(onset_times, wakeup_times, strict=True))
 
-    data_line = ["identifier"]
+    data_line = [file_manager["identifier"]]
     data_line.extend([str(date) for date in dates])
 
     sleep_times = _flatten(
@@ -124,17 +124,22 @@ def write_sleeplog(file_manager: dict[str, str]) -> None:
         writer.writerow(data_line)
 
 
-def write_vector(filepath: str, vector: list[Any]) -> None:
+def write_data_cleaning(filepath: str, vector: list[Any], identifier: str) -> None:
     """Write a list of values to a CSV file.
 
     Args:
         filepath: The path to the CSV file.
-        vector: The list of values to write to the CSV file.
+        vector: The list of nights to exclude as 0s and 1s.
+        identifier: The identifier for the participant.
 
     """
+    header = ["ID", "day_part5", "relyonguider_part4", "night_part4"]
+    indices = [i + 1 for i, value in enumerate(vector) if value == 1]
+    data = [identifier, "", "", " ".join([str(value) for value in indices])]
     with open(filepath, "w") as file_buffer:
         writer = csv.writer(file_buffer)
-        writer.writerow(vector)
+        writer.writerow(header)
+        writer.writerow(data)
 
 
 def _flatten(iterable_of_iterables: abc.Iterable[Any]) -> list[Any]:
