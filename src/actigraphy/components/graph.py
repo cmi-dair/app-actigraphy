@@ -73,8 +73,31 @@ def graph() -> html.Div:
                 style={
                     "marginLeft": "55px",
                     "marginRight": "55px",
+                    "marginTop": "20px",
                 },
                 children=[
+                    html.P("GGIR Time:"),
+                    dash_table.DataTable(
+                        data=[],
+                        id="ggir_window_table",
+                        columns=[
+                            {"name": "Sleep Onset", "id": "ggir_onset"},
+                            {"name": "Sleep Offset", "id": "ggir_wakeup"},
+                            {"name": "Sleep Duration", "id": "ggir_duration"},
+                        ],
+                        sort_action="native",
+                        sort_mode="multi",
+                        column_selectable="single",
+                    ),
+                ],
+            ),
+            html.Div(
+                style={
+                    "marginLeft": "55px",
+                    "marginRight": "55px",
+                },
+                children=[
+                    html.P("Sleep Times:"),
                     dash_table.DataTable(
                         data=[],
                         id="sleep_window_table",
@@ -154,6 +177,7 @@ def create_graph(
 @callback_manager.global_manager.callback(
     dash.Output("slider_div", "children", allow_duplicate=True),
     dash.Output("sleep_window_table", "data", allow_duplicate=True),
+    dash.Output("ggir_window_table", "data"),
     dash.Input("trigger_day_load", "value"),
     dash.State("day_slider", "value"),
     dash.State("file_manager", "data"),
@@ -165,7 +189,7 @@ def refresh_range_slider(
     day_index: int,
     file_manager: dict[str, str],
     daylight_savings_shift: int | None,
-) -> tuple[list[int], list[dict[str, str]]]:
+) -> tuple[list[int], list[dict[str, str]], list[dict[str, str]]]:
     """Reads the sleep logs for the given day.
 
     Args:
@@ -213,7 +237,26 @@ def refresh_range_slider(
                 "duration": str(wake_time - sleep_time),
             },
         )
-    return sliders, data_table
+
+    if day.ggir_sleep_times:
+        ggir_time = [
+            {
+                "ggir_onset": day.ggir_sleep_times[0].onset_with_tz.strftime(
+                    TIME_FORMATTING,
+                ),
+                "ggir_wakeup": day.ggir_sleep_times[0].wakeup_with_tz.strftime(
+                    TIME_FORMATTING,
+                ),
+                "ggir_duration": str(
+                    day.ggir_sleep_times[0].wakeup_with_tz
+                    - day.ggir_sleep_times[0].onset_with_tz,
+                ),
+            },
+        ]
+    else:
+        ggir_time = [{}]
+
+    return sliders, data_table, ggir_time
 
 
 @callback_manager.global_manager.callback(
