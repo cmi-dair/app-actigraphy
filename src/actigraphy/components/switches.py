@@ -125,14 +125,7 @@ def toggle_exclude_night(
         file_manager: A dictionary containing file paths for the missing sleep file.
     """
     _toggle_bool_field(day_index, "is_missing_sleep", exclude_button, file_manager)
-    session = next(database.session_generator(file_manager["database"]))
-    subject = crud.read_subject(session, file_manager["identifier"])
-    is_missing_sleep = [int(day.is_missing_sleep) for day in subject.days]
-    ggir_files.write_data_cleaning(
-        file_manager["data_cleaning_file"],
-        is_missing_sleep,
-        file_manager["identifier"],
-    )
+    ggir_files.write_data_cleaning(file_manager)
 
 
 @callback_manager.global_manager.callback(

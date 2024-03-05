@@ -71,6 +71,15 @@ class BaseSleepTime(BaseTable):
             datetime.timezone(datetime.timedelta(seconds=self.wakeup_utc_offset)),
         )
 
+    @hybrid.hybrid_property
+    def duration(self) -> datetime.timedelta:
+        """Returns the duration of the sleep period.
+
+        Returns:
+            datetime.timedelta: The duration of the sleep period.
+        """
+        return self.wakeup - self.onset
+
 
 class SleepTime(BaseSleepTime):
     """Represents a sleep time record in the database.

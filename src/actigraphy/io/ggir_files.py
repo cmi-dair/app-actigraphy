@@ -1,6 +1,7 @@
 """Functions for reading and writing minor files to a format accepted by GGIR."""
 import csv
 import dataclasses
+import datetime
 import logging
 import pathlib
 import re
@@ -101,13 +102,33 @@ def write_sleeplog(file_manager: dict[str, str]) -> None:
 
     Notes:
         The last day is discarded as each frontend "day" displays two days.
+        If no data is available, a placeholder time is used as a default.
 
     """
     logger.debug("Writing sleep log file.")
     session = next(database.session_generator(file_manager["database"]))
     subject = crud.read_subject(session, file_manager["identifier"])
-    onset_times = [day.sleep_times[0].onset_with_tz for day in subject.days]
-    wakeup_times = [day.sleep_times[0].wakeup_with_tz for day in subject.days]
+    placeholder_time = datetime.datetime(
+        1970,
+        1,
+        1,
+        0,
+        0,
+        0,
+        tzinfo=datetime.UTC,
+    )
+
+    onset_times = []
+    wakeup_times = []
+    for day in subject.days:
+        if len(day.sleep_times) == 0:
+            onset_times.append(placeholder_time)
+            wakeup_times.append(placeholder_time)
+            continue
+        longest_window = max(enumerate(day.sleep_times), key=lambda x: x[1].duration)[0]
+        onset_times.append(day.sleep_times[longest_window].onset_with_tz)
+        wakeup_times.append(day.sleep_times[longest_window].wakeup_with_tz)
+
     dates = _flatten(zip(onset_times, wakeup_times, strict=True))
 
     data_line = [file_manager["identifier"]]
@@ -124,19 +145,53 @@ def write_sleeplog(file_manager: dict[str, str]) -> None:
         writer.writerow(data_line)
 
 
-def write_data_cleaning(filepath: str, vector: list[Any], identifier: str) -> None:
+def write_all_sleep_times(file_manager: dict[str, str]) -> None:
+    """Writes all sleep times to a CSV file.
+
+    Args:
+        file_manager: A dictionary containing file paths for the sleep log file.
+
+    """
+    logger.debug("Writing all sleep times file.")
+    session = next(database.session_generator(file_manager["database"]))
+    subject = crud.read_subject(session, file_manager["identifier"])
+    onsets = [time.onset_with_tz for day in subject.days for time in day.sleep_times]
+    wakeups = [time.wakeup_with_tz for day in subject.days for time in day.sleep_times]
+
+    csv_output = pd.DataFrame(
+        {
+            "onset": onsets,
+            "wakeup": wakeups,
+        },
+    ).sort_values(by="onset")
+    csv_output.to_csv(file_manager["all_sleep_times"], index=False)
+
+
+def write_data_cleaning(file_manager: dict[str, str]) -> None:
     """Write a list of values to a CSV file.
 
     Args:
-        filepath: The path to the CSV file.
-        vector: The list of nights to exclude as 0s and 1s.
-        identifier: The identifier for the participant.
+        file_manager: A dictionary containing file paths for the data cleaning file.
 
     """
+    session = next(database.session_generator(file_manager["database"]))
+    subject = crud.read_subject(session, file_manager["identifier"])
+    has_no_sleep_windows = [len(day.sleep_times) == 0 for day in subject.days]
+    is_missing_sleep = [day.is_missing_sleep for day in subject.days]
+    ignore_night = [
+        int(has_no_sleep_windows[i] or is_missing_sleep[i])
+        for i in range(len(subject.days))
+    ]
+
     header = ["ID", "day_part5", "relyonguider_part4", "night_part4"]
-    indices = [i + 1 for i, value in enumerate(vector) if value == 1]
-    data = [identifier, "", "", " ".join([str(value) for value in indices])]
-    with open(filepath, "w") as file_buffer:
+    indices = [i + 1 for i, value in enumerate(ignore_night) if value == 1]
+    data = [
+        file_manager["identifier"],
+        "",
+        "",
+        " ".join([str(value) for value in indices]),
+    ]
+    with open(file_manager["data_cleaning_file"], "w") as file_buffer:
         writer = csv.writer(file_buffer)
         writer.writerow(header)
         writer.writerow(data)
