@@ -44,6 +44,10 @@ class FileManager:
             self.log_dir,
             f"data_cleaning_{self.identifier}.csv",
         )
+        self.all_sleep_times = path.join(
+            self.log_dir,
+            f"multiple_sleep_{self.identifier}.csv",
+        )
         self.ms4_file = path.join(
             self.base_dir,
             "meta",

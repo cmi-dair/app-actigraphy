@@ -378,6 +378,7 @@ def adjust_range_slider(  # noqa: PLR0913
 
     session.commit()
     ggir_files.write_sleeplog(file_manager)
+    ggir_files.write_all_sleep_times(file_manager)
 
     return new_values, patch_table
 
@@ -451,6 +452,9 @@ def add_sliders(
             "duration": str(datetime.timedelta()),
         },
     )
+
+    # Rewrite data cleaning as it has a special case for no sliders.
+    ggir_files.write_data_cleaning(file_manager)
     return patch_slider, patch_table
 
 
@@ -491,6 +495,8 @@ def remove_sliders(
     del patch_table[-1]
 
     session.commit()
+    # Rewrite data cleaning as it has a special case for no sliders.
+    ggir_files.write_data_cleaning(file_manager)
     return patch_slider, patch_table
 
 
