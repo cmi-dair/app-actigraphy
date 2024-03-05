@@ -46,7 +46,7 @@ class FileManager:
         )
         self.all_sleep_times = path.join(
             self.log_dir,
-            f"all_sleep_times_{self.identifier}.csv",
+            f"multiple_sleep_{self.identifier}.csv",
         )
         self.ms4_file = path.join(
             self.base_dir,
