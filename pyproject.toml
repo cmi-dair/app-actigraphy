@@ -23,16 +23,16 @@ polars = "^0.20.7"
 pyarrow = "^15.0.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.2"
-mypy = "^1.8.0"
-pre-commit = "^3.6.2"
-pytest-cov = "^4.1.0"
-ruff = "^0.2.2"
-pytest-mock = "^3.12.0"
+pytest = "^8.2.1"
+mypy = "^1.10.0"
+pre-commit = "^3.7.1"
+pytest-cov = "^5.0.0"
+ruff = "^0.4.7"
+pytest-mock = "^3.14.0"
 vulture = "^2.11"
 
 [tool.poetry.group.docs.dependencies]
-pdoc = "^14.4.0"
+pdoc = "^14.5.0"
 
 [tool.poetry.extras]
 docs = ["pdoc"]
