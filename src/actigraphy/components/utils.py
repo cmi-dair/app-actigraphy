@@ -1,6 +1,5 @@
 """Utility functions used across components."""
 import datetime
-import functools
 import logging
 
 from actigraphy.core import config
@@ -12,7 +11,6 @@ LOGGER_NAME = settings.LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 
-@functools.cache
 def get_day_data(
     day_index: int,
     database_path: str,
