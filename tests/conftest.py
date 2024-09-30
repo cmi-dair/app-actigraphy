@@ -1,4 +1,5 @@
 """Pytest configuration file."""
+
 import datetime
 from collections.abc import Generator
 
@@ -9,7 +10,7 @@ from sqlalchemy import orm
 from actigraphy.database import database, models
 
 
-@pytest.fixture()
+@pytest.fixture
 def session(in_memory_db: database.Database) -> Generator[orm.Session, None, None]:
     """Returns a database session in memory.
 
@@ -50,7 +51,7 @@ def _fill_database(session: orm.Session) -> None:
     session.commit()
 
 
-@pytest.fixture()
+@pytest.fixture
 def file_manager() -> dict[str, str]:
     """Return a file manager dictionary."""
     return {
