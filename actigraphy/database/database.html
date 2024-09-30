@@ -99,72 +99,73 @@
                         <label class="view-source-button" for="mod-database-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;A module for interacting with the SQL database.&quot;&quot;&quot;</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span> <span class="nn">logging</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">pathlib</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">abc</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">import</span> <span class="nn">sqlalchemy</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">orm</span><span class="p">,</span> <span class="n">pool</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">from</span> <span class="nn">actigraphy.core</span> <span class="kn">import</span> <span class="n">config</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="n">settings</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_settings</span><span class="p">()</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="n">LOGGER_NAME</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">LOGGER_NAME</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="n">Base</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">declarative_base</span><span class="p">()</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">logging</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="kn">import</span> <span class="nn">pathlib</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">abc</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">import</span> <span class="nn">sqlalchemy</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">orm</span><span class="p">,</span> <span class="n">pool</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="kn">from</span> <span class="nn">actigraphy.core</span> <span class="kn">import</span> <span class="n">config</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="n">settings</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_settings</span><span class="p">()</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="n">LOGGER_NAME</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">LOGGER_NAME</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a><span class="n">Base</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">declarative_base</span><span class="p">()</span>
 </span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a><span class="k">class</span> <span class="nc">Database</span><span class="p">:</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a database connection.&quot;&quot;&quot;</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the Database class.</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">        The Database class provides a high-level interface for interacting with a</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        PostgreSQL database.</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">        Args:</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">            path: The path to the database file.</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing database engine.&quot;</span><span class="p">)</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>            <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>            <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">StaticPool</span><span class="p">,</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>            <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;check_same_thread&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>        <span class="p">)</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">session_factory</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">scoped_session</span><span class="p">(</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>            <span class="n">orm</span><span class="o">.</span><span class="n">sessionmaker</span><span class="p">(</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>                <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>                <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>                <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>            <span class="p">),</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="p">)</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>    <span class="k">def</span> <span class="nf">create_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the database schema.&quot;&quot;&quot;</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating database schema.&quot;</span><span class="p">)</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a><span class="k">class</span> <span class="nc">Database</span><span class="p">:</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a database connection.&quot;&quot;&quot;</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the Database class.</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        The Database class provides a high-level interface for interacting with a</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">        PostgreSQL database.</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">        Args:</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">            path: The path to the database file.</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing database engine.&quot;</span><span class="p">)</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>            <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>            <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">StaticPool</span><span class="p">,</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>            <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;check_same_thread&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>        <span class="p">)</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">session_factory</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">scoped_session</span><span class="p">(</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>            <span class="n">orm</span><span class="o">.</span><span class="n">sessionmaker</span><span class="p">(</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>                <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>                <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>                <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>            <span class="p">),</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="p">)</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>    <span class="k">def</span> <span class="nf">create_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the database schema.&quot;&quot;&quot;</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating database schema.&quot;</span><span class="p">)</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
 </span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="k">def</span> <span class="nf">session_generator</span><span class="p">(</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">abc</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">orm</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a generator for a session instance.</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">    Returns:</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">        orm.Session: A database session.</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>
-</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a><span class="sd">    Notes:</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="sd">        A generator is used to ensure that the session is closed after use.</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">Database</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">session_factory</span><span class="p">()</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>        <span class="k">yield</span> <span class="n">session</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>    <span class="k">finally</span><span class="p">:</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>        <span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="k">def</span> <span class="nf">session_generator</span><span class="p">(</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">abc</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">orm</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a generator for a session instance.</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">    Returns:</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">        orm.Session: A database session.</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="sd">    Notes:</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="sd">        A generator is used to ensure that the session is closed after use.</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">Database</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">session_factory</span><span class="p">()</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a>        <span class="k">yield</span> <span class="n">session</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a>    <span class="k">finally</span><span class="p">:</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a>        <span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></pre></div>
 
 
@@ -301,37 +302,37 @@ for example, any mapped columns or relationships.</p>
 
     </div>
     <a class="headerlink" href="#Database"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Database-20"><a href="#Database-20"><span class="linenos">20</span></a><span class="k">class</span> <span class="nc">Database</span><span class="p">:</span>
-</span><span id="Database-21"><a href="#Database-21"><span class="linenos">21</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a database connection.&quot;&quot;&quot;</span>
-</span><span id="Database-22"><a href="#Database-22"><span class="linenos">22</span></a>
-</span><span id="Database-23"><a href="#Database-23"><span class="linenos">23</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Database-24"><a href="#Database-24"><span class="linenos">24</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the Database class.</span>
-</span><span id="Database-25"><a href="#Database-25"><span class="linenos">25</span></a>
-</span><span id="Database-26"><a href="#Database-26"><span class="linenos">26</span></a><span class="sd">        The Database class provides a high-level interface for interacting with a</span>
-</span><span id="Database-27"><a href="#Database-27"><span class="linenos">27</span></a><span class="sd">        PostgreSQL database.</span>
-</span><span id="Database-28"><a href="#Database-28"><span class="linenos">28</span></a>
-</span><span id="Database-29"><a href="#Database-29"><span class="linenos">29</span></a><span class="sd">        Args:</span>
-</span><span id="Database-30"><a href="#Database-30"><span class="linenos">30</span></a><span class="sd">            path: The path to the database file.</span>
-</span><span id="Database-31"><a href="#Database-31"><span class="linenos">31</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Database-32"><a href="#Database-32"><span class="linenos">32</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing database engine.&quot;</span><span class="p">)</span>
-</span><span id="Database-33"><a href="#Database-33"><span class="linenos">33</span></a>
-</span><span id="Database-34"><a href="#Database-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
-</span><span id="Database-35"><a href="#Database-35"><span class="linenos">35</span></a>            <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Database-36"><a href="#Database-36"><span class="linenos">36</span></a>            <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">StaticPool</span><span class="p">,</span>
-</span><span id="Database-37"><a href="#Database-37"><span class="linenos">37</span></a>            <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;check_same_thread&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-</span><span id="Database-38"><a href="#Database-38"><span class="linenos">38</span></a>        <span class="p">)</span>
-</span><span id="Database-39"><a href="#Database-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">session_factory</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">scoped_session</span><span class="p">(</span>
-</span><span id="Database-40"><a href="#Database-40"><span class="linenos">40</span></a>            <span class="n">orm</span><span class="o">.</span><span class="n">sessionmaker</span><span class="p">(</span>
-</span><span id="Database-41"><a href="#Database-41"><span class="linenos">41</span></a>                <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="Database-42"><a href="#Database-42"><span class="linenos">42</span></a>                <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="Database-43"><a href="#Database-43"><span class="linenos">43</span></a>                <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span>
-</span><span id="Database-44"><a href="#Database-44"><span class="linenos">44</span></a>            <span class="p">),</span>
-</span><span id="Database-45"><a href="#Database-45"><span class="linenos">45</span></a>        <span class="p">)</span>
-</span><span id="Database-46"><a href="#Database-46"><span class="linenos">46</span></a>
-</span><span id="Database-47"><a href="#Database-47"><span class="linenos">47</span></a>    <span class="k">def</span> <span class="nf">create_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Database-48"><a href="#Database-48"><span class="linenos">48</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the database schema.&quot;&quot;&quot;</span>
-</span><span id="Database-49"><a href="#Database-49"><span class="linenos">49</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating database schema.&quot;</span><span class="p">)</span>
-</span><span id="Database-50"><a href="#Database-50"><span class="linenos">50</span></a>        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Database-21"><a href="#Database-21"><span class="linenos">21</span></a><span class="k">class</span> <span class="nc">Database</span><span class="p">:</span>
+</span><span id="Database-22"><a href="#Database-22"><span class="linenos">22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A class representing a database connection.&quot;&quot;&quot;</span>
+</span><span id="Database-23"><a href="#Database-23"><span class="linenos">23</span></a>
+</span><span id="Database-24"><a href="#Database-24"><span class="linenos">24</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Database-25"><a href="#Database-25"><span class="linenos">25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the Database class.</span>
+</span><span id="Database-26"><a href="#Database-26"><span class="linenos">26</span></a>
+</span><span id="Database-27"><a href="#Database-27"><span class="linenos">27</span></a><span class="sd">        The Database class provides a high-level interface for interacting with a</span>
+</span><span id="Database-28"><a href="#Database-28"><span class="linenos">28</span></a><span class="sd">        PostgreSQL database.</span>
+</span><span id="Database-29"><a href="#Database-29"><span class="linenos">29</span></a>
+</span><span id="Database-30"><a href="#Database-30"><span class="linenos">30</span></a><span class="sd">        Args:</span>
+</span><span id="Database-31"><a href="#Database-31"><span class="linenos">31</span></a><span class="sd">            path: The path to the database file.</span>
+</span><span id="Database-32"><a href="#Database-32"><span class="linenos">32</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Database-33"><a href="#Database-33"><span class="linenos">33</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing database engine.&quot;</span><span class="p">)</span>
+</span><span id="Database-34"><a href="#Database-34"><span class="linenos">34</span></a>
+</span><span id="Database-35"><a href="#Database-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
+</span><span id="Database-36"><a href="#Database-36"><span class="linenos">36</span></a>            <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Database-37"><a href="#Database-37"><span class="linenos">37</span></a>            <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">StaticPool</span><span class="p">,</span>
+</span><span id="Database-38"><a href="#Database-38"><span class="linenos">38</span></a>            <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;check_same_thread&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+</span><span id="Database-39"><a href="#Database-39"><span class="linenos">39</span></a>        <span class="p">)</span>
+</span><span id="Database-40"><a href="#Database-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">session_factory</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">scoped_session</span><span class="p">(</span>
+</span><span id="Database-41"><a href="#Database-41"><span class="linenos">41</span></a>            <span class="n">orm</span><span class="o">.</span><span class="n">sessionmaker</span><span class="p">(</span>
+</span><span id="Database-42"><a href="#Database-42"><span class="linenos">42</span></a>                <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="Database-43"><a href="#Database-43"><span class="linenos">43</span></a>                <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="Database-44"><a href="#Database-44"><span class="linenos">44</span></a>                <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span>
+</span><span id="Database-45"><a href="#Database-45"><span class="linenos">45</span></a>            <span class="p">),</span>
+</span><span id="Database-46"><a href="#Database-46"><span class="linenos">46</span></a>        <span class="p">)</span>
+</span><span id="Database-47"><a href="#Database-47"><span class="linenos">47</span></a>
+</span><span id="Database-48"><a href="#Database-48"><span class="linenos">48</span></a>    <span class="k">def</span> <span class="nf">create_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Database-49"><a href="#Database-49"><span class="linenos">49</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the database schema.&quot;&quot;&quot;</span>
+</span><span id="Database-50"><a href="#Database-50"><span class="linenos">50</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating database schema.&quot;</span><span class="p">)</span>
+</span><span id="Database-51"><a href="#Database-51"><span class="linenos">51</span></a>        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -349,29 +350,29 @@ for example, any mapped columns or relationships.</p>
 
     </div>
     <a class="headerlink" href="#Database.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Database.__init__-23"><a href="#Database.__init__-23"><span class="linenos">23</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Database.__init__-24"><a href="#Database.__init__-24"><span class="linenos">24</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the Database class.</span>
-</span><span id="Database.__init__-25"><a href="#Database.__init__-25"><span class="linenos">25</span></a>
-</span><span id="Database.__init__-26"><a href="#Database.__init__-26"><span class="linenos">26</span></a><span class="sd">        The Database class provides a high-level interface for interacting with a</span>
-</span><span id="Database.__init__-27"><a href="#Database.__init__-27"><span class="linenos">27</span></a><span class="sd">        PostgreSQL database.</span>
-</span><span id="Database.__init__-28"><a href="#Database.__init__-28"><span class="linenos">28</span></a>
-</span><span id="Database.__init__-29"><a href="#Database.__init__-29"><span class="linenos">29</span></a><span class="sd">        Args:</span>
-</span><span id="Database.__init__-30"><a href="#Database.__init__-30"><span class="linenos">30</span></a><span class="sd">            path: The path to the database file.</span>
-</span><span id="Database.__init__-31"><a href="#Database.__init__-31"><span class="linenos">31</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Database.__init__-32"><a href="#Database.__init__-32"><span class="linenos">32</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing database engine.&quot;</span><span class="p">)</span>
-</span><span id="Database.__init__-33"><a href="#Database.__init__-33"><span class="linenos">33</span></a>
-</span><span id="Database.__init__-34"><a href="#Database.__init__-34"><span class="linenos">34</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
-</span><span id="Database.__init__-35"><a href="#Database.__init__-35"><span class="linenos">35</span></a>            <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Database.__init__-36"><a href="#Database.__init__-36"><span class="linenos">36</span></a>            <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">StaticPool</span><span class="p">,</span>
-</span><span id="Database.__init__-37"><a href="#Database.__init__-37"><span class="linenos">37</span></a>            <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;check_same_thread&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-</span><span id="Database.__init__-38"><a href="#Database.__init__-38"><span class="linenos">38</span></a>        <span class="p">)</span>
-</span><span id="Database.__init__-39"><a href="#Database.__init__-39"><span class="linenos">39</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">session_factory</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">scoped_session</span><span class="p">(</span>
-</span><span id="Database.__init__-40"><a href="#Database.__init__-40"><span class="linenos">40</span></a>            <span class="n">orm</span><span class="o">.</span><span class="n">sessionmaker</span><span class="p">(</span>
-</span><span id="Database.__init__-41"><a href="#Database.__init__-41"><span class="linenos">41</span></a>                <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="Database.__init__-42"><a href="#Database.__init__-42"><span class="linenos">42</span></a>                <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="Database.__init__-43"><a href="#Database.__init__-43"><span class="linenos">43</span></a>                <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span>
-</span><span id="Database.__init__-44"><a href="#Database.__init__-44"><span class="linenos">44</span></a>            <span class="p">),</span>
-</span><span id="Database.__init__-45"><a href="#Database.__init__-45"><span class="linenos">45</span></a>        <span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Database.__init__-24"><a href="#Database.__init__-24"><span class="linenos">24</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Database.__init__-25"><a href="#Database.__init__-25"><span class="linenos">25</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a new instance of the Database class.</span>
+</span><span id="Database.__init__-26"><a href="#Database.__init__-26"><span class="linenos">26</span></a>
+</span><span id="Database.__init__-27"><a href="#Database.__init__-27"><span class="linenos">27</span></a><span class="sd">        The Database class provides a high-level interface for interacting with a</span>
+</span><span id="Database.__init__-28"><a href="#Database.__init__-28"><span class="linenos">28</span></a><span class="sd">        PostgreSQL database.</span>
+</span><span id="Database.__init__-29"><a href="#Database.__init__-29"><span class="linenos">29</span></a>
+</span><span id="Database.__init__-30"><a href="#Database.__init__-30"><span class="linenos">30</span></a><span class="sd">        Args:</span>
+</span><span id="Database.__init__-31"><a href="#Database.__init__-31"><span class="linenos">31</span></a><span class="sd">            path: The path to the database file.</span>
+</span><span id="Database.__init__-32"><a href="#Database.__init__-32"><span class="linenos">32</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Database.__init__-33"><a href="#Database.__init__-33"><span class="linenos">33</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Initializing database engine.&quot;</span><span class="p">)</span>
+</span><span id="Database.__init__-34"><a href="#Database.__init__-34"><span class="linenos">34</span></a>
+</span><span id="Database.__init__-35"><a href="#Database.__init__-35"><span class="linenos">35</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">sqlalchemy</span><span class="o">.</span><span class="n">create_engine</span><span class="p">(</span>
+</span><span id="Database.__init__-36"><a href="#Database.__init__-36"><span class="linenos">36</span></a>            <span class="n">url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Database.__init__-37"><a href="#Database.__init__-37"><span class="linenos">37</span></a>            <span class="n">poolclass</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">StaticPool</span><span class="p">,</span>
+</span><span id="Database.__init__-38"><a href="#Database.__init__-38"><span class="linenos">38</span></a>            <span class="n">connect_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;check_same_thread&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+</span><span id="Database.__init__-39"><a href="#Database.__init__-39"><span class="linenos">39</span></a>        <span class="p">)</span>
+</span><span id="Database.__init__-40"><a href="#Database.__init__-40"><span class="linenos">40</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">session_factory</span> <span class="o">=</span> <span class="n">orm</span><span class="o">.</span><span class="n">scoped_session</span><span class="p">(</span>
+</span><span id="Database.__init__-41"><a href="#Database.__init__-41"><span class="linenos">41</span></a>            <span class="n">orm</span><span class="o">.</span><span class="n">sessionmaker</span><span class="p">(</span>
+</span><span id="Database.__init__-42"><a href="#Database.__init__-42"><span class="linenos">42</span></a>                <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="Database.__init__-43"><a href="#Database.__init__-43"><span class="linenos">43</span></a>                <span class="n">autoflush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="Database.__init__-44"><a href="#Database.__init__-44"><span class="linenos">44</span></a>                <span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">,</span>
+</span><span id="Database.__init__-45"><a href="#Database.__init__-45"><span class="linenos">45</span></a>            <span class="p">),</span>
+</span><span id="Database.__init__-46"><a href="#Database.__init__-46"><span class="linenos">46</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
@@ -422,10 +423,10 @@ PostgreSQL database.</p>
 
     </div>
     <a class="headerlink" href="#Database.create_database"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Database.create_database-47"><a href="#Database.create_database-47"><span class="linenos">47</span></a>    <span class="k">def</span> <span class="nf">create_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="Database.create_database-48"><a href="#Database.create_database-48"><span class="linenos">48</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the database schema.&quot;&quot;&quot;</span>
-</span><span id="Database.create_database-49"><a href="#Database.create_database-49"><span class="linenos">49</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating database schema.&quot;</span><span class="p">)</span>
-</span><span id="Database.create_database-50"><a href="#Database.create_database-50"><span class="linenos">50</span></a>        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Database.create_database-48"><a href="#Database.create_database-48"><span class="linenos">48</span></a>    <span class="k">def</span> <span class="nf">create_database</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="Database.create_database-49"><a href="#Database.create_database-49"><span class="linenos">49</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates the database schema.&quot;&quot;&quot;</span>
+</span><span id="Database.create_database-50"><a href="#Database.create_database-50"><span class="linenos">50</span></a>        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating database schema.&quot;</span><span class="p">)</span>
+</span><span id="Database.create_database-51"><a href="#Database.create_database-51"><span class="linenos">51</span></a>        <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -446,22 +447,22 @@ PostgreSQL database.</p>
 
     </div>
     <a class="headerlink" href="#session_generator"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="session_generator-53"><a href="#session_generator-53"><span class="linenos">53</span></a><span class="k">def</span> <span class="nf">session_generator</span><span class="p">(</span>
-</span><span id="session_generator-54"><a href="#session_generator-54"><span class="linenos">54</span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
-</span><span id="session_generator-55"><a href="#session_generator-55"><span class="linenos">55</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">abc</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">orm</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-</span><span id="session_generator-56"><a href="#session_generator-56"><span class="linenos">56</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a generator for a session instance.</span>
-</span><span id="session_generator-57"><a href="#session_generator-57"><span class="linenos">57</span></a>
-</span><span id="session_generator-58"><a href="#session_generator-58"><span class="linenos">58</span></a><span class="sd">    Returns:</span>
-</span><span id="session_generator-59"><a href="#session_generator-59"><span class="linenos">59</span></a><span class="sd">        orm.Session: A database session.</span>
-</span><span id="session_generator-60"><a href="#session_generator-60"><span class="linenos">60</span></a>
-</span><span id="session_generator-61"><a href="#session_generator-61"><span class="linenos">61</span></a><span class="sd">    Notes:</span>
-</span><span id="session_generator-62"><a href="#session_generator-62"><span class="linenos">62</span></a><span class="sd">        A generator is used to ensure that the session is closed after use.</span>
-</span><span id="session_generator-63"><a href="#session_generator-63"><span class="linenos">63</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="session_generator-64"><a href="#session_generator-64"><span class="linenos">64</span></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">Database</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">session_factory</span><span class="p">()</span>
-</span><span id="session_generator-65"><a href="#session_generator-65"><span class="linenos">65</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="session_generator-66"><a href="#session_generator-66"><span class="linenos">66</span></a>        <span class="k">yield</span> <span class="n">session</span>
-</span><span id="session_generator-67"><a href="#session_generator-67"><span class="linenos">67</span></a>    <span class="k">finally</span><span class="p">:</span>
-</span><span id="session_generator-68"><a href="#session_generator-68"><span class="linenos">68</span></a>        <span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="session_generator-54"><a href="#session_generator-54"><span class="linenos">54</span></a><span class="k">def</span> <span class="nf">session_generator</span><span class="p">(</span>
+</span><span id="session_generator-55"><a href="#session_generator-55"><span class="linenos">55</span></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
+</span><span id="session_generator-56"><a href="#session_generator-56"><span class="linenos">56</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">abc</span><span class="o">.</span><span class="n">Generator</span><span class="p">[</span><span class="n">orm</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+</span><span id="session_generator-57"><a href="#session_generator-57"><span class="linenos">57</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a generator for a session instance.</span>
+</span><span id="session_generator-58"><a href="#session_generator-58"><span class="linenos">58</span></a>
+</span><span id="session_generator-59"><a href="#session_generator-59"><span class="linenos">59</span></a><span class="sd">    Returns:</span>
+</span><span id="session_generator-60"><a href="#session_generator-60"><span class="linenos">60</span></a><span class="sd">        orm.Session: A database session.</span>
+</span><span id="session_generator-61"><a href="#session_generator-61"><span class="linenos">61</span></a>
+</span><span id="session_generator-62"><a href="#session_generator-62"><span class="linenos">62</span></a><span class="sd">    Notes:</span>
+</span><span id="session_generator-63"><a href="#session_generator-63"><span class="linenos">63</span></a><span class="sd">        A generator is used to ensure that the session is closed after use.</span>
+</span><span id="session_generator-64"><a href="#session_generator-64"><span class="linenos">64</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="session_generator-65"><a href="#session_generator-65"><span class="linenos">65</span></a>    <span class="n">session</span> <span class="o">=</span> <span class="n">Database</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">session_factory</span><span class="p">()</span>
+</span><span id="session_generator-66"><a href="#session_generator-66"><span class="linenos">66</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="session_generator-67"><a href="#session_generator-67"><span class="linenos">67</span></a>        <span class="k">yield</span> <span class="n">session</span>
+</span><span id="session_generator-68"><a href="#session_generator-68"><span class="linenos">68</span></a>    <span class="k">finally</span><span class="p">:</span>
+</span><span id="session_generator-69"><a href="#session_generator-69"><span class="linenos">69</span></a>        <span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></pre></div>
 
 
