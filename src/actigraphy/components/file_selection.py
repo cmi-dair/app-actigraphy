@@ -9,7 +9,13 @@ import dash
 import dash_bootstrap_components
 from dash import dcc, html
 
-from actigraphy.components import day_slider, finished_checkbox, graph, switches
+from actigraphy.components import (
+    day_slider,
+    dst_banner,
+    finished_checkbox,
+    graph,
+    switches,
+)
 from actigraphy.core import callback_manager, config, exceptions
 from actigraphy.core import utils as core_utils
 from actigraphy.database import crud, database
@@ -129,6 +135,10 @@ def parse_files(
         switches.switches(),
         graph.graph(),
     ]
+
+    if dst_index := subject.day_of_daylight_savings_time:
+        ui_components.insert(0, dst_banner.dst_banner(dst_index))
+
     return (
         ui_components,
         "",

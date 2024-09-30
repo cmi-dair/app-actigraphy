@@ -263,3 +263,26 @@ class Subject(BaseTable):
         back_populates="subject",
         cascade="all, delete",
     )
+
+    @property
+    def day_of_daylight_savings_time(self) -> int | None:
+        """Property to assess whether a subject has daylight savings time shifts.
+
+        Returns:
+           Integer of the first day with DST or None if none is found.
+        """
+        first_tz = self.data_points[0].timestamp_utc_offset
+        first_dst = next(
+            (
+                point.timestamp.date()
+                for point in self.data_points[1:]
+                if first_tz != point.timestamp_utc_offset
+            ),
+            None,
+        )
+        if first_dst is None:
+            return None
+
+        return next(
+            index for index, day in enumerate(self.days) if day.date == first_dst
+        )
