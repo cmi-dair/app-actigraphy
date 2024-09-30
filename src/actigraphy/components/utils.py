@@ -1,4 +1,5 @@
 """Utility functions used across components."""
+
 import datetime
 import logging
 
