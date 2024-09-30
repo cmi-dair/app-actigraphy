@@ -1,4 +1,5 @@
 """A warning banner for Daylight savings time."""
+
 from dash import html
 
 
