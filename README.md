@@ -21,7 +21,7 @@ The app may be installed either through Docker (recommended for users) or Poetry
       -p 127.0.0.1:8051:8051 \
       --volume ${LOCAL_DATA_DIR}:/data \
       --volume `pwd`/assets:/app/assets \
-      cmidair/actigraphy:latest
+      cmidair/actigraphy:main
    ```
 
 ### Running the App through Poetry
