@@ -1,4 +1,4 @@
-# App Actigraphy
+# ActiSleep Tracker
 
 [![Build](https://github.com/childmindresearch/app-actigraphy/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/childmindresearch/app-actigraphy/actions/workflows/test.yaml?query=branch%3Amain)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -6,11 +6,11 @@
 [![L-GPL License](https://img.shields.io/badge/license-L--GPL-blue.svg)](https://github.com/childmindresearch/app-actigraphy/blob/main/LICENSE)
 [![pages](https://img.shields.io/badge/api-docs-blue)](https://childmindresearch.github.io/app-actigraphy)
 
-This webapp is an application designed for annotating sleep data. This repository contains the source code and related files for the application.
+ActiSleep Tracler is an application designed to annotate sleep data. This repository contains the source code and related files for the application.
 
 ## Getting Started
 
-The app may be installed either through Docker (recommended for users) or Poetry (recommended for developers), see the instructions for each below. Whichever method you use to launch the app, the app will be available at http://localhost:8051.
+The app may be installed either through Docker (recommended for users) or Poetry (recommended for developers); see the instructions for each below. Whichever method you use to launch the app, the app will be available at http://localhost:8051.
 
 ### Running the App through Docker
 
@@ -60,7 +60,7 @@ This may also be done with Poetry through:
 
 ## Developer notes
 
-The Actigraphy app is developed to annotate sleep data, and for this project, we've utilized the Dash framework. It's important to note that Dash apps usually aren't geared towards full-stack applications, but given the project requirements, adopting it was a pragmatic necessity. In this repository, we've implemented a custom Dash architecture to address some typical challenges associated with a full-stack Dash app, particularly through the introduction of a custom callback manager. The organization of the project is structured as follows:
+The ActiSleep Tracker app is developed to annotate sleep data, and for this project, we've utilized the Dash framework. It's important to note that Dash apps usually aren't geared towards full-stack applications, but given the project requirements, adopting it was a pragmatic necessity. In this repository, we've implemented a custom Dash architecture to address some typical challenges associated with a full-stack Dash app, particularly through the introduction of a custom callback manager. The organization of the project is structured as follows:
 
 - `app.py` contains the main Dash app, which is responsible for the layout of the app.
 - `components/` houses the components utilized by the app. Each component is tasked with its specific layout and logic. Some of the components include file selection, day slider, and graph visualization.
